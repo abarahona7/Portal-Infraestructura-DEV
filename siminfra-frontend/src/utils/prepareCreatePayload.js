@@ -31,29 +31,18 @@ export const prepareCreatePayload = (
   ========================= */
 
   if (tab === 'ips') {
-    const tieneAsignacion =
-      payload.usuario ||
-      (
-        payload.asignado_otro &&
-        payload.asignado_otro.trim()
-      );
+    // La asignación a usuarios solo se administra desde Usuarios.
+    delete payload.usuario;
 
-    // Si tiene asignación y está LIBRE,
-    // automáticamente pasa a RESERVADA.
-    if (
-      tieneAsignacion &&
-      payload.estado === 'LIBRE'
-    ) {
-      payload.estado = 'RESERVADA';
+    // LIBRE / RESERVADA se calcula automáticamente en backend.
+    delete payload.estado;
+
+    if (payload.asignado_otro) {
+      payload.asignado_otro = payload.asignado_otro.trim() || null;
     }
 
-    // Si se elimina la asignación y estaba
-    // RESERVADA, vuelve automáticamente a LIBRE.
-    if (
-      !tieneAsignacion &&
-      payload.estado === 'RESERVADA'
-    ) {
-      payload.estado = 'LIBRE';
+    if (payload.observacion) {
+      payload.observacion = payload.observacion.trim() || null;
     }
   }
 

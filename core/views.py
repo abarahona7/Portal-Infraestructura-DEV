@@ -150,6 +150,17 @@ class IPViewSet(viewsets.ModelViewSet):
         'asignado_otro'
     ]
 
+    def perform_destroy(self, instance):
+        if instance.usuario_id:
+            raise serializers.ValidationError({
+                'detail': (
+                    'No se puede eliminar una IP asignada a un usuario. '
+                    'Libérala primero desde la ficha del usuario.'
+                )
+            })
+
+        instance.delete()
+
 
 # =========================================
 # SERVIDORES

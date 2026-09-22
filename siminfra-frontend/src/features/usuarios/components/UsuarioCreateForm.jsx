@@ -33,6 +33,16 @@ export default function UsuarioCreateForm({
     });
   };
 
+  const handleStatusChange = (value) => {
+    onChange({
+      ...usuario,
+      estado: value,
+      ...(value === 'ACTIVO' ? {} : { ip_seleccionada: null }),
+    });
+  };
+
+  const ipAssignmentDisabled = (usuario.estado || 'ACTIVO') !== 'ACTIVO';
+
   const handleDepartmentChange = (value) => {
     const departmentId = value ? Number(value) : null;
 
@@ -65,7 +75,7 @@ export default function UsuarioCreateForm({
         <label style={labelStyle}>Estado del Usuario</label>
         <select
           value={usuario.estado || 'ACTIVO'}
-          onChange={(e) => updateField('estado', e.target.value)}
+          onChange={(e) => handleStatusChange(e.target.value)}
           style={inputStyle}
         >
           <option value="ACTIVO">Activo</option>
@@ -206,7 +216,13 @@ export default function UsuarioCreateForm({
           onChange={(e) =>
             updateField('ip_seleccionada', e.target.value || null)
           }
-          style={{ ...inputStyle, fontWeight: 'bold', color: '#15803d' }}
+          disabled={ipAssignmentDisabled}
+          style={{
+            ...inputStyle,
+            fontWeight: 'bold',
+            color: ipAssignmentDisabled ? '#94a3b8' : '#15803d',
+            backgroundColor: ipAssignmentDisabled ? '#f8fafc' : '#fff',
+          }}
         >
           <option value="">Sin IP Asignada</option>
           {availableIps.map((ip) => (
@@ -215,6 +231,11 @@ export default function UsuarioCreateForm({
             </option>
           ))}
         </select>
+        {ipAssignmentDisabled && (
+          <div style={{ marginTop: '6px', fontSize: '0.75rem', color: '#64748b' }}>
+            Las IP solo se pueden asignar a usuarios activos.
+          </div>
+        )}
       </div>
     </>
   );

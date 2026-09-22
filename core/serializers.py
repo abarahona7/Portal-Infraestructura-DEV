@@ -1,3 +1,4 @@
+from ipaddress import ip_address, ip_network
 from rest_framework import serializers
 from django.db.models.functions import Lower, Trim
 
@@ -130,35 +131,75 @@ class DepartamentoSerializer(serializers.ModelSerializer):
 
 
 
+IP_ALLOWED_NETWORKS = tuple(
+    ip_network(network)
+    for network in (
+        '172.23.1.0/24',
+        '172.24.1.0/24',
+        '172.25.1.0/24',
+        '192.168.10.0/24',
+        '192.168.20.0/24',
+        '192.168.30.0/24',
+        '192.168.90.0/24',
+    )
+)
+
+
 class IPSerializer(serializers.ModelSerializer):
+    usuario = serializers.PrimaryKeyRelatedField(read_only=True)
     usuario_nombre = serializers.ReadOnlyField(
         source='usuario.nombre_completo'
     )
+    estado = serializers.CharField(read_only=True)
 
     class Meta:
         model = IP
         fields = '__all__'
 
+    def validate_direccion_ip(self, value):
+        parsed_ip = ip_address(value)
+
+        if parsed_ip.version != 4:
+            raise serializers.ValidationError(
+                'Solo se permiten direcciones IPv4.'
+            )
+
+        network = next(
+            (item for item in IP_ALLOWED_NETWORKS if parsed_ip in item),
+            None,
+        )
+
+        if network is None:
+            raise serializers.ValidationError(
+                'La IP no pertenece a un segmento administrado en Gestión IPs.'
+            )
+
+        if parsed_ip in (network.network_address, network.broadcast_address):
+            raise serializers.ValidationError(
+                'No se puede registrar la dirección de red ni la dirección broadcast.'
+            )
+
+        return str(parsed_ip)
+
     def validate(self, attrs):
-        usuario = attrs.get('usuario')
-
-        # =====================================
-        # VALIDAR ESTADO DEL USUARIO
-        # =====================================
-
-        if (
-            usuario and
-            usuario.estado in [
-                'BAJA',
-                'LICENCIA'
-            ]
-        ):
+        # La relación IP -> Usuario se administra exclusivamente desde
+        # Crear/Editar Usuario. Gestión IPs no puede crear, cambiar ni
+        # quitar esa relación directamente.
+        if 'usuario' in self.initial_data:
             raise serializers.ValidationError({
-                "usuario":
-                    "No se puede asignar una IP "
-                    "a un usuario que se encuentra "
-                    "de baja o en licencia."
+                'usuario': (
+                    'La asignación de IP a usuarios se gestiona únicamente '
+                    'desde el módulo Usuarios.'
+                )
             })
+
+        asignado_otro = attrs.get('asignado_otro')
+        if isinstance(asignado_otro, str):
+            attrs['asignado_otro'] = asignado_otro.strip() or None
+
+        observacion = attrs.get('observacion')
+        if isinstance(observacion, str):
+            attrs['observacion'] = observacion.strip() or None
 
         return attrs
 
@@ -595,6 +636,12 @@ class UsuarioSerializer(serializers.ModelSerializer):
                 "La IP seleccionada no existe en Gestión de IPs."
             )
 
+        parsed_ip = ip_address(ip.direccion_ip)
+        if not any(parsed_ip in network for network in IP_ALLOWED_NETWORKS):
+            raise serializers.ValidationError(
+                "La IP no pertenece a un segmento administrado en Gestión IPs."
+            )
+
         # Permitirla si ya pertenece al mismo usuario
         if ip.usuario:
             if not self.instance or ip.usuario_id != self.instance.id:
@@ -605,6 +652,14 @@ class UsuarioSerializer(serializers.ModelSerializer):
         if ip.asignado_otro:
             raise serializers.ValidationError(
                 "Esta IP está reservada para otro dispositivo o servicio."
+            )
+
+        already_current = bool(
+            self.instance and ip.usuario_id == self.instance.id
+        )
+        if ip.estado != 'LIBRE' and not already_current:
+            raise serializers.ValidationError(
+                "Solo se pueden asignar IPs que estén en estado Libre."
             )
 
         return value
@@ -660,7 +715,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
         validated_data
     )
 
-        if ip_enviada:
+        if ip_enviada and usuario.estado != 'BAJA':
             self._asignar_ip(
             usuario,
             ip_seleccionada
@@ -787,6 +842,43 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
         if departamento:
             attrs['dpto_area'] = departamento.nombre
+
+        # Una IP nueva solo puede asignarse a usuarios ACTIVOS.
+        # Si el usuario está en LICENCIA se permite conservar su IP actual,
+        # pero no cambiarla por otra. BAJA libera la IP mediante la señal
+        # post_save y nunca debe recibir una nueva asignación.
+        if 'ip_seleccionada' in attrs and attrs.get('ip_seleccionada') is not None:
+            estado_resultante = attrs.get(
+                'estado',
+                getattr(instance, 'estado', 'ACTIVO'),
+            )
+
+            ip_solicitada = str(attrs['ip_seleccionada'])
+            ip_actual = None
+            if instance:
+                ip_actual_obj = IP.objects.filter(usuario=instance).first()
+                if ip_actual_obj:
+                    ip_actual = ip_actual_obj.direccion_ip
+
+            es_ip_actual = bool(
+                instance
+                and ip_actual
+                and ip_actual == ip_solicitada
+            )
+
+            if estado_resultante == 'BAJA':
+                raise serializers.ValidationError({
+                    'ip_seleccionada': (
+                        'No se puede asignar una IP a un usuario dado de baja.'
+                    )
+                })
+
+            if estado_resultante == 'LICENCIA' and not es_ip_actual:
+                raise serializers.ValidationError({
+                    'ip_seleccionada': (
+                        'No se puede asignar una IP nueva a un usuario en licencia médica.'
+                    )
+                })
 
         return attrs
 

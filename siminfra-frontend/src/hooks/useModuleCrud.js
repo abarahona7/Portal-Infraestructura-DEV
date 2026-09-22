@@ -7,6 +7,25 @@ import { prepareUpdatePayload } from '../utils/prepareUpdatePayload';
 import { validateItem } from '../utils/validateItem';
 import { formatEquipmentType } from '../utils/formatEquipmentType';
 
+const extractApiErrorMessage = (error, fallback) => {
+  const data = error?.response?.data;
+
+  if (!data) return fallback;
+  if (typeof data === 'string') return data;
+  if (typeof data.detail === 'string') return data.detail;
+
+  for (const value of Object.values(data)) {
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value) && value.length > 0) {
+      const first = value[0];
+      if (typeof first === 'string') return first;
+      if (first?.string) return first.string;
+    }
+  }
+
+  return fallback;
+};
+
 export const useModuleCrud = ({
   tab,
   data,
@@ -75,7 +94,10 @@ export const useModuleCrud = ({
       );
 
       showToast?.(
-        'No se pudieron guardar los cambios. Verifique los datos ingresados.',
+        extractApiErrorMessage(
+          error,
+          'No se pudo crear el registro. Verifique los datos ingresados.'
+        ),
         'error'
       );
     }
@@ -143,7 +165,10 @@ export const useModuleCrud = ({
       );
 
       showToast?.(
-        'No se pudo crear el registro. Verifique los datos ingresados.',
+        extractApiErrorMessage(
+          error,
+          'No se pudieron guardar los cambios. Verifique los datos ingresados.'
+        ),
         'error'
       );
     }
@@ -184,7 +209,10 @@ export const useModuleCrud = ({
       );
 
       showToast?.(
-        'No se pudo eliminar el registro.',
+        extractApiErrorMessage(
+          error,
+          'No se pudo eliminar el registro.'
+        ),
         'error'
       );
     }

@@ -31,6 +31,16 @@ export const prepareUpdatePayload = (
     delete payload.celular;
     delete payload.dpto_area;
 
+    ['nombre_completo', 'usuario_red', 'correo_corp', 'cargo', 'hostname', 'gmail'].forEach((field) => {
+      if (typeof payload[field] === 'string') {
+        payload[field] = payload[field].trim();
+      }
+    });
+
+    if (payload.usuario_red) payload.usuario_red = payload.usuario_red.toLowerCase();
+    if (payload.correo_corp) payload.correo_corp = payload.correo_corp.toLowerCase();
+    if (payload.gmail) payload.gmail = payload.gmail.toLowerCase();
+
     if (payload.ip_seleccionada === '') {
       payload.ip_seleccionada = null;
     }
@@ -71,6 +81,21 @@ export const prepareUpdatePayload = (
   ========================= */
 
   if (tab === 'equipos') {
+    ['marca', 'modelo', 'numero_serie', 'hostname', 'af', 'numero_telefono', 'imei', 'icloud_cuenta', 'accesorios'].forEach((field) => {
+      if (typeof payload[field] === 'string') {
+        payload[field] = payload[field].trim();
+      }
+    });
+
+    if (!payload.numero_serie) payload.numero_serie = null;
+    if (!payload.af) payload.af = null;
+    if (!payload.hostname) payload.hostname = null;
+    if (!payload.numero_telefono) payload.numero_telefono = null;
+    if (!payload.imei) payload.imei = null;
+    if (!payload.icloud_cuenta) payload.icloud_cuenta = null;
+    if (!payload.accesorios) payload.accesorios = null;
+    if (payload.icloud_cuenta) payload.icloud_cuenta = payload.icloud_cuenta.toLowerCase();
+
     if (!payload.usuario) {
       payload.estado = 'STOCK';
       payload.fecha_asignacion = null;
@@ -167,14 +192,12 @@ export const prepareUpdatePayload = (
         payload.modelo.trim();
     }
 
-    if (payload.numero_serie) {
-      payload.numero_serie =
-        payload.numero_serie.trim();
+    if (typeof payload.numero_serie === 'string') {
+      payload.numero_serie = payload.numero_serie.trim() || null;
     }
 
-    if (payload.activo_fijo) {
-      payload.activo_fijo =
-        payload.activo_fijo.trim();
+    if (typeof payload.activo_fijo === 'string') {
+      payload.activo_fijo = payload.activo_fijo.trim() || null;
     }
 
     if (payload.observaciones) {

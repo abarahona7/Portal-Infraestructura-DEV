@@ -23,6 +23,38 @@ export const prepareCreatePayload = (
     // dpto_area queda como campo legado de compatibilidad.
     // El backend lo sincroniza desde la relación Departamento.
     delete payload.dpto_area;
+
+    ['nombre_completo', 'usuario_red', 'correo_corp', 'cargo', 'hostname', 'gmail'].forEach((field) => {
+      if (typeof payload[field] === 'string') {
+        payload[field] = payload[field].trim();
+      }
+    });
+
+    if (payload.usuario_red) payload.usuario_red = payload.usuario_red.toLowerCase();
+    if (payload.correo_corp) payload.correo_corp = payload.correo_corp.toLowerCase();
+    if (payload.gmail) payload.gmail = payload.gmail.toLowerCase();
+  }
+
+
+  /* =========================
+     EQUIPOS
+  ========================= */
+
+  if (tab === 'equipos') {
+    ['marca', 'modelo', 'numero_serie', 'hostname', 'af', 'numero_telefono', 'imei', 'icloud_cuenta', 'accesorios'].forEach((field) => {
+      if (typeof payload[field] === 'string') {
+        payload[field] = payload[field].trim();
+      }
+    });
+
+    if (!payload.numero_serie) payload.numero_serie = null;
+    if (!payload.af) payload.af = null;
+    if (!payload.hostname) payload.hostname = null;
+    if (!payload.numero_telefono) payload.numero_telefono = null;
+    if (!payload.imei) payload.imei = null;
+    if (!payload.icloud_cuenta) payload.icloud_cuenta = null;
+    if (!payload.accesorios) payload.accesorios = null;
+    if (payload.icloud_cuenta) payload.icloud_cuenta = payload.icloud_cuenta.toLowerCase();
   }
 
 

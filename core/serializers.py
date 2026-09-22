@@ -1,4 +1,5 @@
 from ipaddress import ip_address, ip_network
+import re
 from rest_framework import serializers
 from django.db.models.functions import Lower, Trim
 
@@ -34,6 +35,35 @@ def _has_normalized_duplicate(queryset, field_name, value, exclude_pk=None):
         queryset = queryset.exclude(pk=exclude_pk)
 
     return queryset.exists()
+
+
+HOSTNAME_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]*$')
+
+
+def _validate_hostname_format(value, field_label='Hostname'):
+    value = _normalize_spaces(value)
+    if not value:
+        return value
+
+    if ' ' in value or not HOSTNAME_PATTERN.fullmatch(value):
+        raise serializers.ValidationError(
+            f'{field_label} solo puede contener letras, números, punto, guion y guion bajo, sin espacios.'
+        )
+
+    return value
+
+
+def _validate_no_whitespace(value, field_label):
+    value = _normalize_spaces(value)
+    if not value:
+        return value
+
+    if any(char.isspace() for char in value):
+        raise serializers.ValidationError(
+            f'{field_label} no puede contener espacios.'
+        )
+
+    return value
 
 
 class SubAreaSerializer(serializers.ModelSerializer):
@@ -197,6 +227,20 @@ class IPSerializer(serializers.ModelSerializer):
         if isinstance(asignado_otro, str):
             attrs['asignado_otro'] = asignado_otro.strip() or None
 
+        instance = getattr(self, 'instance', None)
+        if (
+            instance
+            and instance.usuario_id
+            and 'asignado_otro' in attrs
+            and attrs.get('asignado_otro')
+        ):
+            raise serializers.ValidationError({
+                'asignado_otro': (
+                    'Esta IP está vinculada a un usuario. Para cambiar su asignación, '
+                    'debe gestionarla desde el módulo Usuarios.'
+                )
+            })
+
         observacion = attrs.get('observacion')
         if isinstance(observacion, str):
             attrs['observacion'] = observacion.strip() or None
@@ -229,7 +273,9 @@ class ServidorSerializer(serializers.ModelSerializer):
         return value
 
     def validate_hostname(self, value):
-        value = value.strip()
+        value = _validate_hostname_format(value)
+        if not value:
+            raise serializers.ValidationError('Debe ingresar el Hostname del servidor.')
 
         instance = getattr(
             self,
@@ -293,6 +339,10 @@ class AnexoSerializer(serializers.ModelSerializer):
 
     def validate_numero_anexo(self, value):
         value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Debe ingresar un número de anexo.')
+        if not value.isdigit():
+            raise serializers.ValidationError('El número de anexo debe contener solo números.')
 
         instance = getattr(self, 'instance', None)
 
@@ -349,25 +399,6 @@ class AnexoSerializer(serializers.ModelSerializer):
             )
 
         return value
-
-def validate_exterior(self, value):
-    if not value:
-        return value
-
-    value = value.strip()
-
-    if (
-        len(value) != 12 or
-        not value.startswith('+') or
-        not value[1:].isdigit()
-    ):
-        raise serializers.ValidationError(
-            "El número exterior debe comenzar "
-            "con + y contener exactamente 11 números. "
-            "Ejemplo: +56254698789."
-        )
-
-    return value
 
 class HistorialUsuarioSerializer(serializers.ModelSerializer):
     class Meta:
@@ -445,7 +476,40 @@ class EquipamientoSerializer(serializers.ModelSerializer):
             'numero_telefono',
             getattr(instance, 'numero_telefono', None)
         )
-        
+
+        for field in ('marca', 'modelo', 'numero_serie', 'hostname', 'af', 'accesorios', 'imei', 'icloud_cuenta'):
+            if field in attrs and isinstance(attrs[field], str):
+                cleaned = attrs[field].strip()
+                attrs[field] = cleaned or None
+
+        if attrs.get('icloud_cuenta'):
+            attrs['icloud_cuenta'] = attrs['icloud_cuenta'].lower()
+
+        if 'numero_serie' in attrs:
+            serie = attrs.get('numero_serie')
+        if 'af' in attrs:
+            af = attrs.get('af')
+        if 'hostname' in attrs:
+            hostname = attrs.get('hostname')
+
+        marca_resultante = attrs.get('marca', getattr(instance, 'marca', None))
+        modelo_resultante = attrs.get('modelo', getattr(instance, 'modelo', None))
+        if not marca_resultante:
+            raise serializers.ValidationError({'marca': 'Debe ingresar la Marca del equipo.'})
+        if not modelo_resultante:
+            raise serializers.ValidationError({'modelo': 'Debe ingresar el Modelo del equipo.'})
+
+        if serie and len(serie) > 20:
+            raise serializers.ValidationError({
+                'numero_serie': 'El N° de Serie permite un máximo de 20 caracteres.'
+            })
+
+        if hostname:
+            try:
+                attrs['hostname'] = _validate_hostname_format(hostname)
+                hostname = attrs['hostname']
+            except serializers.ValidationError as exc:
+                raise serializers.ValidationError({'hostname': exc.detail}) from exc
 
         # =====================================
         # VALIDAR FORMATO ACTIVO FIJO
@@ -625,6 +689,31 @@ class UsuarioSerializer(serializers.ModelSerializer):
         except Anexo.DoesNotExist:
             return None
         
+    def validate_nombre_completo(self, value):
+        value = _normalize_spaces(value)
+        if not value:
+            raise serializers.ValidationError('Debe ingresar el Nombre Completo.')
+        return value
+
+    def validate_usuario_red(self, value):
+        value = _validate_no_whitespace(value, 'El Usuario de Red')
+        if not value:
+            raise serializers.ValidationError('Debe ingresar el Usuario de Red.')
+        return value.lower()
+
+    def validate_hostname(self, value):
+        if not value:
+            return value
+        value = _validate_hostname_format(value)
+        instance = getattr(self, 'instance', None)
+        if Usuario.objects.filter(hostname__iexact=value).exclude(
+            pk=getattr(instance, 'pk', None)
+        ).exists():
+            raise serializers.ValidationError(
+                'Ya existe un usuario registrado con este Hostname.'
+            )
+        return value
+
     def validate_ip_seleccionada(self, value):
         if value is None:
             return None
@@ -800,6 +889,11 @@ class UsuarioSerializer(serializers.ModelSerializer):
             getattr(instance, 'subarea', None),
         )
 
+        if instance is None and not departamento:
+            raise serializers.ValidationError({
+                'departamento': 'Debe seleccionar un Departamento.'
+            })
+
         if subarea and not departamento:
             raise serializers.ValidationError({
                 'departamento':
@@ -919,6 +1013,28 @@ class PerfilGenericoSerializer(serializers.ModelSerializer):
         if attrs.get('correo'):
             attrs['correo'] = attrs['correo'].lower()
 
+        nombre = attrs.get('nombre', getattr(instance, 'nombre', None))
+        usuario_resultante = attrs.get('usuario', getattr(instance, 'usuario', None))
+        tipo = attrs.get('tipo', getattr(instance, 'tipo', 'On Premise'))
+
+        if not nombre:
+            raise serializers.ValidationError({
+                'nombre': 'Debe ingresar el Nombre / Perfil.'
+            })
+        if not usuario_resultante:
+            raise serializers.ValidationError({
+                'usuario': 'Debe ingresar el Usuario del Perfil Genérico.'
+            })
+        try:
+            attrs['usuario'] = _validate_no_whitespace(usuario_resultante, 'El Usuario del Perfil Genérico')
+        except serializers.ValidationError as exc:
+            raise serializers.ValidationError({'usuario': exc.detail}) from exc
+
+        if tipo not in ('On Premise', 'O365'):
+            raise serializers.ValidationError({
+                'tipo': 'Tipo de cuenta inválido. Use On Premise u O365.'
+            })
+
         usuario = attrs.get('usuario')
         if usuario and PerfilGenerico.objects.filter(
             usuario__iexact=usuario.strip()
@@ -959,6 +1075,20 @@ class PerfilGenericoSerializer(serializers.ModelSerializer):
                     )
                 })
 
+        if departamento and not departamento.activo:
+            current_id = getattr(getattr(instance, 'departamento', None), 'id', None)
+            if departamento.id != current_id:
+                raise serializers.ValidationError({
+                    'departamento': 'No se puede asignar un Departamento inactivo.'
+                })
+
+        if subarea and not subarea.activo:
+            current_id = getattr(getattr(instance, 'subarea', None), 'id', None)
+            if subarea.id != current_id:
+                raise serializers.ValidationError({
+                    'subarea': 'No se puede asignar una Subárea inactiva.'
+                })
+
         return attrs
 
 
@@ -993,15 +1123,18 @@ class PCGenericoSerializer(serializers.ModelSerializer):
             validated_data.pop('password', None)
         return super().update(instance, validated_data)
 
+    def validate_usuario_local(self, value):
+        value = _normalize_spaces(value)
+        if not value:
+            raise serializers.ValidationError('Debe ingresar el Usuario Local.')
+        return value
+
     def validate_hostname(self, value):
-        value = value.strip()
+        value = _validate_hostname_format(value)
+        if not value:
+            raise serializers.ValidationError('Debe ingresar el Hostname del PC Genérico.')
 
-        instance = getattr(
-            self,
-            'instance',
-            None
-        )
-
+        instance = getattr(self, 'instance', None)
         if PCGenerico.objects.filter(
             hostname__iexact=value
         ).exclude(
@@ -1013,11 +1146,32 @@ class PCGenericoSerializer(serializers.ModelSerializer):
 
         return value
 
+    def validate_numero_serie(self, value):
+        if not value:
+            return None
+        value = value.strip()
+        if not value:
+            return None
+        if len(value) > 20:
+            raise serializers.ValidationError(
+                'El N° de Serie permite un máximo de 20 caracteres.'
+            )
+        instance = getattr(self, 'instance', None)
+        if PCGenerico.objects.filter(numero_serie__iexact=value).exclude(
+            pk=getattr(instance, 'pk', None)
+        ).exists():
+            raise serializers.ValidationError(
+                'Ya existe un PC Genérico con este N° de Serie.'
+            )
+        return value
+
     def validate_activo_fijo(self, value):
         if not value:
-            return value
+            return None
 
         value = value.strip()
+        if not value:
+            return None
 
         if len(value) > 12:
             raise serializers.ValidationError(
@@ -1027,6 +1181,14 @@ class PCGenericoSerializer(serializers.ModelSerializer):
         if not value.isalnum():
             raise serializers.ValidationError(
                 "El Activo Fijo solo puede contener letras y números."
+            )
+
+        instance = getattr(self, 'instance', None)
+        if PCGenerico.objects.filter(activo_fijo__iexact=value).exclude(
+            pk=getattr(instance, 'pk', None)
+        ).exists():
+            raise serializers.ValidationError(
+                'Ya existe un PC Genérico con este Activo Fijo.'
             )
 
         return value
@@ -1048,15 +1210,11 @@ class PCGenericoSerializer(serializers.ModelSerializer):
         if attrs.get('modelo'):
             attrs['modelo'] = attrs['modelo'].strip()
 
-        if attrs.get('numero_serie'):
-            attrs['numero_serie'] = (
-                attrs['numero_serie'].strip()
-            )
+        if 'numero_serie' in attrs and isinstance(attrs.get('numero_serie'), str):
+            attrs['numero_serie'] = attrs['numero_serie'].strip() or None
 
         if attrs.get('teamviewer_id'):
-            attrs['teamviewer_id'] = (
-                attrs['teamviewer_id'].strip()
-            )
+            attrs['teamviewer_id'] = attrs['teamviewer_id'].strip()
 
         if attrs.get('observaciones'):
             attrs['observaciones'] = (

@@ -2,7 +2,7 @@ from django.contrib.auth.models import User, Group
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 from cryptography.fernet import Fernet
-from core.models import Usuario, PerfilGenerico, IP, Equipamiento, Anexo, SecurityAuditLog, Departamento, SubArea
+from core.models import Usuario, PerfilGenerico, IP, Equipamiento, Anexo, SecurityAuditLog, Departamento, SubArea, PCGenerico, Servidor
 
 @override_settings(FIELD_ENCRYPTION_KEY=Fernet.generate_key().decode(), LEGACY_DJANGO_SECRET_KEY='legacy-key')
 class SecurityTests(TestCase):
@@ -518,3 +518,212 @@ class SecurityTests(TestCase):
         self.assertTrue(SubArea.objects.filter(pk=subarea.pk).exists())
         self.assertTrue(Departamento.objects.filter(pk=departamento.pk).exists())
 
+
+
+    def test_usuario_email_duplicate_is_case_insensitive(self):
+        self.auth(self.admin)
+        departamento = Departamento.objects.create(nombre='Tecnología')
+        response = self.client.post(
+            '/api/usuarios/',
+            {
+                'nombre_completo': 'Persona Correo',
+                'usuario_red': 'pcorreo',
+                'correo_corp': '  PUNO@EXAMPLE.COM  ',
+                'departamento': departamento.pk,
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('correo_corp', response.json())
+
+    def test_usuario_rejects_whitespace_in_network_user(self):
+        self.auth(self.admin)
+        departamento = Departamento.objects.create(nombre='Tecnología')
+        response = self.client.post(
+            '/api/usuarios/',
+            {
+                'nombre_completo': 'Persona Espacio',
+                'usuario_red': 'usuario con espacio',
+                'correo_corp': 'espacio@example.com',
+                'departamento': departamento.pk,
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('usuario_red', response.json())
+
+    def test_usuario_hostname_is_valid_and_case_insensitive_unique(self):
+        self.auth(self.admin)
+        departamento = Departamento.objects.create(nombre='Tecnología')
+        self.portal_user.departamento = departamento
+        self.portal_user.hostname = 'CL-NB-001'
+        self.portal_user.save()
+
+        duplicate = self.client.post(
+            '/api/usuarios/',
+            {
+                'nombre_completo': 'Persona Host',
+                'usuario_red': 'phost',
+                'correo_corp': 'phost@example.com',
+                'departamento': departamento.pk,
+                'hostname': 'cl-nb-001',
+            },
+            format='json',
+        )
+        invalid = self.client.post(
+            '/api/usuarios/',
+            {
+                'nombre_completo': 'Persona Host Dos',
+                'usuario_red': 'phost2',
+                'correo_corp': 'phost2@example.com',
+                'departamento': departamento.pk,
+                'hostname': 'HOST INVALIDO',
+            },
+            format='json',
+        )
+
+        self.assertEqual(duplicate.status_code, 400)
+        self.assertIn('hostname', duplicate.json())
+        self.assertEqual(invalid.status_code, 400)
+        self.assertIn('hostname', invalid.json())
+
+    def test_equipment_requires_brand_and_model(self):
+        self.auth(self.operator)
+        response = self.client.post(
+            '/api/equipos/',
+            {
+                'tipo': 'Notebook',
+                'marca': '   ',
+                'modelo': '   ',
+                'numero_serie': 'SER-REQ-1',
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        body = response.json()
+        self.assertTrue('marca' in body or 'modelo' in body)
+
+    def test_equipment_serial_duplicate_is_case_insensitive(self):
+        self.auth(self.operator)
+        Equipamiento.objects.create(
+            tipo='Monitor',
+            marca='Dell',
+            modelo='P2422H',
+            numero_serie='SERIE-CASE-01',
+        )
+        response = self.client.post(
+            '/api/equipos/',
+            {
+                'tipo': 'Monitor',
+                'marca': 'Dell',
+                'modelo': 'P2422H',
+                'numero_serie': 'serie-case-01',
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('numero_serie', response.json())
+
+    def test_pc_generico_rejects_duplicate_serial_and_asset(self):
+        self.auth(self.operator)
+        PCGenerico.objects.create(
+            usuario_local='local1',
+            hostname='PC-GEN-01',
+            numero_serie='PCSER-01',
+            activo_fijo='AFPC001',
+        )
+
+        duplicate_serial = self.client.post(
+            '/api/pcs-genericos/',
+            {
+                'usuario_local': 'local2',
+                'hostname': 'PC-GEN-02',
+                'numero_serie': 'pcser-01',
+            },
+            format='json',
+        )
+        duplicate_asset = self.client.post(
+            '/api/pcs-genericos/',
+            {
+                'usuario_local': 'local3',
+                'hostname': 'PC-GEN-03',
+                'activo_fijo': 'afpc001',
+            },
+            format='json',
+        )
+
+        self.assertEqual(duplicate_serial.status_code, 400)
+        self.assertIn('numero_serie', duplicate_serial.json())
+        self.assertEqual(duplicate_asset.status_code, 400)
+        self.assertIn('activo_fijo', duplicate_asset.json())
+
+    def test_anexo_rejects_non_numeric_number(self):
+        self.auth(self.operator)
+        response = self.client.post(
+            '/api/anexos/',
+            {'numero_anexo': '30A5'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('numero_anexo', response.json())
+
+    def test_perfil_rejects_inactive_department_and_invalid_type(self):
+        self.auth(self.operator)
+        inactive = Departamento.objects.create(nombre='Inactivo', activo=False)
+        active = Departamento.objects.create(nombre='Tecnología')
+
+        blocked_department = self.client.post(
+            '/api/perfiles-genericos/',
+            {
+                'nombre': 'Perfil Inactivo',
+                'usuario': 'perfil.inactivo',
+                'departamento': inactive.pk,
+                'tipo': 'On Premise',
+            },
+            format='json',
+        )
+        invalid_type = self.client.post(
+            '/api/perfiles-genericos/',
+            {
+                'nombre': 'Perfil Tipo',
+                'usuario': 'perfil.tipo',
+                'departamento': active.pk,
+                'tipo': 'OTRO',
+            },
+            format='json',
+        )
+
+        self.assertEqual(blocked_department.status_code, 400)
+        self.assertIn('departamento', blocked_department.json())
+        self.assertEqual(invalid_type.status_code, 400)
+        self.assertIn('tipo', invalid_type.json())
+
+    def test_ip_assigned_to_user_cannot_set_other_assignment(self):
+        self.auth(self.admin)
+        ip = IP.objects.create(
+            direccion_ip='172.23.1.80',
+            usuario=self.portal_user,
+        )
+        response = self.client.patch(
+            f'/api/ips/{ip.pk}/',
+            {'asignado_otro': 'Impresora Piso 1'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('asignado_otro', response.json())
+        ip.refresh_from_db()
+        self.assertFalse(ip.asignado_otro)
+
+    def test_servidor_rejects_invalid_hostname(self):
+        self.auth(self.operator)
+        response = self.client.post(
+            '/api/servidores/',
+            {
+                'ip': '172.23.50.10',
+                'hostname': 'SERVIDOR INVALIDO',
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('hostname', response.json())
+        self.assertFalse(Servidor.objects.filter(ip='172.23.50.10').exists())

@@ -147,6 +147,7 @@ export default function EquipoEditForm({
         <input
           type="text"
           value={equipo.marca || ''}
+          maxLength={50}
           onChange={(e) =>
             updateField(
               'marca',
@@ -169,6 +170,7 @@ export default function EquipoEditForm({
         <input
           type="text"
           value={equipo.modelo || ''}
+          maxLength={50}
           onChange={(e) =>
             updateField(
               'modelo',

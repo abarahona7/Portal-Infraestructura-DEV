@@ -42,6 +42,7 @@ export default function PCGenericoCreateForm({
           type="text"
           required
           value={pc.usuario_local || ''}
+          maxLength={150}
           onChange={(e) =>
             updateField(
               'usuario_local',
@@ -81,6 +82,7 @@ export default function PCGenericoCreateForm({
           type="text"
           required
           value={pc.hostname || ''}
+          maxLength={100}
           onChange={(e) =>
             updateField(
               'hostname',
@@ -139,6 +141,7 @@ export default function PCGenericoCreateForm({
           <input
             type="text"
             value={pc.marca || ''}
+            maxLength={100}
             onChange={(e) =>
               updateField(
                 'marca',
@@ -158,6 +161,7 @@ export default function PCGenericoCreateForm({
           <input
             type="text"
             value={pc.modelo || ''}
+            maxLength={100}
             onChange={(e) =>
               updateField(
                 'modelo',

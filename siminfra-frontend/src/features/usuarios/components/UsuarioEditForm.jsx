@@ -104,6 +104,7 @@ export default function UsuarioEditForm({
         <input
           type="text"
           value={usuario.nombre_completo || ''}
+          maxLength={150}
           onChange={(e) => updateField('nombre_completo', e.target.value)}
           style={inputStyle}
         />
@@ -157,6 +158,7 @@ export default function UsuarioEditForm({
         <input
           type="text"
           value={usuario.cargo || ''}
+          maxLength={100}
           onChange={(e) => updateField('cargo', e.target.value)}
           style={inputStyle}
         />
@@ -167,6 +169,7 @@ export default function UsuarioEditForm({
         <input
           type="text"
           value={usuario.hostname || ''}
+          maxLength={50}
           onChange={(e) => updateField('hostname', e.target.value)}
           style={inputStyle}
         />
@@ -177,6 +180,7 @@ export default function UsuarioEditForm({
         <input
           type="text"
           value={usuario.usuario_red || ''}
+          maxLength={50}
           onChange={(e) => updateField('usuario_red', e.target.value)}
           style={inputStyle}
         />
@@ -187,6 +191,7 @@ export default function UsuarioEditForm({
         <input
           type="email"
           value={usuario.correo_corp || ''}
+          maxLength={254}
           onChange={(e) => updateField('correo_corp', e.target.value)}
           style={inputStyle}
         />
@@ -197,6 +202,7 @@ export default function UsuarioEditForm({
         <input
           type="email"
           value={usuario.gmail || ''}
+          maxLength={254}
           onChange={(e) => updateField('gmail', e.target.value)}
           style={inputStyle}
         />

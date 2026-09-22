@@ -1,0 +1,450 @@
+:root {
+  --simi-blue: #2b5aa5;
+  --simi-blue-dark: #244d91;
+  --portal-dark: #0f172a;
+}
+
+/* =========================
+   PÁGINA
+========================= */
+
+.login-page {
+  position: relative;
+
+  width: 100%;
+  min-height: 100dvh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 2rem 1rem;
+
+  box-sizing: border-box;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(135deg,
+      #0f172a 0%,
+      #14213d 50%,
+      #102448 100%);
+
+  font-family: var(--sans);
+}
+
+/* =========================
+   DECORACIÓN DE FONDO
+========================= */
+
+.login-background-decoration {
+  position: absolute;
+
+  border-radius: 50%;
+
+  background-color: rgba(43, 90, 165, 0.16);
+
+  pointer-events: none;
+}
+
+.login-decoration-one {
+  width: 420px;
+  height: 420px;
+
+  top: -180px;
+  right: -120px;
+}
+
+.login-decoration-two {
+  width: 320px;
+  height: 320px;
+
+  bottom: -160px;
+  left: -100px;
+}
+
+/* =========================
+   TARJETA
+========================= */
+
+.login-card {
+  position: relative;
+  z-index: 1;
+
+  width: min(430px, 100%);
+
+  padding: 2rem;
+
+  box-sizing: border-box;
+
+  background-color: #ffffff;
+
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 18px;
+
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.28);
+}
+
+/* =========================
+   BRANDING
+========================= */
+
+.login-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  text-align: center;
+}
+
+.login-logo {
+  width: 86px;
+  height: 86px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 1rem;
+
+  border-radius: 50%;
+
+  background-color: #fff;
+}
+
+.login-logo img {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: contain;
+}
+
+.login-company {
+  display: block;
+
+  margin-bottom: 0.3rem;
+
+  color: var(--simi-blue);
+
+  font-size: 0.8rem;
+  font-weight: 800;
+
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.login-brand-text h1 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 1.4rem;
+  font-weight: 850;
+
+  line-height: 1.2;
+}
+
+.login-brand-text p {
+  margin:
+    0.5rem 0 0;
+
+  color: #64748b;
+
+  font-size: 0.82rem;
+
+  line-height: 1.4;
+}
+
+/* =========================
+   SEPARADOR
+========================= */
+
+.login-divider {
+  width: 100%;
+  height: 1px;
+
+  margin: 1.5rem 0;
+
+  background-color: #e2e8f0;
+}
+
+/* =========================
+   TITULO LOGIN
+========================= */
+
+.login-form-header {
+  margin-bottom: 1.25rem;
+}
+
+.login-form-header h2 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.login-form-header p {
+  margin:
+    0.3rem 0 0;
+
+  color: #64748b;
+
+  font-size: 0.8rem;
+}
+
+/* =========================
+   ERROR
+========================= */
+
+.login-error {
+  margin-bottom: 1rem;
+
+  padding: 0.75rem 0.85rem;
+
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+
+  background-color: #fef2f2;
+
+  color: #dc2626;
+
+  font-size: 0.8rem;
+  font-weight: 600;
+
+  text-align: center;
+}
+
+/* =========================
+   CAMPOS
+========================= */
+
+.login-field {
+  margin-bottom: 1rem;
+}
+
+.login-field label {
+  display: block;
+
+  margin-bottom: 0.4rem;
+
+  color: #475569;
+
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.login-input-wrapper {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+}
+
+.login-input-icon {
+  position: absolute;
+  left: 0.85rem;
+
+  color: #94a3b8;
+
+  pointer-events: none;
+}
+
+.login-input-wrapper input {
+  width: 100%;
+  min-height: 46px;
+
+  padding:
+    0.7rem 0.9rem 0.7rem 2.7rem;
+
+  box-sizing: border-box;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+
+  background-color: #fff;
+  color: #0f172a;
+
+  font-size: 0.9rem;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.login-input-wrapper input::placeholder {
+  color: #94a3b8;
+}
+
+.login-input-wrapper input:focus {
+  border-color: var(--simi-blue);
+
+  box-shadow:
+    0 0 0 3px rgba(43, 90, 165, 0.12);
+}
+
+.login-password-input {
+  padding-right: 3rem !important;
+}
+
+/* =========================
+   MOSTRAR CONTRASEÑA
+========================= */
+
+.login-password-toggle {
+  position: absolute;
+  right: 0.65rem;
+
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: none;
+  border-radius: 7px;
+
+  background: transparent;
+  color: #64748b;
+
+  cursor: pointer;
+}
+
+.login-password-toggle:hover {
+  background-color: #f1f5f9;
+}
+
+/* =========================
+   BOTÓN INGRESAR
+========================= */
+
+.login-submit {
+  width: 100%;
+  min-height: 46px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.5rem;
+
+  margin-top: 1.4rem;
+
+  padding: 0.75rem 1rem;
+
+  border: none;
+  border-radius: 9px;
+
+  background-color: var(--simi-blue);
+  color: #fff;
+
+  font-size: 0.9rem;
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.login-submit:hover {
+  background-color: var(--simi-blue-dark);
+}
+
+.login-submit:active {
+  transform: scale(0.99);
+}
+
+/* =========================
+   FOOTER
+========================= */
+
+.login-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 2px;
+
+  margin-top: 1.5rem;
+
+  color: #94a3b8;
+
+  font-size: 0.68rem;
+}
+
+.login-footer span {
+  font-weight: 600;
+}
+
+.login-footer small {
+  font-size: 0.65rem;
+}
+
+/* =========================
+   MÓVIL
+========================= */
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: 1rem 0.75rem;
+  }
+
+  .login-card {
+    padding: 1.4rem;
+
+    border-radius: 14px;
+  }
+
+  .login-logo {
+    width: 72px;
+    height: 72px;
+  }
+
+  .login-brand-text h1 {
+    font-size: 1.15rem;
+  }
+
+  .login-brand-text p {
+    font-size: 0.76rem;
+  }
+
+  .login-divider {
+    margin: 1.2rem 0;
+  }
+}
+
+/* =========================
+   PANTALLAS BAJAS
+========================= */
+
+@media (max-height: 650px) {
+  .login-page {
+    align-items: flex-start;
+
+    overflow-y: auto;
+  }
+
+  .login-card {
+    margin: auto 0;
+  }
+
+  .login-logo {
+    width: 64px;
+    height: 64px;
+  }
+
+  .login-divider {
+    margin: 1rem 0;
+  }
+}

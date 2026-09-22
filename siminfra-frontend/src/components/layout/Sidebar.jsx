@@ -9,6 +9,7 @@ import {
   Mail,
   Globe2,
   Phone,
+  Building2,
 } from 'lucide-react';
 
 import './Sidebar.css';
@@ -48,6 +49,11 @@ const modules = [
     id: 'anexos',
     icon: Phone,
     label: 'Anexos',
+  },
+  {
+    id: 'departamentos',
+    icon: Building2,
+    label: 'Departamentos / Subáreas',
   },
 ];
 

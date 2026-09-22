@@ -61,6 +61,8 @@ import Header from './components/layout/Header';
 import ModuleToolbar from './components/layout/ModuleToolbar';
 import EquipmentCategoryCards
   from './features/equipos/components/EquipmentCategoryCards';
+import DepartamentosSubareasPage
+  from './features/departamentos/components/DepartamentosSubareasPage';
 
 import { formatEquipmentType } from './utils/formatEquipmentType';
 
@@ -246,6 +248,7 @@ export default function App() {
     dptosList,
     usuariosList,
     ipsList,
+    departamentosList,
     refreshReferenceData,
   } = useReferenceData(token, authUser?.role);
 
@@ -705,7 +708,7 @@ export default function App() {
         isOpen={sidebarOpen}
         collapsed={sidebarCollapsed}
         activeTab={tab}
-        activeCount={filteredData.length}
+        activeCount={tab === 'departamentos' ? data.length : filteredData.length}
         onClose={closeSidebar}
         onToggleCollapse={toggleSidebarCollapsed}
         onSelectTab={handleSelectTab}
@@ -846,6 +849,16 @@ export default function App() {
           />
         )}
 
+        {tab === 'departamentos' && (
+          <DepartamentosSubareasPage
+            departamentos={data}
+            onRefresh={refreshAllData}
+            showToast={showToast}
+            requestConfirmation={requestConfirmation}
+            role={authUser?.role}
+          />
+        )}
+
         {/* RESULTADOS DEL MÓDULO */}
         {(
           (tab === 'equipos' && selectedCategoriaEquipo) ||
@@ -854,7 +867,8 @@ export default function App() {
           (
             tab !== 'equipos' &&
             tab !== 'usuarios' &&
-            tab !== 'ips'
+            tab !== 'ips' &&
+            tab !== 'departamentos'
           )
         ) && (
             <>
@@ -1131,6 +1145,10 @@ export default function App() {
             dptosList
           }
 
+          departmentCatalog={
+            departamentosList
+          }
+
           usuarios={
             usuariosList
           }
@@ -1186,6 +1204,10 @@ export default function App() {
 
           departments={
             dptosList
+          }
+
+          departmentCatalog={
+            departamentosList
           }
 
           usuarios={

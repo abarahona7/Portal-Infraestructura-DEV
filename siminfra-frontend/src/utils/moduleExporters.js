@@ -26,8 +26,16 @@ export const exportUsuariosExcel = ({
         header: 'Nombre Completo',
       },
       {
-        key: 'dpto_area',
-        header: 'Departamento / Área',
+        key: 'departamento',
+        header: 'Departamento',
+        value: (usuario) =>
+          usuario.departamento_nombre || usuario.dpto_area || 'N/I',
+      },
+      {
+        key: 'subarea',
+        header: 'Subárea',
+        value: (usuario) =>
+          usuario.subarea_nombre || 'N/I',
       },
       {
         key: 'cargo',

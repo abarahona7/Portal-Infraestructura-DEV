@@ -171,8 +171,12 @@ export default function UsuariosTable({
 
             <div className="usuario-card-grid">
               <MobileField
-                label="Departamento / Área"
-                value={usuario.dpto_area || 'N/I'}
+                label="Departamento"
+                value={usuario.departamento_nombre || usuario.dpto_area || 'N/I'}
+              />
+              <MobileField
+                label="Subárea"
+                value={usuario.subarea_nombre || 'N/I'}
               />
               <MobileField
                 label="Cargo"

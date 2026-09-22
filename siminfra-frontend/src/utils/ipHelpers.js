@@ -17,8 +17,11 @@ export const getAvailableIpsForUser = (
 ) => {
   return ipsList.filter(
     (ip) =>
-      ip.estado === 'LIBRE' ||
-      ip.direccion_ip === currentIp
+      isManagedIpAddress(ip.direccion_ip) &&
+      (
+        ip.estado === 'LIBRE' ||
+        ip.direccion_ip === currentIp
+      )
   );
 };
 
@@ -88,6 +91,28 @@ export const getIpSegment = (
   );
 
   return segment || null;
+};
+
+
+/* =========================
+   VALIDAR IP ADMINISTRADA
+========================= */
+
+export const isManagedIpAddress = (direccionIp = '') => {
+  const ip = direccionIp.trim();
+  const segment = getIpSegment(ip);
+
+  if (!segment) {
+    return false;
+  }
+
+  const parts = ip.split('.');
+  if (parts.length !== 4) {
+    return false;
+  }
+
+  const host = Number(parts[3]);
+  return Number.isInteger(host) && host >= 1 && host <= 254;
 };
 
 

@@ -52,9 +52,7 @@ export const getInitialCreateItem = (
     case 'ips':
       return {
         direccion_ip: '',
-        estado: 'LIBRE',
         observacion: '',
-        usuario: '',
         asignado_otro: '',
       };
 

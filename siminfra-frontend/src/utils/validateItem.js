@@ -1,3 +1,5 @@
+import { isManagedIpAddress } from './ipHelpers';
+
 const isValidIPv4 = (value = '') => {
   const parts = value.trim().split('.');
 
@@ -38,7 +40,15 @@ export const validateItem = (
       return {
         valid: false,
         message:
-          'Por favor ingrese una dirección IP válida (ejemplo: 192.168.1.50).',
+          'Por favor ingrese una dirección IP válida (ejemplo: 172.23.1.50).',
+      };
+    }
+
+    if (!isManagedIpAddress(direccionIp)) {
+      return {
+        valid: false,
+        message:
+          'La IP debe pertenecer a uno de los segmentos visibles en Gestión IPs y usar un host entre 1 y 254.',
       };
     }
 

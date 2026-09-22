@@ -46,7 +46,7 @@ class SecurityTests(TestCase):
 
     def test_operator_can_create_but_not_delete(self):
         self.auth(self.operator)
-        r=self.client.post('/api/ips/', {'direccion_ip':'10.0.0.2','estado':'LIBRE'}, format='json')
+        r=self.client.post('/api/ips/', {'direccion_ip':'172.23.1.2','estado':'LIBRE'}, format='json')
         self.assertEqual(r.status_code,201)
         self.assertEqual(self.client.delete(f"/api/ips/{r.data['id']}/").status_code,403)
 
@@ -230,3 +230,136 @@ class SecurityTests(TestCase):
         self.assertEqual(deleted.status_code, 204)
         self.assertEqual(blocked.status_code, 400)
         self.assertTrue(Departamento.objects.filter(pk=used_structure.pk).exists())
+
+    def test_ip_rejects_unknown_segment(self):
+        self.auth(self.admin)
+        response = self.client.post(
+            '/api/ips/',
+            {'direccion_ip': '10.0.0.50', 'asignado_otro': 'Prueba'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('direccion_ip', response.json())
+        self.assertFalse(IP.objects.filter(direccion_ip='10.0.0.50').exists())
+
+    def test_ip_api_cannot_assign_user_directly(self):
+        self.auth(self.admin)
+        response = self.client.post(
+            '/api/ips/',
+            {
+                'direccion_ip': '172.23.1.60',
+                'usuario': self.portal_user.pk,
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('usuario', response.json())
+        self.assertFalse(IP.objects.filter(direccion_ip='172.23.1.60').exists())
+
+    def test_ip_status_is_automatic_for_other_assignment(self):
+        self.auth(self.admin)
+        created = self.client.post(
+            '/api/ips/',
+            {
+                'direccion_ip': '172.23.1.61',
+                'estado': 'LIBRE',
+                'asignado_otro': 'Impresora Piso 2',
+            },
+            format='json',
+        )
+
+        self.assertEqual(created.status_code, 201)
+        ip = IP.objects.get(direccion_ip='172.23.1.61')
+        self.assertEqual(ip.estado, 'RESERVADA')
+
+        updated = self.client.patch(
+            f'/api/ips/{ip.pk}/',
+            {'asignado_otro': ''},
+            format='json',
+        )
+        self.assertEqual(updated.status_code, 200)
+        ip.refresh_from_db()
+        self.assertEqual(ip.estado, 'LIBRE')
+
+    def test_admin_cannot_delete_ip_assigned_to_user(self):
+        self.auth(self.admin)
+        ip = IP.objects.create(
+            direccion_ip='172.23.1.62',
+            usuario=self.portal_user,
+        )
+
+        blocked = self.client.delete(f'/api/ips/{ip.pk}/')
+        self.assertEqual(blocked.status_code, 400)
+        self.assertTrue(IP.objects.filter(pk=ip.pk).exists())
+
+        ip.usuario = None
+        ip.save()
+        deleted = self.client.delete(f'/api/ips/{ip.pk}/')
+        self.assertEqual(deleted.status_code, 204)
+        self.assertFalse(IP.objects.filter(pk=ip.pk).exists())
+
+    def test_usuario_can_have_only_one_ip(self):
+        self.auth(self.admin)
+        first_ip = IP.objects.create(direccion_ip='172.23.1.70')
+        second_ip = IP.objects.create(direccion_ip='172.23.1.71')
+
+        first_assignment = self.client.patch(
+            f'/api/usuarios/{self.portal_user.pk}/',
+            {'ip_seleccionada': first_ip.direccion_ip},
+            format='json',
+        )
+        self.assertEqual(first_assignment.status_code, 200)
+
+        second_assignment = self.client.patch(
+            f'/api/usuarios/{self.portal_user.pk}/',
+            {'ip_seleccionada': second_ip.direccion_ip},
+            format='json',
+        )
+        self.assertEqual(second_assignment.status_code, 200)
+
+        first_ip.refresh_from_db()
+        second_ip.refresh_from_db()
+        self.assertIsNone(first_ip.usuario)
+        self.assertEqual(first_ip.estado, 'LIBRE')
+        self.assertEqual(second_ip.usuario_id, self.portal_user.pk)
+        self.assertEqual(second_ip.estado, 'RESERVADA')
+        self.assertEqual(IP.objects.filter(usuario=self.portal_user).count(), 1)
+
+    def test_baja_user_cannot_receive_ip(self):
+        self.auth(self.admin)
+        self.portal_user.estado = 'BAJA'
+        self.portal_user.save()
+        ip = IP.objects.create(direccion_ip='172.23.1.72')
+
+        response = self.client.patch(
+            f'/api/usuarios/{self.portal_user.pk}/',
+            {'ip_seleccionada': ip.direccion_ip},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('ip_seleccionada', response.json())
+        ip.refresh_from_db()
+        self.assertIsNone(ip.usuario)
+        self.assertEqual(ip.estado, 'LIBRE')
+
+    def test_licencia_user_cannot_receive_new_ip(self):
+        self.auth(self.admin)
+        self.portal_user.estado = 'LICENCIA'
+        self.portal_user.save()
+        ip = IP.objects.create(direccion_ip='172.23.1.73')
+
+        response = self.client.patch(
+            f'/api/usuarios/{self.portal_user.pk}/',
+            {'ip_seleccionada': ip.direccion_ip},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('ip_seleccionada', response.json())
+        ip.refresh_from_db()
+        self.assertIsNone(ip.usuario)
+        self.assertEqual(ip.estado, 'LIBRE')
+

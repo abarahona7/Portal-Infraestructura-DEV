@@ -40,6 +40,24 @@ export default function UsuarioEditForm({
     });
   };
 
+  const handleStatusChange = (value) => {
+    const nextUsuario = {
+      ...usuario,
+      estado: value,
+    };
+
+    // Si había una selección pendiente y el usuario deja de estar ACTIVO,
+    // la descartamos. La IP actual se conserva visualmente desde ip_actual;
+    // BAJA será liberada automáticamente por el backend al guardar.
+    if (value !== 'ACTIVO' && 'ip_seleccionada' in nextUsuario) {
+      delete nextUsuario.ip_seleccionada;
+    }
+
+    onChange(nextUsuario);
+  };
+
+  const ipAssignmentDisabled = (usuario.estado || 'ACTIVO') !== 'ACTIVO';
+
   const handleDepartmentChange = (value) => {
     const departmentId = value ? Number(value) : null;
 
@@ -72,7 +90,7 @@ export default function UsuarioEditForm({
         <label style={labelStyle}>Estado del Usuario</label>
         <select
           value={usuario.estado || 'ACTIVO'}
-          onChange={(e) => updateField('estado', e.target.value)}
+          onChange={(e) => handleStatusChange(e.target.value)}
           style={inputStyle}
         >
           <option value="ACTIVO">Activo</option>
@@ -213,7 +231,13 @@ export default function UsuarioEditForm({
           onChange={(e) =>
             updateField('ip_seleccionada', e.target.value || null)
           }
-          style={{ ...inputStyle, fontWeight: 'bold', color: '#15803d' }}
+          disabled={ipAssignmentDisabled}
+          style={{
+            ...inputStyle,
+            fontWeight: 'bold',
+            color: ipAssignmentDisabled ? '#94a3b8' : '#15803d',
+            backgroundColor: ipAssignmentDisabled ? '#f8fafc' : '#fff',
+          }}
         >
           <option value="">Sin IP Asignada</option>
           {availableIps.map((ip) => (
@@ -222,6 +246,11 @@ export default function UsuarioEditForm({
             </option>
           ))}
         </select>
+        {ipAssignmentDisabled && (
+          <div style={{ marginTop: '6px', fontSize: '0.75rem', color: '#64748b' }}>
+            Las IP solo se pueden asignar o cambiar cuando el usuario está Activo.
+          </div>
+        )}
       </div>
     </>
   );

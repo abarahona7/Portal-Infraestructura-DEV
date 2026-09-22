@@ -200,28 +200,18 @@ export const prepareUpdatePayload = (
   ========================= */
 
   if (tab === 'ips') {
-    const tieneAsignacion = Boolean(
-      payload.usuario ||
-      (
-        payload.asignado_otro &&
-        payload.asignado_otro.trim()
-      )
-    );
+    // Nunca modificar la relación con Usuario desde Gestión IPs.
+    delete payload.usuario;
 
-    // Automatizamos LIBRE y RESERVADA
-    // según exista o no una asignación.
-    if (
-      payload.estado === 'LIBRE' &&
-      tieneAsignacion
-    ) {
-      payload.estado = 'RESERVADA';
+    // El backend deriva el estado desde usuario/asignado_otro.
+    delete payload.estado;
+
+    if (payload.asignado_otro) {
+      payload.asignado_otro = payload.asignado_otro.trim() || null;
     }
 
-    if (
-      payload.estado === 'RESERVADA' &&
-      !tieneAsignacion
-    ) {
-      payload.estado = 'LIBRE';
+    if (payload.observacion) {
+      payload.observacion = payload.observacion.trim() || null;
     }
   }
 

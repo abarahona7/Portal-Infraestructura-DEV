@@ -1,0 +1,25 @@
+Portal Infra v1.1 - Etapa 2 / Ajuste IP por usuario
+
+Este parche complementa Portal_Infra_v1.1_Etapa2_Gestion_IPs.zip.
+
+Cambios:
+- Mantiene una sola IP por usuario. El modelo IP ya usa OneToOneField y el serializer libera la IP anterior al asignar una nueva.
+- Bloquea nuevas asignaciones de IP a usuarios BAJA.
+- Bloquea nuevas asignaciones/cambios de IP a usuarios LICENCIA.
+- Un usuario en LICENCIA puede conservar su IP actual, pero no cambiarla por otra hasta volver a ACTIVO.
+- BAJA continúa liberando la IP automáticamente.
+- Frontend deshabilita el selector de IP para BAJA/LICENCIA.
+- 3 tests nuevos: unicidad de IP por usuario, bloqueo BAJA y bloqueo LICENCIA.
+
+No requiere migraciones.
+
+Validar:
+python manage.py check
+python manage.py test core -v 2
+
+Esperado tras aplicar junto con Etapa 2: 24 tests.
+
+Frontend:
+cd siminfra-frontend
+npm run lint
+npm run build

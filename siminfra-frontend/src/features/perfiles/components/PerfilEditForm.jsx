@@ -79,6 +79,7 @@ export default function PerfilEditForm({
           type="text"
           required
           value={perfil.nombre || ''}
+          maxLength={150}
           onChange={(e) => updateField('nombre', e.target.value)}
           style={inputStyle}
         />
@@ -90,6 +91,7 @@ export default function PerfilEditForm({
           type="text"
           required
           value={perfil.usuario || ''}
+          maxLength={100}
           onChange={(e) => updateField('usuario', e.target.value)}
           style={inputStyle}
         />
@@ -129,6 +131,7 @@ export default function PerfilEditForm({
         <input
           type="email"
           value={perfil.correo || ''}
+          maxLength={254}
           onChange={(e) => updateField('correo', e.target.value)}
           style={inputStyle}
         />

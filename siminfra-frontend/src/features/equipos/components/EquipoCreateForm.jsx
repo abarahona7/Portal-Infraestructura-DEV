@@ -148,6 +148,7 @@ export default function EquipoCreateForm({
           type="text"
           required
           value={equipo.marca || ''}
+          maxLength={50}
           onChange={(e) =>
             updateField(
               'marca',
@@ -171,6 +172,7 @@ export default function EquipoCreateForm({
           type="text"
           required
           value={equipo.modelo || ''}
+          maxLength={50}
           onChange={(e) =>
             updateField(
               'modelo',

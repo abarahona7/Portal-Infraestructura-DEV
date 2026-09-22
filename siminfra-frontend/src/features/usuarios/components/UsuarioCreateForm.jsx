@@ -90,6 +90,7 @@ export default function UsuarioCreateForm({
           type="text"
           required
           value={usuario.nombre_completo || ''}
+          maxLength={150}
           onChange={(e) => updateField('nombre_completo', e.target.value)}
           style={inputStyle}
         />
@@ -143,6 +144,7 @@ export default function UsuarioCreateForm({
         <input
           type="text"
           value={usuario.cargo || ''}
+          maxLength={100}
           onChange={(e) => updateField('cargo', e.target.value)}
           style={inputStyle}
         />
@@ -154,6 +156,7 @@ export default function UsuarioCreateForm({
           type="text"
           placeholder="Ej: LAPTOP-FIN-01"
           value={usuario.hostname || ''}
+          maxLength={50}
           onChange={(e) => updateField('hostname', e.target.value)}
           style={inputStyle}
         />
@@ -165,6 +168,7 @@ export default function UsuarioCreateForm({
           type="text"
           required
           value={usuario.usuario_red || ''}
+          maxLength={50}
           onChange={(e) => updateField('usuario_red', e.target.value)}
           style={inputStyle}
         />
@@ -176,6 +180,7 @@ export default function UsuarioCreateForm({
           type="email"
           required
           value={usuario.correo_corp || ''}
+          maxLength={254}
           onChange={(e) => updateField('correo_corp', e.target.value)}
           style={inputStyle}
         />
@@ -186,6 +191,7 @@ export default function UsuarioCreateForm({
         <input
           type="email"
           value={usuario.gmail || ''}
+          maxLength={254}
           onChange={(e) => updateField('gmail', e.target.value)}
           style={inputStyle}
         />

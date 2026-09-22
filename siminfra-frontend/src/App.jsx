@@ -11,6 +11,9 @@ import SecretRevealModal from './components/common/SecretRevealModal';
 
 import UserDepartmentCards
   from './features/usuarios/components/UserDepartmentCards';
+import PerfilDepartmentCards
+  from './features/perfiles/components/PerfilDepartmentCards';
+import { updatePerfil } from './api/perfilesApi';
 
 import IpSegmentCards
   from './features/ips/components/IpSegmentCards';
@@ -179,10 +182,7 @@ export default function App() {
     logout,
   } = useAuth();
 
-  const [
-    visibleProfilePasswords,
-    setVisibleProfilePasswords
-  ] = useState({});
+  const [visibleProfilePasswords] = useState({});
 
   const [
     selectedIpSegment,
@@ -249,6 +249,7 @@ export default function App() {
     usuariosList,
     ipsList,
     departamentosList,
+    perfilesList,
     refreshReferenceData,
   } = useReferenceData(token, authUser?.role);
 
@@ -338,6 +339,37 @@ export default function App() {
       'success'
     );
   };
+
+  const handleToggleProfileStatus = async (perfil) => {
+    const isActive = perfil.estado !== 'INACTIVO';
+    const nextStatus = isActive ? 'INACTIVO' : 'ACTIVO';
+
+    const confirmed = await requestConfirmation({
+      title: isActive ? 'Desactivar Perfil Genérico' : 'Reactivar Perfil Genérico',
+      message: isActive
+        ? `¿Confirmas que deseas desactivar "${perfil.nombre || perfil.usuario}"? El registro se conservará.`
+        : `¿Confirmas que deseas reactivar "${perfil.nombre || perfil.usuario}"?`,
+      confirmText: isActive ? 'Desactivar' : 'Reactivar',
+      danger: isActive,
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await updatePerfil(perfil.id, { estado: nextStatus });
+      await refreshAllData();
+      showToast(
+        isActive
+          ? 'Perfil Genérico desactivado correctamente.'
+          : 'Perfil Genérico reactivado correctamente.',
+        'success'
+      );
+    } catch (error) {
+      console.error('Error actualizando estado del perfil:', error.response?.data || error);
+      showToast('No se pudo actualizar el estado del Perfil Genérico.', 'error');
+    }
+  };
+
 
   const handleHostnameEquipoChange = (
     hostnameValue,
@@ -480,12 +512,12 @@ export default function App() {
     try {
       exportPerfilesExcel({
         rows: filteredData,
-        selectedDpto,
+        selectedDpto: selectedProfileFilterLabel,
       });
 
       showToast(
-        selectedDpto
-          ? `Excel de perfiles del área ${selectedDpto} exportado correctamente.`
+        selectedProfileFilterLabel
+          ? `Excel de perfiles de ${selectedProfileFilterLabel} exportado correctamente.`
           : 'Excel general de perfiles exportado correctamente.',
         'success'
       );
@@ -562,6 +594,31 @@ export default function App() {
 
   const selectedDepartmentLabel =
     getDepartmentDisplayLabel(selectedDpto);
+
+  const getProfileFilterLabel = (filterValue) => {
+    if (!filterValue) return '';
+
+    if (filterValue.startsWith('dept:')) {
+      const id = Number(filterValue.split(':')[1]);
+      return departamentosList.find((department) => Number(department.id) === id)?.nombre || '';
+    }
+
+    if (filterValue.startsWith('subarea:')) {
+      const id = Number(filterValue.split(':')[1]);
+      for (const department of departamentosList) {
+        const subarea = (department.subareas || []).find(
+          (item) => Number(item.id) === id
+        );
+        if (subarea) return `${department.nombre} / ${subarea.nombre}`;
+      }
+      return '';
+    }
+
+    return getDepartmentDisplayLabel(filterValue);
+  };
+
+  const selectedProfileFilterLabel =
+    tab === 'perfiles' ? getProfileFilterLabel(selectedDpto) : '';
 
   useEffect(() => {
     if (
@@ -772,6 +829,15 @@ export default function App() {
             usuarios={usuariosList}
             selectedDepartment={selectedDpto}
             onSelectDepartment={setSelectedDpto}
+          />
+        )}
+
+        {tab === 'perfiles' && (
+          <PerfilDepartmentCards
+            perfiles={perfilesList}
+            departamentos={departamentosList}
+            selectedFilter={selectedDpto}
+            onSelectFilter={setSelectedDpto}
           />
         )}
 
@@ -1021,9 +1087,6 @@ export default function App() {
                     visibleProfilePasswords
                   }
 
-                  setVisibleProfilePasswords={
-                    setVisibleProfilePasswords
-                  }
 
                   renderUsuarioStatusBadge={
                     renderUsuarioStatusBadge
@@ -1066,6 +1129,7 @@ export default function App() {
                   }
 
                   onDelete={handleDelete}
+                  onToggleProfileStatus={handleToggleProfileStatus}
                   role={authUser?.role}
                   onRevealSecret={setSecretRequest}
                 />

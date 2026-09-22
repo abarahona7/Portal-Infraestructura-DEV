@@ -27,6 +27,22 @@ export const prepareCreatePayload = (
 
 
   /* =========================
+     PERFILES GENÉRICOS
+  ========================= */
+
+  if (tab === 'perfiles') {
+    delete payload.dpto_area;
+
+    if (payload.nombre) payload.nombre = payload.nombre.trim();
+    if (payload.usuario) payload.usuario = payload.usuario.trim();
+    if (payload.correo) payload.correo = payload.correo.trim();
+    if (payload.observaciones) payload.observaciones = payload.observaciones.trim();
+
+    payload.estado = payload.estado || 'ACTIVO';
+  }
+
+
+  /* =========================
      IPS
   ========================= */
 

@@ -12,6 +12,11 @@ ESTADOS = [
     ('BAJA', 'Dado de Baja'),
 ]
 
+ESTADOS_PERFIL = [
+    ('ACTIVO', 'Activo'),
+    ('INACTIVO', 'Inactivo'),
+]
+
 ESTADOS_EQUIPO = [
     ('ASIGNADO', 'Asignado'),
     ('STOCK', 'Stock / Disponible'),
@@ -541,21 +546,70 @@ class PerfilGenerico(models.Model):
     usuario = models.CharField(max_length=100, unique=True)
     password = models.CharField(max_length=255, null=True, blank=True)
     correo = models.EmailField(null=True, blank=True)
-    dpto_area = models.CharField(max_length=100, null=True, blank=True)
+    # Campo legado conservado temporalmente para compatibilidad con datos
+    # anteriores e importadores. La fuente estructurada es departamento/subarea.
+    dpto_area = models.CharField(max_length=100, blank=True, default='')
+    departamento = models.ForeignKey(
+        Departamento,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='perfiles_genericos',
+    )
+    subarea = models.ForeignKey(
+        SubArea,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='perfiles_genericos',
+    )
     tipo = models.CharField(max_length=20, default='On Premise')
     estado = models.CharField(
         max_length=20,
-        choices=ESTADOS,
+        choices=ESTADOS_PERFIL,
         default='ACTIVO',
-        null=True,
-        blank=True
     )
-    observaciones = models.TextField(
-        null=True,
-        blank=True
-    )
+    observaciones = models.TextField(null=True, blank=True)
+
+    class Meta:
+        ordering = [
+            'departamento__nombre',
+            'subarea__nombre',
+            'nombre',
+            'usuario',
+        ]
+
+    def clean(self):
+        if self.subarea_id and not self.departamento_id:
+            raise ValidationError({
+                'departamento': 'Debe indicar el departamento de la subárea seleccionada.'
+            })
+
+        if self.subarea_id and self.departamento_id:
+            if self.subarea.departamento_id != self.departamento_id:
+                raise ValidationError({
+                    'subarea': 'La subárea seleccionada no pertenece al departamento indicado.'
+                })
 
     def save(self, *args, **kwargs):
+        self.nombre = _normalize_spaces(self.nombre) if self.nombre else self.nombre
+        self.usuario = _normalize_spaces(self.usuario) or ''
+        self.correo = (_normalize_spaces(self.correo) or '').lower() or None
+        self.observaciones = (
+            _normalize_spaces(self.observaciones)
+            if self.observaciones
+            else self.observaciones
+        )
+
+        if self.subarea_id:
+            self.dpto_area = self.subarea.nombre
+        elif self.departamento_id:
+            self.dpto_area = self.departamento.nombre
+        else:
+            self.dpto_area = _normalize_spaces(self.dpto_area) or ''
+
+        self.clean()
+
         if self.password and not is_encrypted(self.password):
             self.password = encrypt_val(self.password)
 

@@ -224,6 +224,41 @@ export const validateItem = (
 
 
   /* =========================
+     PERFILES GENÉRICOS
+  ========================= */
+
+  if (tab === 'perfiles') {
+    const nombre = (item.nombre || '').trim();
+    const usuario = (item.usuario || '').trim();
+
+    if (!nombre) {
+      return { valid: false, message: 'Debe ingresar el Nombre / Perfil.' };
+    }
+
+    if (!usuario) {
+      return { valid: false, message: 'Debe ingresar el Usuario del Perfil Genérico.' };
+    }
+
+    if (!item.departamento) {
+      return { valid: false, message: 'Debe seleccionar un Departamento.' };
+    }
+
+    const duplicated = data.find(
+      (perfil) =>
+        perfil.id !== item.id &&
+        perfil.usuario?.trim().toLowerCase() === usuario.toLowerCase()
+    );
+
+    if (duplicated) {
+      return {
+        valid: false,
+        message: `Error: El usuario de Perfil Genérico "${usuario}" ya existe.`,
+      };
+    }
+  }
+
+
+  /* =========================
      PCS GENERICOS
   ========================= */
 

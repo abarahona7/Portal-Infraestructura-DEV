@@ -114,7 +114,6 @@ export default function ModuleToolbar({
 
         {/* FILTRO DEPARTAMENTO */}
         {(
-          activeTab === 'perfiles' ||
           activeTab === 'pcs-genericos'
         ) && (
           <div className="module-toolbar-filter">

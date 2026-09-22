@@ -883,8 +883,19 @@ class UsuarioSerializer(serializers.ModelSerializer):
         return attrs
 
 class PerfilGenericoSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    password = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
     password_configured = serializers.SerializerMethodField()
+    departamento_nombre = serializers.ReadOnlyField(
+        source='departamento.nombre'
+    )
+    subarea_nombre = serializers.ReadOnlyField(
+        source='subarea.nombre'
+    )
 
     class Meta:
         model = PerfilGenerico
@@ -900,19 +911,56 @@ class PerfilGenericoSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         instance = getattr(self, 'instance', None)
-        usuario = attrs.get('usuario')
 
+        for field in ('nombre', 'usuario', 'correo', 'dpto_area', 'observaciones'):
+            if field in attrs and isinstance(attrs[field], str):
+                attrs[field] = _normalize_spaces(attrs[field])
+
+        if attrs.get('correo'):
+            attrs['correo'] = attrs['correo'].lower()
+
+        usuario = attrs.get('usuario')
         if usuario and PerfilGenerico.objects.filter(
             usuario__iexact=usuario.strip()
         ).exclude(
             pk=getattr(instance, 'pk', None)
         ).exists():
             raise serializers.ValidationError({
-                "usuario":
-                "Ya existe un Perfil Genérico registrado con este Usuario."
+                'usuario':
+                'Ya existe un Perfil Genérico registrado con este Usuario.'
             })
 
+        departamento = attrs.get(
+            'departamento',
+            getattr(instance, 'departamento', None),
+        )
+        subarea = attrs.get(
+            'subarea',
+            getattr(instance, 'subarea', None),
+        )
+
+        if instance is None and not departamento:
+            raise serializers.ValidationError({
+                'departamento': 'Debe seleccionar un Departamento.'
+            })
+
+        if subarea and not departamento:
+            raise serializers.ValidationError({
+                'departamento': (
+                    'Debe seleccionar el Departamento correspondiente a la Subárea.'
+                )
+            })
+
+        if subarea and departamento:
+            if subarea.departamento_id != departamento.id:
+                raise serializers.ValidationError({
+                    'subarea': (
+                        'La Subárea seleccionada no pertenece al Departamento indicado.'
+                    )
+                })
+
         return attrs
+
 
 class HistorialPCGenericoSerializer(serializers.ModelSerializer):
     class Meta:

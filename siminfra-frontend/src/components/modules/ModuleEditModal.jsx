@@ -81,7 +81,7 @@ export default function ModuleEditModal({
         <PerfilEditForm
           perfil={editingItem}
           onChange={setEditingItem}
-          departments={departments}
+          departments={departmentCatalog}
         />
       )}
 

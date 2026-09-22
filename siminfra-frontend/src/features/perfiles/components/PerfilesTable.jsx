@@ -1,12 +1,9 @@
-import { useState } from 'react';
-
 import {
   Eye,
   EyeOff,
-  Copy,
-  Check,
   Edit,
-  Trash2,
+  Power,
+  PowerOff,
   UserCog,
 } from 'lucide-react';
 
@@ -17,12 +14,10 @@ export default function PerfilesTable({
   visiblePasswords,
   renderAccountTypeBadge,
   onEdit,
-  onDelete,
+  onToggleStatus,
   role,
   onRevealSecret,
 }) {
-  const [copiedPasswords, setCopiedPasswords] = useState({});
-
   const togglePassword = (id) => {
     if (role === 'Administrador') {
       onRevealSecret?.({
@@ -33,52 +28,16 @@ export default function PerfilesTable({
     }
   };
 
-  const copyPassword = async (perfil) => {
-    if (!perfil.password_configured) return;
-
-    try {
-      await navigator.clipboard.writeText(
-        'El secreto solo puede copiarse después de reautenticación desde el modal.'
-      );
-
-      setCopiedPasswords((prev) => ({
-        ...prev,
-        [perfil.id]: true,
-      }));
-
-      setTimeout(() => {
-        setCopiedPasswords((prev) => ({
-          ...prev,
-          [perfil.id]: false,
-        }));
-      }, 1800);
-    } catch (error) {
-      console.error('Error copiando contraseña:', error);
-    }
-  };
-
   const PasswordField = ({ perfil }) => {
-    const passwordVisible = Boolean(
-      visiblePasswords?.[perfil.id]
-    );
-
-    const passwordCopied = Boolean(
-      copiedPasswords?.[perfil.id]
-    );
+    const passwordVisible = Boolean(visiblePasswords?.[perfil.id]);
 
     if (!perfil.password_configured) {
-      return (
-        <span className="perfil-no-password">
-          Sin contraseña
-        </span>
-      );
+      return <span className="perfil-no-password">Sin contraseña</span>;
     }
 
     return (
       <div className="perfil-password">
-        <span className="perfil-password-value">
-          {'••••••••'}
-        </span>
+        <span className="perfil-password-value">••••••••</span>
 
         <button
           type="button"
@@ -87,56 +46,49 @@ export default function PerfilesTable({
           title={passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
           aria-label={passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
         >
-          {passwordVisible ? (
-            <EyeOff size={16} />
-          ) : (
-            <Eye size={16} />
-          )}
+          {passwordVisible ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
-
-        {false && (
-          <button
-            type="button"
-            className={`perfil-password-action ${passwordCopied ? 'is-copied' : ''}`}
-            onClick={() => copyPassword(perfil)}
-            title="Copiar contraseña"
-            aria-label="Copiar contraseña"
-          >
-            {passwordCopied ? <Check size={16} /> : <Copy size={16} />}
-          </button>
-        )}
       </div>
     );
   };
 
-  const Actions = ({ perfil }) => (
-    <div className="perfiles-actions">
-      <button
-        type="button"
-        className="perfil-action perfil-action-edit"
-        onClick={() => onEdit(perfil)}
-        title="Editar perfil"
-        aria-label={`Editar ${perfil.nombre || perfil.usuario || 'perfil'}`}
-      >
-        <Edit size={17} />
-      </button>
+  const StatusBadge = ({ estado }) => {
+    const active = estado !== 'INACTIVO';
 
-      <button
-        type="button"
-        className="perfil-action perfil-action-delete"
-        onClick={() =>
-          onDelete(
-            perfil.id,
-            perfil.nombre || perfil.usuario
-          )
-        }
-        title="Eliminar perfil"
-        aria-label={`Eliminar ${perfil.nombre || perfil.usuario || 'perfil'}`}
-      >
-        <Trash2 size={17} />
-      </button>
-    </div>
-  );
+    return (
+      <span className={`perfil-status ${active ? 'is-active' : 'is-inactive'}`}>
+        {active ? 'Activo' : 'Inactivo'}
+      </span>
+    );
+  };
+
+  const Actions = ({ perfil }) => {
+    const active = perfil.estado !== 'INACTIVO';
+
+    return (
+      <div className="perfiles-actions">
+        <button
+          type="button"
+          className="perfil-action perfil-action-edit"
+          onClick={() => onEdit(perfil)}
+          title="Editar perfil"
+          aria-label={`Editar ${perfil.nombre || perfil.usuario || 'perfil'}`}
+        >
+          <Edit size={17} />
+        </button>
+
+        <button
+          type="button"
+          className={`perfil-action ${active ? 'perfil-action-deactivate' : 'perfil-action-activate'}`}
+          onClick={() => onToggleStatus?.(perfil)}
+          title={active ? 'Desactivar perfil' : 'Reactivar perfil'}
+          aria-label={`${active ? 'Desactivar' : 'Reactivar'} ${perfil.nombre || perfil.usuario || 'perfil'}`}
+        >
+          {active ? <PowerOff size={17} /> : <Power size={17} />}
+        </button>
+      </div>
+    );
+  };
 
   if (!perfiles || perfiles.length === 0) {
     return (
@@ -158,7 +110,8 @@ export default function PerfilesTable({
               <th className="perfil-col-password">Contraseña</th>
               <th className="perfil-col-tipo">Tipo Cuenta</th>
               <th className="perfil-col-correo">Correo Asignado</th>
-              <th className="perfil-col-area">Área</th>
+              <th className="perfil-col-area">Departamento / Subárea</th>
+              <th className="perfil-col-estado">Estado</th>
               <th className="perfil-col-observaciones">Observaciones</th>
               <th className="perfiles-actions-header">Acciones</th>
             </tr>
@@ -166,7 +119,10 @@ export default function PerfilesTable({
 
           <tbody>
             {perfiles.map((perfil) => (
-              <tr key={perfil.id}>
+              <tr
+                key={perfil.id}
+                className={perfil.estado === 'INACTIVO' ? 'perfil-row-inactive' : ''}
+              >
                 <td className="perfil-col-nombre perfil-nombre">
                   {perfil.nombre || 'N/I'}
                 </td>
@@ -188,7 +144,14 @@ export default function PerfilesTable({
                 </td>
 
                 <td className="perfil-col-area">
-                  {perfil.dpto_area || 'N/I'}
+                  <div className="perfil-area-stack">
+                    <strong>{perfil.departamento_nombre || 'Sin Departamento'}</strong>
+                    <span>{perfil.subarea_nombre || 'Sin Subárea'}</span>
+                  </div>
+                </td>
+
+                <td className="perfil-col-estado">
+                  <StatusBadge estado={perfil.estado} />
                 </td>
 
                 <td className="perfil-col-observaciones">
@@ -206,7 +169,10 @@ export default function PerfilesTable({
 
       <div className="perfiles-cards-mobile">
         {perfiles.map((perfil) => (
-          <article key={perfil.id} className="perfil-card">
+          <article
+            key={perfil.id}
+            className={`perfil-card ${perfil.estado === 'INACTIVO' ? 'is-inactive' : ''}`}
+          >
             <div className="perfil-card-header">
               <div className="perfil-card-title">
                 <span className="perfil-card-icon">
@@ -236,8 +202,16 @@ export default function PerfilesTable({
                 full
               />
               <MobileField
-                label="Departamento / Área"
-                value={perfil.dpto_area || 'N/I'}
+                label="Departamento"
+                value={perfil.departamento_nombre || 'Sin Departamento'}
+              />
+              <MobileField
+                label="Subárea"
+                value={perfil.subarea_nombre || 'Sin Subárea'}
+              />
+              <MobileField
+                label="Estado"
+                value={<StatusBadge estado={perfil.estado} />}
               />
               <MobileField
                 label="Observaciones"

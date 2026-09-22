@@ -658,3 +658,72 @@
     height: 36px;
   }
 }
+
+/* =========================
+   ESTADO / ORGANIZACIÓN V1.1
+========================= */
+
+.perfil-col-estado {
+  min-width: 90px;
+  white-space: nowrap;
+}
+
+.perfil-area-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.perfil-area-stack strong {
+  color: #1e293b;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.perfil-area-stack span {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.perfil-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0.18rem 0.52rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.perfil-status.is-active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.perfil-status.is-inactive {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.perfil-row-inactive {
+  background: #f8fafc;
+}
+
+.perfil-row-inactive td {
+  color: #64748b;
+}
+
+.perfil-card.is-inactive {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.perfil-action-deactivate {
+  color: #dc2626;
+}
+
+.perfil-action-activate {
+  color: #16a34a;
+}

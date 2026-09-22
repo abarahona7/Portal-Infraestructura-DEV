@@ -20,6 +20,7 @@ export const prepareUpdatePayload = (
   delete payload.anexo_actual;
   delete payload.password_gmail_configured;
   delete payload.password_vpn_configured;
+  delete payload.password_configured;
 
 
   /* =========================
@@ -33,6 +34,20 @@ export const prepareUpdatePayload = (
     if (payload.ip_seleccionada === '') {
       payload.ip_seleccionada = null;
     }
+  }
+
+
+  /* =========================
+     PERFILES GENÉRICOS
+  ========================= */
+
+  if (tab === 'perfiles') {
+    delete payload.dpto_area;
+
+    if (payload.nombre) payload.nombre = payload.nombre.trim();
+    if (payload.usuario) payload.usuario = payload.usuario.trim();
+    if (payload.correo) payload.correo = payload.correo.trim();
+    if (payload.observaciones) payload.observaciones = payload.observaciones.trim();
   }
 
 

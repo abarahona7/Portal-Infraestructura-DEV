@@ -44,9 +44,12 @@ export const getInitialCreateItem = (
         usuario: '',
         password: '',
         correo: '',
-        dpto_area: dptosList[0] || '',
+        dpto_area: '',
+        departamento: null,
+        subarea: null,
         tipo: 'On Premise',
         estado: 'ACTIVO',
+        observaciones: '',
       };
 
     case 'ips':

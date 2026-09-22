@@ -81,7 +81,7 @@ export default function ModuleCreateModal({
         <PerfilCreateForm
           perfil={newItem}
           onChange={setNewItem}
-          departments={departments}
+          departments={departmentCatalog}
         />
       )}
 

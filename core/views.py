@@ -88,11 +88,11 @@ class DepartamentoViewSet(
     search_fields = ['nombre', 'subareas__nombre']
 
     def perform_destroy(self, instance):
-        if instance.usuarios.exists():
+        if instance.usuarios.exists() or instance.perfiles_genericos.exists():
             raise serializers.ValidationError({
                 'detail': (
                     'No se puede eliminar este departamento porque tiene '
-                    'usuarios asociados. Puedes desactivarlo.'
+                    'usuarios o perfiles genéricos asociados. Puedes desactivarlo.'
                 )
             })
 
@@ -123,11 +123,12 @@ class SubAreaViewSet(
     search_fields = ['nombre', 'departamento__nombre']
 
     def perform_destroy(self, instance):
-        if instance.usuarios.exists():
+        if instance.usuarios.exists() or instance.perfiles_genericos.exists():
             raise serializers.ValidationError({
                 'detail': (
                     'No se puede eliminar esta subárea porque tiene usuarios '
-                    'asociados. Puedes desactivarla para conservar el historial.'
+                    'o perfiles genéricos asociados. Puedes desactivarla para '
+                    'conservar las relaciones existentes.'
                 )
             })
 
@@ -342,7 +343,10 @@ class PerfilGenericoViewSet(
     viewsets.ModelViewSet
 ):
     permission_classes = [PortalRolePermission]
-    queryset = PerfilGenerico.objects.all()
+    queryset = PerfilGenerico.objects.select_related(
+        'departamento',
+        'subarea',
+    ).all()
     serializer_class = PerfilGenericoSerializer
 
     filter_backends = [
@@ -351,7 +355,8 @@ class PerfilGenericoViewSet(
     ]
 
     filterset_fields = [
-        'dpto_area',
+        'departamento',
+        'subarea',
         'tipo',
         'estado'
     ]
@@ -359,23 +364,58 @@ class PerfilGenericoViewSet(
     search_fields = [
         'nombre',
         'usuario',
-        'correo'
+        'correo',
+        'departamento__nombre',
+        'subarea__nombre',
+        'dpto_area',
+        'observaciones',
     ]
 
     def get_queryset(self):
-        queryset = PerfilGenerico.objects.all()
+        queryset = PerfilGenerico.objects.select_related(
+            'departamento',
+            'subarea',
+        ).all()
 
-        dpto = self.request.query_params.get(
-            'dpto_area',
-            None
+        legacy_filter = self.request.query_params.get('dpto_area')
+        if legacy_filter and legacy_filter.strip():
+            value = legacy_filter.strip()
+
+            if value.startswith('dept:'):
+                try:
+                    queryset = queryset.filter(
+                        departamento_id=int(value.split(':', 1)[1])
+                    )
+                except (TypeError, ValueError):
+                    return queryset.none()
+            elif value.startswith('subarea:'):
+                try:
+                    queryset = queryset.filter(
+                        subarea_id=int(value.split(':', 1)[1])
+                    )
+                except (TypeError, ValueError):
+                    return queryset.none()
+            else:
+                from django.db.models import Q
+                queryset = queryset.filter(
+                    Q(departamento__nombre__icontains=value)
+                    | Q(subarea__nombre__icontains=value)
+                    | Q(dpto_area__icontains=value)
+                )
+
+        return queryset.order_by(
+            'departamento__nombre',
+            'subarea__nombre',
+            'nombre',
+            'usuario',
         )
 
-        if dpto and dpto.strip():
-            queryset = queryset.filter(
-                dpto_area__icontains=dpto.strip()
-            )
+    def perform_destroy(self, instance):
+        # Perfil Genérico usa baja lógica: nunca se elimina físicamente desde
+        # la API para conservar evidencia de que el perfil existió.
+        instance.estado = 'INACTIVO'
+        instance.save(update_fields=['estado'])
 
-        return queryset
 
 class PCGenericoViewSet(
     AuditUserMixin,

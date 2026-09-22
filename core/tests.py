@@ -362,4 +362,159 @@ class SecurityTests(TestCase):
         ip.refresh_from_db()
         self.assertIsNone(ip.usuario)
         self.assertEqual(ip.estado, 'LIBRE')
+    def test_perfil_generico_uses_departamento_and_subarea(self):
+        self.auth(self.admin)
+        departamento = Departamento.objects.create(nombre='Tecnología')
+        subarea = SubArea.objects.create(
+            departamento=departamento,
+            nombre='Infraestructura',
+        )
+
+        response = self.client.post(
+            '/api/perfiles-genericos/',
+            {
+                'nombre': 'Soporte Infra',
+                'usuario': 'perfil.infra',
+                'tipo': 'On Premise',
+                'departamento': departamento.pk,
+                'subarea': subarea.pk,
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['departamento_nombre'], 'Tecnología')
+        self.assertEqual(response.data['subarea_nombre'], 'Infraestructura')
+
+        perfil = PerfilGenerico.objects.get(pk=response.data['id'])
+        self.assertEqual(perfil.departamento_id, departamento.pk)
+        self.assertEqual(perfil.subarea_id, subarea.pk)
+        self.assertEqual(perfil.dpto_area, 'Infraestructura')
+
+    def test_perfil_generico_rejects_subarea_from_other_department(self):
+        self.auth(self.admin)
+        tecnologia = Departamento.objects.create(nombre='Tecnología')
+        operaciones = Departamento.objects.create(nombre='Operaciones')
+        infraestructura = SubArea.objects.create(
+            departamento=tecnologia,
+            nombre='Infraestructura',
+        )
+
+        response = self.client.post(
+            '/api/perfiles-genericos/',
+            {
+                'nombre': 'Perfil Invalido',
+                'usuario': 'perfil.invalido',
+                'departamento': operaciones.pk,
+                'subarea': infraestructura.pk,
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('subarea', response.json())
+
+    def test_perfil_generico_delete_is_soft_deactivation(self):
+        self.auth(self.admin)
+        perfil = PerfilGenerico.objects.create(
+            nombre='Perfil Histórico',
+            usuario='perfil.historico',
+            estado='ACTIVO',
+        )
+
+        response = self.client.delete(
+            f'/api/perfiles-genericos/{perfil.pk}/'
+        )
+
+        self.assertEqual(response.status_code, 204)
+        self.assertTrue(PerfilGenerico.objects.filter(pk=perfil.pk).exists())
+        perfil.refresh_from_db()
+        self.assertEqual(perfil.estado, 'INACTIVO')
+
+    def test_operator_can_deactivate_perfil_with_patch(self):
+        self.auth(self.operator)
+        perfil = PerfilGenerico.objects.create(
+            nombre='Perfil Operador',
+            usuario='perfil.operador',
+            estado='ACTIVO',
+        )
+
+        response = self.client.patch(
+            f'/api/perfiles-genericos/{perfil.pk}/',
+            {'estado': 'INACTIVO'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        perfil.refresh_from_db()
+        self.assertEqual(perfil.estado, 'INACTIVO')
+
+    def test_perfiles_can_filter_by_department_and_subarea(self):
+        self.auth(self.admin)
+        tecnologia = Departamento.objects.create(nombre='Tecnología')
+        operaciones = Departamento.objects.create(nombre='Operaciones')
+        infraestructura = SubArea.objects.create(
+            departamento=tecnologia,
+            nombre='Infraestructura',
+        )
+        desarrollo = SubArea.objects.create(
+            departamento=tecnologia,
+            nombre='Desarrollo',
+        )
+
+        PerfilGenerico.objects.create(
+            nombre='Infra',
+            usuario='perfil.infra.filter',
+            departamento=tecnologia,
+            subarea=infraestructura,
+        )
+        PerfilGenerico.objects.create(
+            nombre='Dev',
+            usuario='perfil.dev.filter',
+            departamento=tecnologia,
+            subarea=desarrollo,
+        )
+        PerfilGenerico.objects.create(
+            nombre='Ops',
+            usuario='perfil.ops.filter',
+            departamento=operaciones,
+        )
+
+        by_department = self.client.get(
+            f'/api/perfiles-genericos/?departamento={tecnologia.pk}'
+        )
+        by_subarea = self.client.get(
+            f'/api/perfiles-genericos/?subarea={infraestructura.pk}'
+        )
+
+        self.assertEqual(by_department.status_code, 200)
+        self.assertEqual(len(by_department.json()), 2)
+        self.assertEqual(by_subarea.status_code, 200)
+        self.assertEqual(len(by_subarea.json()), 1)
+        self.assertEqual(by_subarea.json()[0]['usuario'], 'perfil.infra.filter')
+    def test_cannot_delete_department_or_subarea_used_by_perfil(self):
+        self.auth(self.admin)
+        departamento = Departamento.objects.create(nombre='Tecnología')
+        subarea = SubArea.objects.create(
+            departamento=departamento,
+            nombre='Infraestructura',
+        )
+        PerfilGenerico.objects.create(
+            nombre='Perfil Relacionado',
+            usuario='perfil.relacionado',
+            departamento=departamento,
+            subarea=subarea,
+        )
+
+        subarea_response = self.client.delete(
+            f'/api/subareas/{subarea.pk}/'
+        )
+        departamento_response = self.client.delete(
+            f'/api/departamentos/{departamento.pk}/'
+        )
+
+        self.assertEqual(subarea_response.status_code, 400)
+        self.assertEqual(departamento_response.status_code, 400)
+        self.assertTrue(SubArea.objects.filter(pk=subarea.pk).exists())
+        self.assertTrue(Departamento.objects.filter(pk=departamento.pk).exists())
 

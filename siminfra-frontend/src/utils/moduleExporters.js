@@ -491,10 +491,22 @@ export const exportPerfilesExcel = ({
           perfil.correo || 'N/I',
       },
       {
-        key: 'dpto_area',
-        header: 'Departamento / Área',
+        key: 'departamento',
+        header: 'Departamento',
         value: (perfil) =>
-          perfil.dpto_area || 'N/I',
+          perfil.departamento_nombre || perfil.dpto_area || 'N/I',
+      },
+      {
+        key: 'subarea',
+        header: 'Subárea',
+        value: (perfil) =>
+          perfil.subarea_nombre || 'N/I',
+      },
+      {
+        key: 'estado',
+        header: 'Estado',
+        value: (perfil) =>
+          perfil.estado === 'INACTIVO' ? 'Inactivo' : 'Activo',
       },
       {
         key: 'observaciones',

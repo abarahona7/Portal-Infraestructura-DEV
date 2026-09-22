@@ -19,6 +19,8 @@ from .models import (
     Anexo,
     PCGenerico,
     Servidor,
+    Departamento,
+    SubArea,
 )
 
 from .serializers import (
@@ -29,6 +31,8 @@ from .serializers import (
     AnexoSerializer,
     PCGenericoSerializer,
     ServidorSerializer,
+    DepartamentoSerializer,
+    SubAreaSerializer,
 )
 
 from .audit import (
@@ -66,6 +70,37 @@ class AuditUserMixin:
             instance.delete()
         finally:
             reset_current_audit_user(token)
+
+
+
+class DepartamentoViewSet(
+    AuditUserMixin,
+    viewsets.ModelViewSet
+):
+    permission_classes = [PortalRolePermission]
+    queryset = Departamento.objects.prefetch_related('subareas').all()
+    serializer_class = DepartamentoSerializer
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+    ]
+    filterset_fields = ['activo']
+    search_fields = ['nombre', 'subareas__nombre']
+
+
+class SubAreaViewSet(
+    AuditUserMixin,
+    viewsets.ModelViewSet
+):
+    permission_classes = [PortalRolePermission]
+    queryset = SubArea.objects.select_related('departamento').all()
+    serializer_class = SubAreaSerializer
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+    ]
+    filterset_fields = ['departamento', 'activo']
+    search_fields = ['nombre', 'departamento__nombre']
 
 
 class IPViewSet(viewsets.ModelViewSet):
@@ -133,6 +168,8 @@ class AnexoViewSet(
         'observaciones',
         'usuario__nombre_completo',
         'usuario__dpto_area',
+        'usuario__departamento__nombre',
+        'usuario__subarea__nombre',
         'usuario__cargo',
         'usuario__correo_corp',
     ]
@@ -143,7 +180,10 @@ class UsuarioViewSet(
     viewsets.ModelViewSet
 ):
     permission_classes = [PortalRolePermission]
-    queryset = Usuario.objects.all()
+    queryset = Usuario.objects.select_related(
+        'departamento',
+        'subarea',
+    ).all()
     serializer_class = UsuarioSerializer
 
     filter_backends = [
@@ -153,6 +193,8 @@ class UsuarioViewSet(
 
     filterset_fields = [
         'dpto_area',
+        'departamento',
+        'subarea',
         'estado'
     ]
 
@@ -161,6 +203,8 @@ class UsuarioViewSet(
         'usuario_red',
         'correo_corp',
         'hostname',
+        'departamento__nombre',
+        'subarea__nombre',
         'ip__direccion_ip'
     ]
 

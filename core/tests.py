@@ -2,7 +2,7 @@ from django.contrib.auth.models import User, Group
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 from cryptography.fernet import Fernet
-from core.models import Usuario, PerfilGenerico, IP, Equipamiento, Anexo, SecurityAuditLog
+from core.models import Usuario, PerfilGenerico, IP, Equipamiento, Anexo, SecurityAuditLog, Departamento, SubArea
 
 @override_settings(FIELD_ENCRYPTION_KEY=Fernet.generate_key().decode(), LEGACY_DJANGO_SECRET_KEY='legacy-key')
 class SecurityTests(TestCase):
@@ -88,3 +88,96 @@ class SecurityTests(TestCase):
         ip=IP.objects.create(direccion_ip='10.0.0.4',usuario=self.portal_user)
         self.portal_user.estado='BAJA'; self.portal_user.save(); eq.refresh_from_db(); ip.refresh_from_db()
         self.assertIsNone(eq.usuario); self.assertEqual(eq.estado,'STOCK'); self.assertIsNone(ip.usuario); self.assertEqual(ip.estado,'LIBRE')
+
+    def test_usuario_red_duplicate_is_case_insensitive(self):
+        self.auth(self.admin)
+        response = self.client.post(
+            '/api/usuarios/',
+            {
+                'nombre_completo': 'Persona Dos',
+                'usuario_red': '  PUNO  ',
+                'correo_corp': 'persona.dos@example.com',
+                'dpto_area': 'TI',
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('usuario_red', response.json())
+
+    def test_departamento_duplicate_is_case_and_space_insensitive(self):
+        self.auth(self.admin)
+        first = self.client.post(
+            '/api/departamentos/',
+            {'nombre': 'Gerencia'},
+            format='json',
+        )
+        duplicate = self.client.post(
+            '/api/departamentos/',
+            {'nombre': '  GERENCIA  '},
+            format='json',
+        )
+
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(duplicate.status_code, 400)
+        self.assertEqual(Departamento.objects.count(), 1)
+
+    def test_subarea_unique_inside_department(self):
+        self.auth(self.admin)
+        tecnologia = Departamento.objects.create(nombre='Tecnología')
+        operaciones = Departamento.objects.create(nombre='Operaciones')
+
+        first = self.client.post(
+            '/api/subareas/',
+            {
+                'departamento': tecnologia.pk,
+                'nombre': 'Infraestructura',
+            },
+            format='json',
+        )
+        duplicate = self.client.post(
+            '/api/subareas/',
+            {
+                'departamento': tecnologia.pk,
+                'nombre': 'INFRAESTRUCTURA',
+            },
+            format='json',
+        )
+        other_department = self.client.post(
+            '/api/subareas/',
+            {
+                'departamento': operaciones.pk,
+                'nombre': 'Infraestructura',
+            },
+            format='json',
+        )
+
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(duplicate.status_code, 400)
+        self.assertEqual(other_department.status_code, 201)
+        self.assertEqual(SubArea.objects.count(), 2)
+
+    def test_usuario_rejects_subarea_from_other_department(self):
+        self.auth(self.admin)
+        tecnologia = Departamento.objects.create(nombre='Tecnología')
+        operaciones = Departamento.objects.create(nombre='Operaciones')
+        infraestructura = SubArea.objects.create(
+            departamento=tecnologia,
+            nombre='Infraestructura',
+        )
+
+        response = self.client.post(
+            '/api/usuarios/',
+            {
+                'nombre_completo': 'Persona Tres',
+                'usuario_red': 'ptres',
+                'correo_corp': 'ptres@example.com',
+                'departamento': operaciones.pk,
+                'subarea': infraestructura.pk,
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('subarea', response.json())
+

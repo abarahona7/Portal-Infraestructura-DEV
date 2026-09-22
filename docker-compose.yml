@@ -1,0 +1,17 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?required}
+      MYSQL_DATABASE: ${DATABASE_NAME:-siminfra_db}
+      MYSQL_USER: ${DATABASE_USER:-siminfra_user}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD:?required}
+    expose:
+      - "3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+volumes:
+  mysql_data:

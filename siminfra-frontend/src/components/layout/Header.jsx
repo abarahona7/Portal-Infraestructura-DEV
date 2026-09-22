@@ -34,6 +34,9 @@ export default function Header({
       case 'anexos':
         return 'Anexos';
 
+      case 'departamentos':
+        return 'Departamentos / Subáreas';
+
       default:
         return 'Portal Infraestructura TI Chile';
     }

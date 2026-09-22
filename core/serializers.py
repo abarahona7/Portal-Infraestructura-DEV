@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models.functions import Lower, Trim
 
 from .models import (
     Usuario,
@@ -12,7 +13,121 @@ from .models import (
     PCGenerico,
     HistorialPCGenerico,
     Servidor,
+    Departamento,
+    SubArea,
+    _normalize_key,
+    _normalize_spaces,
 )
+
+
+def _has_normalized_duplicate(queryset, field_name, value, exclude_pk=None):
+    normalized = (_normalize_spaces(value) or '').lower()
+    if not normalized:
+        return False
+
+    queryset = queryset.annotate(
+        _normalized_value=Lower(Trim(field_name))
+    ).filter(_normalized_value=normalized)
+
+    if exclude_pk is not None:
+        queryset = queryset.exclude(pk=exclude_pk)
+
+    return queryset.exists()
+
+
+class SubAreaSerializer(serializers.ModelSerializer):
+    departamento_nombre = serializers.ReadOnlyField(
+        source='departamento.nombre'
+    )
+
+    class Meta:
+        model = SubArea
+        fields = [
+            'id',
+            'departamento',
+            'departamento_nombre',
+            'nombre',
+            'activo',
+            'fecha_creacion',
+            'fecha_actualizacion',
+        ]
+        read_only_fields = [
+            'fecha_creacion',
+            'fecha_actualizacion',
+        ]
+
+    def validate_nombre(self, value):
+        value = _normalize_spaces(value)
+        if not value:
+            raise serializers.ValidationError(
+                'El nombre de la subárea es obligatorio.'
+            )
+        return value
+
+    def validate(self, attrs):
+        instance = getattr(self, 'instance', None)
+        departamento = attrs.get(
+            'departamento',
+            getattr(instance, 'departamento', None),
+        )
+        nombre = attrs.get(
+            'nombre',
+            getattr(instance, 'nombre', None),
+        )
+
+        if departamento and nombre:
+            normalized = _normalize_key(nombre)
+            duplicated = SubArea.objects.filter(
+                departamento=departamento,
+                nombre_normalizado=normalized,
+            ).exclude(pk=getattr(instance, 'pk', None)).exists()
+
+            if duplicated:
+                raise serializers.ValidationError({
+                    'nombre': (
+                        'Ya existe una subárea con este nombre '
+                        'dentro del departamento seleccionado.'
+                    )
+                })
+
+        return attrs
+
+
+class DepartamentoSerializer(serializers.ModelSerializer):
+    subareas = SubAreaSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Departamento
+        fields = [
+            'id',
+            'nombre',
+            'activo',
+            'subareas',
+            'fecha_creacion',
+            'fecha_actualizacion',
+        ]
+        read_only_fields = [
+            'fecha_creacion',
+            'fecha_actualizacion',
+        ]
+
+    def validate_nombre(self, value):
+        value = _normalize_spaces(value)
+        if not value:
+            raise serializers.ValidationError(
+                'El nombre del departamento es obligatorio.'
+            )
+
+        instance = getattr(self, 'instance', None)
+        if Departamento.objects.filter(
+            nombre_normalizado=_normalize_key(value)
+        ).exclude(pk=getattr(instance, 'pk', None)).exists():
+            raise serializers.ValidationError(
+                'Ya existe un departamento con este nombre.'
+            )
+
+        return value
+
 
 
 class IPSerializer(serializers.ModelSerializer):
@@ -422,6 +537,12 @@ class EquipamientoSerializer(serializers.ModelSerializer):
 class UsuarioSerializer(serializers.ModelSerializer):
     equipos = EquipamientoSerializer(many=True, read_only=True)
     historial = HistorialUsuarioSerializer(many=True, read_only=True)
+    departamento_nombre = serializers.ReadOnlyField(
+        source='departamento.nombre'
+    )
+    subarea_nombre = serializers.ReadOnlyField(
+        source='subarea.nombre'
+    )
 
     ip_actual = serializers.SerializerMethodField()
 
@@ -555,39 +676,117 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         instance = getattr(self, 'instance', None)
+
+        for field in (
+            'nombre_completo',
+            'usuario_red',
+            'correo_corp',
+            'dpto_area',
+            'cargo',
+            'hostname',
+            'gmail',
+            'celular',
+            'telefono',
+            'anexo',
+        ):
+            if field in attrs and isinstance(attrs[field], str):
+                attrs[field] = _normalize_spaces(attrs[field])
+
+        if attrs.get('usuario_red'):
+            attrs['usuario_red'] = attrs['usuario_red'].lower()
+        if attrs.get('correo_corp'):
+            attrs['correo_corp'] = attrs['correo_corp'].lower()
+        if attrs.get('gmail'):
+            attrs['gmail'] = attrs['gmail'].lower()
+
         nombre = attrs.get('nombre_completo')
         user_red = attrs.get('usuario_red')
         correo = attrs.get('correo_corp')
 
-        if nombre and Usuario.objects.filter(
-            nombre_completo__iexact=nombre.strip()
-        ).exclude(
-            pk=getattr(instance, 'pk', None)
-        ).exists():
+        if nombre and _has_normalized_duplicate(
+            Usuario.objects.all(),
+            'nombre_completo',
+            nombre,
+            getattr(instance, 'pk', None),
+        ):
             raise serializers.ValidationError({
-                "nombre_completo":
-                "Ya existe un usuario registrado con este Nombre Completo."
+                'nombre_completo':
+                'Ya existe un usuario registrado con este Nombre Completo.'
             })
 
-        if user_red and Usuario.objects.filter(
-            usuario_red__iexact=user_red.strip()
-        ).exclude(
-            pk=getattr(instance, 'pk', None)
-        ).exists():
+        if user_red and _has_normalized_duplicate(
+            Usuario.objects.all(),
+            'usuario_red',
+            user_red,
+            getattr(instance, 'pk', None),
+        ):
             raise serializers.ValidationError({
-                "usuario_red":
-                "Ya existe un usuario con este Usuario de Red."
+                'usuario_red':
+                'Ya existe un usuario con este Usuario de Red.'
             })
 
-        if correo and Usuario.objects.filter(
-            correo_corp__iexact=correo.strip()
-        ).exclude(
-            pk=getattr(instance, 'pk', None)
-        ).exists():
+        if correo and _has_normalized_duplicate(
+            Usuario.objects.all(),
+            'correo_corp',
+            correo,
+            getattr(instance, 'pk', None),
+        ):
             raise serializers.ValidationError({
-                "correo_corp":
-                "Ya existe un usuario con este Correo Corporativo."
+                'correo_corp':
+                'Ya existe un usuario con este Correo Corporativo.'
             })
+
+        departamento = attrs.get(
+            'departamento',
+            getattr(instance, 'departamento', None),
+        )
+        subarea = attrs.get(
+            'subarea',
+            getattr(instance, 'subarea', None),
+        )
+
+        if subarea and not departamento:
+            raise serializers.ValidationError({
+                'departamento':
+                'Debe seleccionar el departamento de la subárea indicada.'
+            })
+
+        if (
+            departamento
+            and subarea
+            and subarea.departamento_id != departamento.id
+        ):
+            raise serializers.ValidationError({
+                'subarea':
+                'La subárea seleccionada no pertenece al departamento indicado.'
+            })
+
+        if departamento and not departamento.activo:
+            current_id = getattr(
+                getattr(instance, 'departamento', None),
+                'id',
+                None,
+            )
+            if departamento.id != current_id:
+                raise serializers.ValidationError({
+                    'departamento':
+                    'No se puede asignar un departamento inactivo.'
+                })
+
+        if subarea and not subarea.activo:
+            current_id = getattr(
+                getattr(instance, 'subarea', None),
+                'id',
+                None,
+            )
+            if subarea.id != current_id:
+                raise serializers.ValidationError({
+                    'subarea':
+                    'No se puede asignar una subárea inactiva.'
+                })
+
+        if departamento:
+            attrs['dpto_area'] = departamento.nombre
 
         return attrs
 

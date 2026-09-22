@@ -264,8 +264,12 @@ export default function UsuarioDetailModal({
                 </span>
 
                 <span>
-                  {usuario.dpto_area ||
-                    'Sin área'}
+                  {usuario.departamento_nombre ||
+                    usuario.dpto_area ||
+                    'Sin departamento'}
+                  {usuario.subarea_nombre
+                    ? ` / ${usuario.subarea_nombre}`
+                    : ''}
                 </span>
               </div>
 

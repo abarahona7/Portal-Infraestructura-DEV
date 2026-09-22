@@ -15,6 +15,11 @@ export const prepareUpdatePayload = (
   delete payload.id;
   delete payload.usuario_nombre;
   delete payload.ip_actual;
+  delete payload.departamento_nombre;
+  delete payload.subarea_nombre;
+  delete payload.anexo_actual;
+  delete payload.password_gmail_configured;
+  delete payload.password_vpn_configured;
 
 
   /* =========================
@@ -23,6 +28,7 @@ export const prepareUpdatePayload = (
 
   if (tab === 'usuarios') {
     delete payload.celular;
+    delete payload.dpto_area;
 
     if (payload.ip_seleccionada === '') {
       payload.ip_seleccionada = null;

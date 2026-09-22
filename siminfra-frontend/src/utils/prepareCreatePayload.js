@@ -16,6 +16,17 @@ export const prepareCreatePayload = (
 
 
   /* =========================
+     USUARIOS
+  ========================= */
+
+  if (tab === 'usuarios') {
+    // dpto_area queda como campo legado de compatibilidad.
+    // El backend lo sincroniza desde la relación Departamento.
+    delete payload.dpto_area;
+  }
+
+
+  /* =========================
      IPS
   ========================= */
 

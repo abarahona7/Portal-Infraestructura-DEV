@@ -295,6 +295,13 @@ export const validateItem = (
   ========================= */
 
   if (tab === 'usuarios') {
+    if (!item.departamento) {
+      return {
+        valid: false,
+        message: 'Debe seleccionar un Departamento.',
+      };
+    }
+
     const dupNombre = data.find(
       (usuario) =>
         usuario.id !== item.id &&

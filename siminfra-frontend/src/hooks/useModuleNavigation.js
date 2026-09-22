@@ -11,6 +11,7 @@ const VALID_TABS = new Set([
   'perfiles',
   'ips',
   'anexos',
+  'departamentos',
 ]);
 
 const readSavedTab = () => {

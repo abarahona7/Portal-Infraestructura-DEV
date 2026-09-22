@@ -9,7 +9,9 @@ export const getInitialCreateItem = (
         nombre_completo: '',
         hostname: '',
         cargo: '',
-        dpto_area: dptosList[0] || '',
+        dpto_area: '',
+        departamento: null,
+        subarea: null,
         usuario_red: '',
         correo_corp: '',
         gmail: '',
@@ -42,17 +44,18 @@ export const getInitialCreateItem = (
         usuario: '',
         password: '',
         correo: '',
-        dpto_area: dptosList[0] || '',
+        dpto_area: '',
+        departamento: null,
+        subarea: null,
         tipo: 'On Premise',
         estado: 'ACTIVO',
+        observaciones: '',
       };
 
     case 'ips':
       return {
         direccion_ip: '',
-        estado: 'LIBRE',
         observacion: '',
-        usuario: '',
         asignado_otro: '',
       };
 

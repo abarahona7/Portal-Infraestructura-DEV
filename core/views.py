@@ -5,7 +5,7 @@ from .services.acta_entrega_pdf import (
     generar_acta_entrega_pdf
 )
 
-from rest_framework import viewsets, filters
+from rest_framework import viewsets, filters, serializers
 from .permissions import PortalRolePermission
 from django_filters.rest_framework import (
     DjangoFilterBackend
@@ -19,6 +19,8 @@ from .models import (
     Anexo,
     PCGenerico,
     Servidor,
+    Departamento,
+    SubArea,
 )
 
 from .serializers import (
@@ -29,6 +31,8 @@ from .serializers import (
     AnexoSerializer,
     PCGenericoSerializer,
     ServidorSerializer,
+    DepartamentoSerializer,
+    SubAreaSerializer,
 )
 
 from .audit import (
@@ -68,6 +72,69 @@ class AuditUserMixin:
             reset_current_audit_user(token)
 
 
+
+class DepartamentoViewSet(
+    AuditUserMixin,
+    viewsets.ModelViewSet
+):
+    permission_classes = [PortalRolePermission]
+    queryset = Departamento.objects.prefetch_related('subareas').all()
+    serializer_class = DepartamentoSerializer
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+    ]
+    filterset_fields = ['activo']
+    search_fields = ['nombre', 'subareas__nombre']
+
+    def perform_destroy(self, instance):
+        if instance.usuarios.exists() or instance.perfiles_genericos.exists():
+            raise serializers.ValidationError({
+                'detail': (
+                    'No se puede eliminar este departamento porque tiene '
+                    'usuarios o perfiles genéricos asociados. Puedes desactivarlo.'
+                )
+            })
+
+        if instance.subareas.exists():
+            raise serializers.ValidationError({
+                'detail': (
+                    'No se puede eliminar este departamento mientras tenga '
+                    'subáreas registradas. Elimina primero las subáreas que no '
+                    'estén en uso o desactiva el departamento.'
+                )
+            })
+
+        super().perform_destroy(instance)
+
+
+class SubAreaViewSet(
+    AuditUserMixin,
+    viewsets.ModelViewSet
+):
+    permission_classes = [PortalRolePermission]
+    queryset = SubArea.objects.select_related('departamento').all()
+    serializer_class = SubAreaSerializer
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+    ]
+    filterset_fields = ['departamento', 'activo']
+    search_fields = ['nombre', 'departamento__nombre']
+
+    def perform_destroy(self, instance):
+        if instance.usuarios.exists() or instance.perfiles_genericos.exists():
+            raise serializers.ValidationError({
+                'detail': (
+                    'No se puede eliminar esta subárea porque tiene usuarios '
+                    'o perfiles genéricos asociados. Puedes desactivarla para '
+                    'conservar las relaciones existentes.'
+                )
+            })
+
+        super().perform_destroy(instance)
+
+
 class IPViewSet(viewsets.ModelViewSet):
     permission_classes = [PortalRolePermission]
     queryset = IP.objects.all()
@@ -83,6 +150,17 @@ class IPViewSet(viewsets.ModelViewSet):
         'usuario__nombre_completo',
         'asignado_otro'
     ]
+
+    def perform_destroy(self, instance):
+        if instance.usuario_id:
+            raise serializers.ValidationError({
+                'detail': (
+                    'No se puede eliminar una IP asignada a un usuario. '
+                    'Libérala primero desde la ficha del usuario.'
+                )
+            })
+
+        instance.delete()
 
 
 # =========================================
@@ -133,6 +211,8 @@ class AnexoViewSet(
         'observaciones',
         'usuario__nombre_completo',
         'usuario__dpto_area',
+        'usuario__departamento__nombre',
+        'usuario__subarea__nombre',
         'usuario__cargo',
         'usuario__correo_corp',
     ]
@@ -143,7 +223,10 @@ class UsuarioViewSet(
     viewsets.ModelViewSet
 ):
     permission_classes = [PortalRolePermission]
-    queryset = Usuario.objects.all()
+    queryset = Usuario.objects.select_related(
+        'departamento',
+        'subarea',
+    ).all()
     serializer_class = UsuarioSerializer
 
     filter_backends = [
@@ -153,6 +236,8 @@ class UsuarioViewSet(
 
     filterset_fields = [
         'dpto_area',
+        'departamento',
+        'subarea',
         'estado'
     ]
 
@@ -161,6 +246,8 @@ class UsuarioViewSet(
         'usuario_red',
         'correo_corp',
         'hostname',
+        'departamento__nombre',
+        'subarea__nombre',
         'ip__direccion_ip'
     ]
 
@@ -256,7 +343,10 @@ class PerfilGenericoViewSet(
     viewsets.ModelViewSet
 ):
     permission_classes = [PortalRolePermission]
-    queryset = PerfilGenerico.objects.all()
+    queryset = PerfilGenerico.objects.select_related(
+        'departamento',
+        'subarea',
+    ).all()
     serializer_class = PerfilGenericoSerializer
 
     filter_backends = [
@@ -265,7 +355,8 @@ class PerfilGenericoViewSet(
     ]
 
     filterset_fields = [
-        'dpto_area',
+        'departamento',
+        'subarea',
         'tipo',
         'estado'
     ]
@@ -273,23 +364,58 @@ class PerfilGenericoViewSet(
     search_fields = [
         'nombre',
         'usuario',
-        'correo'
+        'correo',
+        'departamento__nombre',
+        'subarea__nombre',
+        'dpto_area',
+        'observaciones',
     ]
 
     def get_queryset(self):
-        queryset = PerfilGenerico.objects.all()
+        queryset = PerfilGenerico.objects.select_related(
+            'departamento',
+            'subarea',
+        ).all()
 
-        dpto = self.request.query_params.get(
-            'dpto_area',
-            None
+        legacy_filter = self.request.query_params.get('dpto_area')
+        if legacy_filter and legacy_filter.strip():
+            value = legacy_filter.strip()
+
+            if value.startswith('dept:'):
+                try:
+                    queryset = queryset.filter(
+                        departamento_id=int(value.split(':', 1)[1])
+                    )
+                except (TypeError, ValueError):
+                    return queryset.none()
+            elif value.startswith('subarea:'):
+                try:
+                    queryset = queryset.filter(
+                        subarea_id=int(value.split(':', 1)[1])
+                    )
+                except (TypeError, ValueError):
+                    return queryset.none()
+            else:
+                from django.db.models import Q
+                queryset = queryset.filter(
+                    Q(departamento__nombre__icontains=value)
+                    | Q(subarea__nombre__icontains=value)
+                    | Q(dpto_area__icontains=value)
+                )
+
+        return queryset.order_by(
+            'departamento__nombre',
+            'subarea__nombre',
+            'nombre',
+            'usuario',
         )
 
-        if dpto and dpto.strip():
-            queryset = queryset.filter(
-                dpto_area__icontains=dpto.strip()
-            )
+    def perform_destroy(self, instance):
+        # Perfil Genérico usa baja lógica: nunca se elimina físicamente desde
+        # la API para conservar evidencia de que el perfil existió.
+        instance.estado = 'INACTIVO'
+        instance.save(update_fields=['estado'])
 
-        return queryset
 
 class PCGenericoViewSet(
     AuditUserMixin,

@@ -1,12 +1,43 @@
+import { useMemo } from 'react';
+
 export default function PerfilCreateForm({
   perfil,
   onChange,
-  departments,
+  departments = [],
 }) {
+  const selectedDepartmentId = perfil.departamento
+    ? Number(perfil.departamento)
+    : null;
+
+  const selectedDepartment = departments.find(
+    (department) => Number(department.id) === selectedDepartmentId
+  );
+
+  const availableDepartments = useMemo(
+    () => departments.filter((department) => department.activo),
+    [departments]
+  );
+
+  const availableSubareas = useMemo(
+    () => (selectedDepartment?.subareas || []).filter((subarea) => subarea.activo),
+    [selectedDepartment]
+  );
+
   const updateField = (field, value) => {
     onChange({
       ...perfil,
-      [field]: value
+      [field]: value,
+    });
+  };
+
+  const handleDepartmentChange = (value) => {
+    const departmentId = value ? Number(value) : null;
+
+    onChange({
+      ...perfil,
+      departamento: departmentId,
+      subarea: null,
+      dpto_area: '',
     });
   };
 
@@ -16,161 +47,131 @@ export default function PerfilCreateForm({
     borderRadius: '6px',
     border: '1px solid #cbd5e1',
     marginTop: '4px',
-    boxSizing: 'border-box'
+    boxSizing: 'border-box',
   };
 
   const labelStyle = {
     fontSize: '0.8rem',
     color: '#64748b',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   };
 
   return (
     <>
       <div>
-        <label style={labelStyle}>
-          Nombre / Perfil *
-        </label>
-
+        <label style={labelStyle}>Nombre / Perfil *</label>
         <input
           type="text"
           required
           value={perfil.nombre || ''}
-          onChange={(e) =>
-            updateField('nombre', e.target.value)
-          }
+          maxLength={150}
+          onChange={(e) => updateField('nombre', e.target.value)}
           style={inputStyle}
         />
       </div>
 
       <div>
-        <label style={labelStyle}>
-          Usuario *
-        </label>
-
+        <label style={labelStyle}>Usuario *</label>
         <input
           type="text"
           required
           value={perfil.usuario || ''}
-          onChange={(e) =>
-            updateField('usuario', e.target.value)
-          }
+          maxLength={100}
+          onChange={(e) => updateField('usuario', e.target.value)}
           style={inputStyle}
         />
       </div>
 
       <div>
-        <label style={labelStyle}>
-          Contraseña
-        </label>
-
+        <label style={labelStyle}>Contraseña</label>
         <input
-          type="text"
+          type="password"
           value={perfil.password || ''}
-          onChange={(e) =>
-            updateField('password', e.target.value)
-          }
+          onChange={(e) => updateField('password', e.target.value)}
+          autoComplete="new-password"
           style={inputStyle}
         />
       </div>
 
       <div>
-        <label style={labelStyle}>
-          Tipo Cuenta
-        </label>
-
+        <label style={labelStyle}>Tipo Cuenta</label>
         <select
           value={perfil.tipo || 'On Premise'}
-          onChange={(e) =>
-            updateField('tipo', e.target.value)
-          }
+          onChange={(e) => updateField('tipo', e.target.value)}
           style={{
             ...inputStyle,
-            backgroundColor:
-              perfil.tipo === 'O365'
-                ? '#eff6ff'
-                : '#f8fafc',
+            backgroundColor: perfil.tipo === 'O365' ? '#eff6ff' : '#f8fafc',
             fontWeight: 'bold',
-            color:
-              perfil.tipo === 'O365'
-                ? '#1d4ed8'
-                : '#334155'
+            color: perfil.tipo === 'O365' ? '#1d4ed8' : '#334155',
           }}
         >
-          <option value="On Premise">
-            On Premise
-          </option>
-
-          <option value="O365">
-            O365
-          </option>
+          <option value="On Premise">On Premise</option>
+          <option value="O365">O365</option>
         </select>
       </div>
 
       <div>
-        <label style={labelStyle}>
-          Correo Asignado
-        </label>
-
+        <label style={labelStyle}>Correo Asignado</label>
         <input
           type="email"
           value={perfil.correo || ''}
-          onChange={(e) =>
-            updateField('correo', e.target.value)
-          }
+          maxLength={254}
+          onChange={(e) => updateField('correo', e.target.value)}
           style={inputStyle}
         />
       </div>
 
       <div>
-        <label style={labelStyle}>
-          Departamento / Área
-        </label>
-
+        <label style={labelStyle}>Departamento *</label>
         <select
-          value={perfil.dpto_area || ''}
-          onChange={(e) =>
-            updateField(
-              'dpto_area',
-              e.target.value
-            )
-          }
+          required
+          value={perfil.departamento ?? ''}
+          onChange={(e) => handleDepartmentChange(e.target.value)}
           style={inputStyle}
         >
-          <option value="">
-            Selecciona un área...
-          </option>
-
-          {departments.map((department, index) => (
-            <option
-              key={index}
-              value={department}
-            >
-              {department}
+          <option value="">Selecciona un Departamento...</option>
+          {availableDepartments.map((department) => (
+            <option key={department.id} value={department.id}>
+              {department.nombre}
             </option>
           ))}
         </select>
       </div>
 
       <div>
-        <label style={labelStyle}>
-          Observaciones
-        </label>
-
-        <textarea
-          value={perfil.observaciones || ''}
+        <label style={labelStyle}>Subárea</label>
+        <select
+          value={perfil.subarea ?? ''}
           onChange={(e) =>
-            updateField(
-              'observaciones',
-              e.target.value
-            )
+            updateField('subarea', e.target.value ? Number(e.target.value) : null)
           }
-          placeholder="Ej: Cuenta utilizada para soporte, sistema interno, acceso compartido, etc."
-          rows={3}
+          disabled={!selectedDepartmentId}
           style={{
             ...inputStyle,
-            resize: 'vertical'
+            backgroundColor: selectedDepartmentId ? '#fff' : '#f8fafc',
           }}
+        >
+          <option value="">
+            {selectedDepartmentId
+              ? 'Selecciona una Subárea...'
+              : 'Selecciona primero un Departamento'}
+          </option>
+          {availableSubareas.map((subarea) => (
+            <option key={subarea.id} value={subarea.id}>
+              {subarea.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label style={labelStyle}>Observaciones</label>
+        <textarea
+          value={perfil.observaciones || ''}
+          onChange={(e) => updateField('observaciones', e.target.value)}
+          placeholder="Ej: Cuenta utilizada para soporte, sistema interno, acceso compartido, etc."
+          rows={3}
+          style={{ ...inputStyle, resize: 'vertical' }}
         />
       </div>
     </>

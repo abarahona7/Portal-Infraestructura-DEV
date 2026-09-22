@@ -5,6 +5,7 @@ import { getIps } from '../api/ipsApi';
 import { getAnexos } from '../api/anexosApi';
 import { getPcsGenericos } from '../api/pcsGenericosApi';
 import { getServidores } from '../api/servidoresApi';
+import { getDepartamentos } from '../api/departamentosApi';
 
 
 export const getItemsByTab = async (
@@ -32,6 +33,9 @@ export const getItemsByTab = async (
 
     case 'servidores':
       return await getServidores(params);
+
+    case 'departamentos':
+      return await getDepartamentos(params);
 
     default:
       return [];

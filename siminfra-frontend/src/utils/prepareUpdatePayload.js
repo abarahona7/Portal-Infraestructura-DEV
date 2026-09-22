@@ -15,6 +15,12 @@ export const prepareUpdatePayload = (
   delete payload.id;
   delete payload.usuario_nombre;
   delete payload.ip_actual;
+  delete payload.departamento_nombre;
+  delete payload.subarea_nombre;
+  delete payload.anexo_actual;
+  delete payload.password_gmail_configured;
+  delete payload.password_vpn_configured;
+  delete payload.password_configured;
 
 
   /* =========================
@@ -23,10 +29,35 @@ export const prepareUpdatePayload = (
 
   if (tab === 'usuarios') {
     delete payload.celular;
+    delete payload.dpto_area;
+
+    ['nombre_completo', 'usuario_red', 'correo_corp', 'cargo', 'hostname', 'gmail'].forEach((field) => {
+      if (typeof payload[field] === 'string') {
+        payload[field] = payload[field].trim();
+      }
+    });
+
+    if (payload.usuario_red) payload.usuario_red = payload.usuario_red.toLowerCase();
+    if (payload.correo_corp) payload.correo_corp = payload.correo_corp.toLowerCase();
+    if (payload.gmail) payload.gmail = payload.gmail.toLowerCase();
 
     if (payload.ip_seleccionada === '') {
       payload.ip_seleccionada = null;
     }
+  }
+
+
+  /* =========================
+     PERFILES GENÉRICOS
+  ========================= */
+
+  if (tab === 'perfiles') {
+    delete payload.dpto_area;
+
+    if (payload.nombre) payload.nombre = payload.nombre.trim();
+    if (payload.usuario) payload.usuario = payload.usuario.trim();
+    if (payload.correo) payload.correo = payload.correo.trim();
+    if (payload.observaciones) payload.observaciones = payload.observaciones.trim();
   }
 
 
@@ -50,6 +81,21 @@ export const prepareUpdatePayload = (
   ========================= */
 
   if (tab === 'equipos') {
+    ['marca', 'modelo', 'numero_serie', 'hostname', 'af', 'numero_telefono', 'imei', 'icloud_cuenta', 'accesorios'].forEach((field) => {
+      if (typeof payload[field] === 'string') {
+        payload[field] = payload[field].trim();
+      }
+    });
+
+    if (!payload.numero_serie) payload.numero_serie = null;
+    if (!payload.af) payload.af = null;
+    if (!payload.hostname) payload.hostname = null;
+    if (!payload.numero_telefono) payload.numero_telefono = null;
+    if (!payload.imei) payload.imei = null;
+    if (!payload.icloud_cuenta) payload.icloud_cuenta = null;
+    if (!payload.accesorios) payload.accesorios = null;
+    if (payload.icloud_cuenta) payload.icloud_cuenta = payload.icloud_cuenta.toLowerCase();
+
     if (!payload.usuario) {
       payload.estado = 'STOCK';
       payload.fecha_asignacion = null;
@@ -146,14 +192,12 @@ export const prepareUpdatePayload = (
         payload.modelo.trim();
     }
 
-    if (payload.numero_serie) {
-      payload.numero_serie =
-        payload.numero_serie.trim();
+    if (typeof payload.numero_serie === 'string') {
+      payload.numero_serie = payload.numero_serie.trim() || null;
     }
 
-    if (payload.activo_fijo) {
-      payload.activo_fijo =
-        payload.activo_fijo.trim();
+    if (typeof payload.activo_fijo === 'string') {
+      payload.activo_fijo = payload.activo_fijo.trim() || null;
     }
 
     if (payload.observaciones) {
@@ -194,28 +238,18 @@ export const prepareUpdatePayload = (
   ========================= */
 
   if (tab === 'ips') {
-    const tieneAsignacion = Boolean(
-      payload.usuario ||
-      (
-        payload.asignado_otro &&
-        payload.asignado_otro.trim()
-      )
-    );
+    // Nunca modificar la relación con Usuario desde Gestión IPs.
+    delete payload.usuario;
 
-    // Automatizamos LIBRE y RESERVADA
-    // según exista o no una asignación.
-    if (
-      payload.estado === 'LIBRE' &&
-      tieneAsignacion
-    ) {
-      payload.estado = 'RESERVADA';
+    // El backend deriva el estado desde usuario/asignado_otro.
+    delete payload.estado;
+
+    if (payload.asignado_otro) {
+      payload.asignado_otro = payload.asignado_otro.trim() || null;
     }
 
-    if (
-      payload.estado === 'RESERVADA' &&
-      !tieneAsignacion
-    ) {
-      payload.estado = 'LIBRE';
+    if (payload.observacion) {
+      payload.observacion = payload.observacion.trim() || null;
     }
   }
 

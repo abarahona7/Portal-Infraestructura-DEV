@@ -1,0 +1,417 @@
+:root {
+  --simi-blue: #2b5aa5;
+  --simi-blue-hover: #244d91;
+  --sidebar-dark: #0f172a;
+}
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  width: 260px;
+  height: 100vh;
+
+  background: #0f172a;
+  color: white;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 16px 12px;
+  box-sizing: border-box;
+
+  z-index: 1200;
+
+  transition:
+    width 0.25s ease,
+    transform 0.25s ease;
+
+  border-right: 1px solid #1e293b;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.sidebar-header {
+  min-height: 56px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+
+  margin-bottom: 18px;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  min-width: 0;
+}
+
+.sidebar-logo {
+  width: 42px;
+  height: 42px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+  overflow: hidden;
+
+  background-color: #fff;
+
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.15);
+}
+
+.sidebar-logo img {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+}
+
+.sidebar-brand-text {
+  min-width: 0;
+}
+
+.sidebar-brand-text h2 {
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.sidebar-brand-text span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #a9bad6;
+
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* =========================
+   BOTONES HEADER
+========================= */
+
+.sidebar-collapse-button,
+.sidebar-mobile-close {
+  width: 34px;
+  height: 34px;
+
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 8px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+  color: #94a3b8;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.sidebar-collapse-button:hover,
+.sidebar-mobile-close:hover {
+  background: #1e293b;
+  color: white;
+}
+
+.sidebar-mobile-close {
+  display: none;
+}
+
+/* =========================
+   NAVEGACIÓN
+========================= */
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+
+  gap: 6px;
+
+  flex: 1;
+}
+
+.sidebar-module-button {
+  width: 100%;
+  min-height: 46px;
+
+  border: none;
+  border-radius: 9px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 8px 12px;
+
+  background: transparent;
+  color: #cbd5e1;
+
+  cursor: pointer;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  text-align: left;
+
+  transition:
+    background-color 0.18s,
+    color 0.18s,
+    transform 0.18s;
+}
+
+.sidebar-module-button:hover {
+  background-color: rgba(43, 90, 165, 0.18);
+}
+
+.sidebar-module-active {
+  background-color: var(--simi-blue);
+  color: #fff;
+}
+
+.sidebar-module-active:hover {
+  background-color: var(--simi-blue-hover);
+}
+
+.sidebar-module-icon {
+  width: 26px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 20px;
+}
+
+.sidebar-module-content {
+  flex: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  min-width: 0;
+}
+
+.sidebar-module-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-module-count {
+  min-width: 24px;
+
+  padding: 2px 7px;
+
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.15);
+
+  font-size: 11px;
+  text-align: center;
+}
+
+/* =========================
+   FOOTER
+========================= */
+
+.sidebar-footer {
+  min-height: 42px;
+
+  border-top: 1px solid #334155;
+
+  padding-top: 14px;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+
+  color: #64748b;
+
+  font-size: 11px;
+}
+
+.sidebar-footer strong {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.sidebar-footer-mini {
+  font-weight: 800;
+  font-size: 12px;
+
+  color: #94a3b8;
+}
+
+/* =========================
+   SIDEBAR CONTRAÍDO
+========================= */
+
+.sidebar-collapsed {
+  width: 76px;
+}
+
+.sidebar-collapsed .sidebar-header {
+  flex-direction: column;
+
+  justify-content: flex-start;
+
+  height: auto;
+}
+
+.sidebar-collapsed .sidebar-brand {
+  justify-content: center;
+}
+
+.sidebar-collapsed .sidebar-module-button {
+  justify-content: center;
+
+  padding: 8px;
+}
+
+.sidebar-collapsed .sidebar-module-content {
+  display: none;
+}
+
+.sidebar-collapsed .sidebar-module-icon {
+  width: auto;
+}
+
+.sidebar-collapsed .sidebar-collapse-button {
+  margin-top: 4px;
+}
+
+/* =========================
+   OVERLAY
+========================= */
+
+.sidebar-overlay {
+  display: none;
+}
+
+/* =========================
+   TABLET / MOBILE
+========================= */
+
+@media (max-width: 1023px) {
+  .sidebar {
+    width: 270px;
+
+    transform: translateX(-100%);
+
+    box-shadow:
+      10px 0 30px rgba(0, 0, 0, 0.25);
+  }
+
+  .sidebar.sidebar-mobile-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-collapsed {
+    width: 270px;
+  }
+
+  .sidebar-collapsed .sidebar-header {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .sidebar-collapsed .sidebar-brand-text {
+    display: block;
+  }
+
+  .sidebar-collapsed .sidebar-module-button {
+    justify-content: flex-start;
+
+    padding: 8px 12px;
+  }
+
+  .sidebar-collapsed .sidebar-module-content {
+    display: flex;
+  }
+
+  .sidebar-collapse-button {
+    display: none;
+  }
+
+  .sidebar-mobile-close {
+    display: flex;
+  }
+
+  .sidebar-overlay {
+    display: block;
+
+    position: fixed;
+    inset: 0;
+
+    background: rgba(15, 23, 42, 0.55);
+
+    backdrop-filter: blur(2px);
+
+    z-index: 1100;
+
+    opacity: 0;
+    visibility: hidden;
+
+    transition:
+      opacity 0.25s,
+      visibility 0.25s;
+  }
+
+  .sidebar-overlay-open {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* =========================
+   TELÉFONOS PEQUEÑOS
+========================= */
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: min(86vw, 300px);
+
+    padding: 14px 10px;
+  }
+
+  .sidebar-module-button {
+    min-height: 48px;
+  }
+
+  .sidebar-module-icon {
+    font-size: 21px;
+  }
+}

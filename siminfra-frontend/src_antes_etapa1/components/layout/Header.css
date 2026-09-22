@@ -1,0 +1,237 @@
+/* =========================
+   HEADER PRINCIPAL
+========================= */
+
+.main-header {
+  width: 100%;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 1rem;
+
+  margin-bottom: 1.5rem;
+}
+
+/* =========================
+   LADO IZQUIERDO
+========================= */
+
+.main-header-left {
+  display: flex;
+  align-items: center;
+
+  gap: 0.9rem;
+
+  min-width: 0;
+}
+
+.main-header-titles {
+  min-width: 0;
+}
+
+.main-header-titles h1 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 1.65rem;
+  font-weight: 700;
+
+  line-height: 1.15;
+}
+
+.main-header-module {
+  margin-top: 4px;
+
+  color: #2563eb;
+
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.main-header-titles p {
+  margin: 4px 0 0;
+
+  color: #64748b;
+
+  font-size: 0.85rem;
+}
+
+/* =========================
+   BOTÓN MENÚ
+========================= */
+
+.header-menu-button {
+  display: none;
+
+  width: 42px;
+  height: 42px;
+
+  flex-shrink: 0;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+
+  background-color: #fff;
+  color: #2563eb;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05);
+
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+
+.header-menu-button:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+}
+
+/* =========================
+   CERRAR SESIÓN
+========================= */
+
+.header-logout-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.5rem;
+
+  flex-shrink: 0;
+
+  padding: 0.6rem 1rem;
+
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+
+  background-color: #fff;
+
+  color: #ef4444;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+
+.header-logout-button:hover {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+}
+
+/* =========================
+   TABLET
+========================= */
+
+@media (max-width: 1023px) {
+  .header-menu-button {
+    display: flex;
+  }
+
+  .main-header-titles h1 {
+    font-size: 1.45rem;
+  }
+}
+
+/* =========================
+   MÓVIL
+========================= */
+
+@media (max-width: 767px) {
+  .main-header {
+    align-items: center;
+  }
+
+  .main-header-left {
+    flex: 1;
+  }
+
+  .main-header-titles h1 {
+    font-size: 1.15rem;
+  }
+
+  .main-header-module {
+    font-size: 0.9rem;
+  }
+
+  .main-header-titles p {
+    display: none;
+  }
+
+  .header-logout-button {
+    width: 42px;
+    height: 42px;
+
+    padding: 0;
+  }
+
+  .header-logout-button span {
+    display: none;
+  }
+}
+
+/* =========================
+   MÓVILES PEQUEÑOS
+========================= */
+
+@media (max-width: 480px) {
+  .main-header {
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+
+  .main-header-left {
+    gap: 0.6rem;
+  }
+
+  .header-menu-button,
+  .header-logout-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .main-header-titles {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .main-header-titles h1 {
+    max-width: none;
+
+    white-space: normal;
+    overflow: visible;
+    text-overflow: initial;
+
+    font-size: 1rem;
+    line-height: 1.15;
+  }
+
+  .main-header-module {
+    margin-top: 3px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .main-header-titles h1 {
+    font-size: 0.95rem;
+  }
+
+  .main-header-module {
+    font-size: 0.8rem;
+  }
+}

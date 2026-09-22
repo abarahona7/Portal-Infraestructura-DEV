@@ -1,0 +1,232 @@
+.module-toolbar {
+  width: 100%;
+  margin-bottom: 1.5rem;
+
+  display: flex;
+  justify-content: flex-end;
+}
+
+.module-toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 0.8rem;
+
+  width: 100%;
+
+  flex-wrap: wrap;
+}
+
+/* AGREGAR */
+
+.module-toolbar-create {
+  min-height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.5rem;
+
+  padding: 0.65rem 1.1rem;
+
+  border: none;
+  border-radius: 8px;
+
+  background-color: #16a34a;
+  color: #fff;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+
+  transition:
+    background-color 0.2s,
+    transform 0.15s;
+}
+
+.module-toolbar-create:hover {
+  background-color: #15803d;
+}
+
+.module-toolbar-create:active {
+  transform: scale(0.98);
+}
+
+
+/* EXPORTAR EXCEL */
+
+.module-toolbar-export {
+  min-height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.5rem;
+
+  padding: 0.65rem 1.1rem;
+
+  border: none;
+  border-radius: 8px;
+
+  background-color: #2563eb;
+  color: #fff;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+
+  transition:
+    background-color 0.2s,
+    transform 0.15s;
+}
+
+.module-toolbar-export:hover {
+  background-color: #1d4ed8;
+}
+
+.module-toolbar-export:active {
+  transform: scale(0.98);
+}
+
+/* FILTROS */
+
+.module-toolbar-filter {
+  min-height: 42px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 0.5rem;
+
+  padding: 0 0.8rem;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+
+  background-color: #fff;
+  color: #64748b;
+
+  box-sizing: border-box;
+}
+
+.module-toolbar-filter select {
+  min-width: 180px;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+
+  color: #334155;
+
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+/* BUSCADOR */
+
+.module-toolbar-search {
+  width: min(320px, 100%);
+}
+
+.module-toolbar-search input {
+  width: 100%;
+  min-height: 42px;
+
+  padding: 0.7rem 1rem;
+
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+
+  outline: none;
+
+  box-sizing: border-box;
+
+  background-color: #fff;
+
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.module-toolbar-search input:focus {
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* TABLET */
+
+@media (max-width: 1023px) {
+  .module-toolbar-actions {
+    justify-content: flex-start;
+  }
+
+  .module-toolbar-search {
+    flex: 1;
+    min-width: 240px;
+  }
+}
+
+/* MÓVIL */
+
+@media (max-width: 767px) {
+  .module-toolbar {
+    margin-bottom: 1rem;
+  }
+
+  .module-toolbar-actions {
+    display: grid;
+
+    grid-template-columns: 1fr;
+
+    gap: 0.7rem;
+  }
+
+  .module-toolbar-create {
+    width: 100%;
+  }
+
+    .module-toolbar-export {
+    width: 100%;
+  }
+
+  .module-toolbar-filter {
+    width: 100%;
+  }
+
+  .module-toolbar-filter select {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .module-toolbar-search {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .module-toolbar-create,
+  .module-toolbar-export,
+  .module-toolbar-filter,
+  .module-toolbar-search input {
+    min-height: 46px;
+  }
+
+  .module-toolbar-create,
+  .module-toolbar-export {
+    padding-inline: 0.85rem;
+  }
+}

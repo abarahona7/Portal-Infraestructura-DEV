@@ -1,5 +1,8 @@
+import { useState } from 'react';
+
 import {
   X,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Users,
@@ -9,47 +12,93 @@ import {
   Mail,
   Globe2,
   Phone,
+  Building2,
 } from 'lucide-react';
 
 import './Sidebar.css';
 
-const modules = [
+const GROUPS_KEY = 'portal-infra-ti-chile-sidebar-groups';
+
+const navigationGroups = [
   {
-    id: 'usuarios',
-    icon: Users,
-    label: 'Usuarios',
+    id: 'usuarios-group',
+    parent: {
+      id: 'usuarios',
+      icon: Users,
+      label: 'Usuarios',
+    },
+    children: [
+      {
+        id: 'anexos',
+        icon: Phone,
+        label: 'Anexos',
+      },
+      {
+        id: 'perfiles',
+        icon: Mail,
+        label: 'Perfiles Genéricos',
+      },
+      {
+        id: 'departamentos',
+        icon: Building2,
+        label: 'Departamentos / Subáreas',
+      },
+    ],
   },
   {
-    id: 'equipos',
-    icon: Package,
-    label: 'Equipos',
+    id: 'equipos-group',
+    parent: {
+      id: 'equipos',
+      icon: Package,
+      label: 'Equipos',
+    },
+    children: [
+      {
+        id: 'pcs-genericos',
+        icon: Monitor,
+        label: 'PCs Genéricos',
+      },
+    ],
   },
   {
-    id: 'pcs-genericos',
-    icon: Monitor,
-    label: 'PCs Genéricos',
-  },
-  {
-    id: 'servidores',
-    icon: Server,
-    label: 'Servidores',
-  },
-  {
-    id: 'perfiles',
-    icon: Mail,
-    label: 'Perfiles Genéricos',
-  },
-  {
-    id: 'ips',
-    icon: Globe2,
-    label: 'Gestión de IPs',
-  },
-  {
-    id: 'anexos',
-    icon: Phone,
-    label: 'Anexos',
+    id: 'ips-group',
+    parent: {
+      id: 'ips',
+      icon: Globe2,
+      label: 'Gestión de IPs',
+    },
+    children: [
+      {
+        id: 'servidores',
+        icon: Server,
+        label: 'Servidores',
+      },
+    ],
   },
 ];
+
+const readSavedGroups = () => {
+  try {
+    const rawValue = sessionStorage.getItem(GROUPS_KEY);
+
+    if (!rawValue) {
+      return {};
+    }
+
+    const parsed = JSON.parse(rawValue);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveGroups = (groups) => {
+  try {
+    sessionStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
+  } catch {
+    // La navegación sigue funcionando aunque sessionStorage no esté disponible.
+  }
+};
 
 export default function Sidebar({
   isOpen,
@@ -61,6 +110,73 @@ export default function Sidebar({
   onSelectTab,
   role,
 }) {
+  const [openGroups, setOpenGroups] = useState(readSavedGroups);
+
+  const toggleGroup = (groupId) => {
+    setOpenGroups((current) => {
+      const next = {
+        ...current,
+        [groupId]: !current[groupId],
+      };
+
+      saveGroups(next);
+      return next;
+    });
+  };
+
+  const groupContainsActiveTab = (group) => (
+    group.parent.id === activeTab ||
+    group.children.some((child) => child.id === activeTab)
+  );
+
+  const isGroupOpen = (group) => {
+    if (collapsed) {
+      return false;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(openGroups, group.id)) {
+      return Boolean(openGroups[group.id]);
+    }
+
+    return groupContainsActiveTab(group);
+  };
+
+  const renderModuleButton = (module, { child = false } = {}) => {
+    const active = activeTab === module.id;
+    const Icon = module.icon;
+
+    return (
+      <button
+        key={module.id}
+        type="button"
+        className={[
+          child ? 'sidebar-child-button' : 'sidebar-module-button',
+          active ? 'sidebar-module-active' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        onClick={() => onSelectTab(module.id)}
+        title={collapsed ? module.label : undefined}
+      >
+        <span className="sidebar-module-icon">
+          <Icon size={child ? 16 : 18} />
+        </span>
+
+        <span className="sidebar-module-content">
+          <span className="sidebar-module-label">
+            {module.label}
+          </span>
+
+          {active && activeCount !== undefined && (
+            <span className="sidebar-module-count">
+              {activeCount}
+            </span>
+          )}
+        </span>
+      </button>
+    );
+  };
+
   return (
     <>
       <div
@@ -100,11 +216,7 @@ export default function Sidebar({
             type="button"
             className="sidebar-collapse-button"
             onClick={onToggleCollapse}
-            title={
-              collapsed
-                ? 'Expandir menú'
-                : 'Contraer menú'
-            }
+            title={collapsed ? 'Expandir menú' : 'Contraer menú'}
           >
             {collapsed ? (
               <ChevronRight size={18} />
@@ -124,55 +236,81 @@ export default function Sidebar({
         </div>
 
         <nav className="sidebar-nav">
-          {modules
-            .filter((module) =>
-              role === 'Visualizador'
-                ? module.id === 'anexos'
-                : true
-            )
-            .map((module) => {
-            const active =
-              activeTab === module.id;
+          {role === 'Visualizador' ? (
+            renderModuleButton({
+              id: 'anexos',
+              icon: Phone,
+              label: 'Anexos',
+            })
+          ) : (
+            navigationGroups.map((group) => {
+              const expanded = isGroupOpen(group);
+              const groupActive = groupContainsActiveTab(group);
+              const ParentIcon = group.parent.icon;
 
-            const Icon = module.icon;
-
-            return (
-              <button
-                key={module.id}
-                type="button"
-                className={`sidebar-module-button ${
-                  active
-                    ? 'sidebar-module-active'
-                    : ''
-                }`}
-                onClick={() =>
-                  onSelectTab(module.id)
-                }
-                title={
-                  collapsed
-                    ? module.label
-                    : undefined
-                }
-              >
-                <span className="sidebar-module-icon">
-                  <Icon size={18} />
-                </span>
-
-                <span className="sidebar-module-content">
-                  <span className="sidebar-module-label">
-                    {module.label}
-                  </span>
-
-                  {active &&
-                    activeCount !== undefined && (
-                      <span className="sidebar-module-count">
-                        {activeCount}
+              return (
+                <div
+                  key={group.id}
+                  className={`sidebar-group ${groupActive ? 'sidebar-group-active' : ''}`}
+                >
+                  <div className="sidebar-group-row">
+                    <button
+                      type="button"
+                      className={`sidebar-module-button sidebar-group-parent ${
+                        activeTab === group.parent.id
+                          ? 'sidebar-module-active'
+                          : ''
+                      }`}
+                      onClick={() => onSelectTab(group.parent.id)}
+                      title={collapsed ? group.parent.label : undefined}
+                    >
+                      <span className="sidebar-module-icon">
+                        <ParentIcon size={18} />
                       </span>
+
+                      <span className="sidebar-module-content">
+                        <span className="sidebar-module-label">
+                          {group.parent.label}
+                        </span>
+
+                        {activeTab === group.parent.id &&
+                          activeCount !== undefined && (
+                            <span className="sidebar-module-count">
+                              {activeCount}
+                            </span>
+                          )}
+                      </span>
+                    </button>
+
+                    {!collapsed && (
+                      <button
+                        type="button"
+                        className={`sidebar-group-toggle ${
+                          expanded ? 'is-open' : ''
+                        }`}
+                        onClick={() => toggleGroup(group.id)}
+                        title={expanded ? 'Contraer grupo' : 'Expandir grupo'}
+                        aria-label={`${expanded ? 'Contraer' : 'Expandir'} ${group.parent.label}`}
+                        aria-expanded={expanded}
+                      >
+                        <ChevronDown size={16} />
+                      </button>
                     )}
-                </span>
-              </button>
-            );
-          })}
+                  </div>
+
+                  {expanded && (
+                    <div className="sidebar-children">
+                      {group.children.map((child) => (
+                        <div key={child.id}>
+                          {renderModuleButton(child, { child: true })}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </nav>
 
         <div className="sidebar-footer">
@@ -185,13 +323,8 @@ export default function Sidebar({
             </span>
           ) : (
             <>
-              <strong>
-                Farmacias Dr. Simi
-              </strong>
-
-              <span>
-                Infraestructura TI
-              </span>
+              <strong>Farmacias Dr. Simi</strong>
+              <span>Infraestructura TI</span>
             </>
           )}
         </div>

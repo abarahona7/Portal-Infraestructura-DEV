@@ -43,6 +43,7 @@ export default function ModuleEditModal({
   onSubmit,
   onClose,
   departments,
+  departmentCatalog,
   usuarios,
   availableIps,
   formatEquipmentType,
@@ -61,7 +62,7 @@ export default function ModuleEditModal({
         <UsuarioEditForm
           usuario={editingItem}
           onChange={setEditingItem}
-          departments={departments}
+          departments={departmentCatalog}
           availableIps={availableIps}
         />
       )}
@@ -80,7 +81,7 @@ export default function ModuleEditModal({
         <PerfilEditForm
           perfil={editingItem}
           onChange={setEditingItem}
-          departments={departments}
+          departments={departmentCatalog}
         />
       )}
 

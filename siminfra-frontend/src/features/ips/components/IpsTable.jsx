@@ -12,34 +12,51 @@ export default function IpsTable({
   onEdit,
   onDelete,
 }) {
-  const Actions = ({ ip }) => (
-    <div className="ips-actions">
-      <button
-        type="button"
-        className="ip-action ip-action-edit"
-        onClick={() => onEdit(ip)}
-        title="Editar"
-        aria-label="Editar IP"
-      >
-        <Edit size={18} />
-      </button>
+  const Actions = ({ ip }) => {
+    const deleteBlocked = Boolean(ip.usuario);
 
-      <button
-        type="button"
-        className="ip-action ip-action-delete"
-        onClick={() =>
-          onDelete(
-            ip.id,
-            ip.direccion_ip
-          )
-        }
-        title="Eliminar"
-        aria-label="Eliminar IP"
-      >
-        <Trash2 size={18} />
-      </button>
-    </div>
-  );
+    return (
+      <div className="ips-actions">
+        <button
+          type="button"
+          className="ip-action ip-action-edit"
+          onClick={() => onEdit(ip)}
+          title="Editar"
+          aria-label="Editar IP"
+        >
+          <Edit size={18} />
+        </button>
+
+        <button
+          type="button"
+          className="ip-action ip-action-delete"
+          onClick={() => {
+            if (!deleteBlocked) {
+              onDelete(ip.id, ip.direccion_ip);
+            }
+          }}
+          disabled={deleteBlocked}
+          title={
+            deleteBlocked
+              ? 'Libera esta IP desde la ficha del usuario antes de eliminarla'
+              : 'Eliminar'
+          }
+          aria-label={
+            deleteBlocked
+              ? 'IP asignada a usuario; no se puede eliminar'
+              : 'Eliminar IP'
+          }
+          style={
+            deleteBlocked
+              ? { opacity: 0.4, cursor: 'not-allowed' }
+              : undefined
+          }
+        >
+          <Trash2 size={18} />
+        </button>
+      </div>
+    );
+  };
 
   return (
     <>

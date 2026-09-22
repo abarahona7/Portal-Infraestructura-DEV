@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.db.models.signals import post_save, pre_save, pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
@@ -9,6 +10,11 @@ ESTADOS = [
     ('ACTIVO', 'Activo'),
     ('LICENCIA', 'En Licencia'),
     ('BAJA', 'Dado de Baja'),
+]
+
+ESTADOS_PERFIL = [
+    ('ACTIVO', 'Activo'),
+    ('INACTIVO', 'Inactivo'),
 ]
 
 ESTADOS_EQUIPO = [
@@ -46,11 +52,106 @@ ESTADOS_ANEXO = [
     ('ASIGNADO', 'Asignado'),
 ]
 
+def _normalize_spaces(value):
+    if value is None:
+        return None
+    return " ".join(str(value).strip().split())
+
+
+def _normalize_key(value):
+    value = _normalize_spaces(value) or ""
+    return value.casefold()
+
+
+class Departamento(models.Model):
+    nombre = models.CharField(max_length=100)
+    nombre_normalizado = models.CharField(
+        max_length=100,
+        unique=True,
+        editable=False,
+    )
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['nombre']
+        verbose_name = 'Departamento'
+        verbose_name_plural = 'Departamentos'
+
+    def clean(self):
+        self.nombre = _normalize_spaces(self.nombre)
+        if not self.nombre:
+            raise ValidationError({'nombre': 'El nombre del departamento es obligatorio.'})
+        self.nombre_normalizado = _normalize_key(self.nombre)
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.nombre
+
+
+class SubArea(models.Model):
+    departamento = models.ForeignKey(
+        Departamento,
+        on_delete=models.PROTECT,
+        related_name='subareas',
+    )
+    nombre = models.CharField(max_length=100)
+    nombre_normalizado = models.CharField(
+        max_length=100,
+        editable=False,
+    )
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['departamento__nombre', 'nombre']
+        verbose_name = 'Subárea'
+        verbose_name_plural = 'Subáreas'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['departamento', 'nombre_normalizado'],
+                name='uniq_subarea_departamento_nombre_norm',
+            )
+        ]
+
+    def clean(self):
+        self.nombre = _normalize_spaces(self.nombre)
+        if not self.nombre:
+            raise ValidationError({'nombre': 'El nombre de la subárea es obligatorio.'})
+        self.nombre_normalizado = _normalize_key(self.nombre)
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.departamento.nombre} / {self.nombre}"
+
+
 class Usuario(models.Model):
     nombre_completo = models.CharField(max_length=150)
     usuario_red = models.CharField(max_length=50, unique=True)
     correo_corp = models.EmailField(unique=True)
-    dpto_area = models.CharField(max_length=100)
+    dpto_area = models.CharField(max_length=100, blank=True, default='')
+    departamento = models.ForeignKey(
+        Departamento,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='usuarios',
+    )
+    subarea = models.ForeignKey(
+        SubArea,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='usuarios',
+    )
     cargo = models.CharField(max_length=100, null=True, blank=True)
     hostname = models.CharField(max_length=50, null=True, blank=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='ACTIVO', null=True, blank=True)
@@ -64,7 +165,35 @@ class Usuario(models.Model):
     vpn_cisco = models.BooleanField(default=False)
     password_vpn = models.CharField(max_length=255, null=True, blank=True)
 
+    def clean(self):
+        if self.subarea_id and not self.departamento_id:
+            raise ValidationError({
+                'departamento': 'Debe indicar el departamento de la subárea seleccionada.'
+            })
+
+        if self.subarea_id and self.departamento_id:
+            if self.subarea.departamento_id != self.departamento_id:
+                raise ValidationError({
+                    'subarea': 'La subárea seleccionada no pertenece al departamento indicado.'
+                })
+
     def save(self, *args, **kwargs):
+        self.nombre_completo = _normalize_spaces(self.nombre_completo) or ''
+        self.usuario_red = (_normalize_spaces(self.usuario_red) or '').lower()
+        self.correo_corp = (_normalize_spaces(self.correo_corp) or '').lower()
+        self.dpto_area = _normalize_spaces(self.dpto_area) or ''
+        self.cargo = _normalize_spaces(self.cargo) if self.cargo else self.cargo
+        self.hostname = _normalize_spaces(self.hostname) if self.hostname else self.hostname
+        self.gmail = (_normalize_spaces(self.gmail) or '').lower() if self.gmail else self.gmail
+        self.celular = _normalize_spaces(self.celular) if self.celular else self.celular
+        self.telefono = _normalize_spaces(self.telefono) if self.telefono else self.telefono
+        self.anexo = _normalize_spaces(self.anexo) if self.anexo else self.anexo
+
+        if self.departamento_id:
+            self.dpto_area = self.departamento.nombre
+
+        self.clean()
+
         if self.password_gmail and not is_encrypted(self.password_gmail):
             self.password_gmail = encrypt_val(self.password_gmail)
 
@@ -417,21 +546,70 @@ class PerfilGenerico(models.Model):
     usuario = models.CharField(max_length=100, unique=True)
     password = models.CharField(max_length=255, null=True, blank=True)
     correo = models.EmailField(null=True, blank=True)
-    dpto_area = models.CharField(max_length=100, null=True, blank=True)
+    # Campo legado conservado temporalmente para compatibilidad con datos
+    # anteriores e importadores. La fuente estructurada es departamento/subarea.
+    dpto_area = models.CharField(max_length=100, blank=True, default='')
+    departamento = models.ForeignKey(
+        Departamento,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='perfiles_genericos',
+    )
+    subarea = models.ForeignKey(
+        SubArea,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='perfiles_genericos',
+    )
     tipo = models.CharField(max_length=20, default='On Premise')
     estado = models.CharField(
         max_length=20,
-        choices=ESTADOS,
+        choices=ESTADOS_PERFIL,
         default='ACTIVO',
-        null=True,
-        blank=True
     )
-    observaciones = models.TextField(
-        null=True,
-        blank=True
-    )
+    observaciones = models.TextField(null=True, blank=True)
+
+    class Meta:
+        ordering = [
+            'departamento__nombre',
+            'subarea__nombre',
+            'nombre',
+            'usuario',
+        ]
+
+    def clean(self):
+        if self.subarea_id and not self.departamento_id:
+            raise ValidationError({
+                'departamento': 'Debe indicar el departamento de la subárea seleccionada.'
+            })
+
+        if self.subarea_id and self.departamento_id:
+            if self.subarea.departamento_id != self.departamento_id:
+                raise ValidationError({
+                    'subarea': 'La subárea seleccionada no pertenece al departamento indicado.'
+                })
 
     def save(self, *args, **kwargs):
+        self.nombre = _normalize_spaces(self.nombre) if self.nombre else self.nombre
+        self.usuario = _normalize_spaces(self.usuario) or ''
+        self.correo = (_normalize_spaces(self.correo) or '').lower() or None
+        self.observaciones = (
+            _normalize_spaces(self.observaciones)
+            if self.observaciones
+            else self.observaciones
+        )
+
+        if self.subarea_id:
+            self.dpto_area = self.subarea.nombre
+        elif self.departamento_id:
+            self.dpto_area = self.departamento.nombre
+        else:
+            self.dpto_area = _normalize_spaces(self.dpto_area) or ''
+
+        self.clean()
+
         if self.password and not is_encrypted(self.password):
             self.password = encrypt_val(self.password)
 
@@ -950,6 +1128,16 @@ def track_historial_usuario(sender, instance, **kwargs):
             add_cambio("Hostname", usr_previo.hostname, instance.hostname)
             add_cambio("Cargo", usr_previo.cargo, instance.cargo)
             add_cambio("Departamento", usr_previo.dpto_area, instance.dpto_area)
+            add_cambio(
+                "Departamento (catálogo)",
+                usr_previo.departamento.nombre if usr_previo.departamento else None,
+                instance.departamento.nombre if instance.departamento else None
+            )
+            add_cambio(
+                "Subárea",
+                usr_previo.subarea.nombre if usr_previo.subarea else None,
+                instance.subarea.nombre if instance.subarea else None
+            )
             add_cambio("Usuario Red", usr_previo.usuario_red, instance.usuario_red)
             add_cambio("Correo Corp.", usr_previo.correo_corp, instance.correo_corp)
             add_cambio("Gmail", usr_previo.gmail, instance.gmail)

@@ -1,7 +1,8 @@
+import { getIpSegment } from '../../../utils/ipHelpers';
+
 export default function IpEditForm({
   ip,
   onChange,
-  usuarios,
   onIpChange,
 }) {
   const updateField = (field, value) => {
@@ -28,16 +29,14 @@ export default function IpEditForm({
 
   const isUserAssigned = Boolean(ip.usuario);
   const isOtherAssigned = Boolean(ip.asignado_otro?.trim());
-
-  const usuariosAsignables = usuarios.filter(
-    (usuario) => usuario.estado === 'ACTIVO'
-  );
+  const isReserved = isUserAssigned || isOtherAssigned;
+  const segment = getIpSegment(ip.direccion_ip || '');
 
   return (
     <>
       <div>
         <label style={labelStyle}>
-          Dirección IP * (Solo números y puntos, máx. 15 caracteres)
+          Dirección IP * (debe pertenecer a un segmento administrado)
         </label>
 
         <input
@@ -48,82 +47,55 @@ export default function IpEditForm({
           onChange={(e) => onIpChange(e.target.value)}
           style={inputStyle}
         />
-      </div>
 
-      <div>
-        <label style={labelStyle}>
-          Estado de la IP *
-        </label>
-
-        {isUserAssigned ? (
-          <div
-            style={{
-              ...inputStyle,
-                backgroundColor: '#fee2e2',
-                color: '#b91c1c',
-              fontWeight: 700,
-            }}
-          >
-            Reservada automáticamente al usuario
-          </div>
-        ) : (
-          <select
-            value={
-              isOtherAssigned
-                ? 'RESERVADA'
-                : ['LIBRE', 'RESERVADA'].includes(ip.estado)
-                  ? ip.estado
-                  : 'LIBRE'
-            }
-            onChange={(e) => updateField('estado', e.target.value)}
-            disabled={isOtherAssigned}
-            style={{
-              ...inputStyle,
-              backgroundColor: isOtherAssigned ? '#f8fafc' : '#fff',
-              cursor: isOtherAssigned ? 'not-allowed' : 'pointer',
-            }}
-          >
-            <option value="LIBRE">Libre</option>
-            <option value="RESERVADA">Reservada</option>
-          </select>
+        {ip.direccion_ip && segment && (
+          <small style={{ color: '#64748b' }}>
+            Segmento: {segment.label} · {segment.network}
+          </small>
         )}
       </div>
 
       <div>
-        <label
-          style={{
-            ...labelStyle,
-            color: '#2563eb',
-          }}
-        >
-          Asignado a (Usuario)
+        <label style={labelStyle}>
+          Estado de la IP
         </label>
 
-        <select
-          value={ip.usuario || ''}
-          onChange={(e) => {
-            const usuarioId = e.target.value || null;
-
-            onChange({
-              ...ip,
-              usuario: usuarioId,
-              asignado_otro: '',
-              estado: usuarioId ? 'RESERVADA' : 'LIBRE',
-            });
+        <div
+          style={{
+            ...inputStyle,
+            backgroundColor: '#f8fafc',
+            color: isReserved ? '#b45309' : '#15803d',
+            fontWeight: 700,
           }}
-          style={inputStyle}
         >
-          <option value="">Sin Asignar (Ninguno)</option>
-
-          {usuariosAsignables.map((usuario) => (
-            <option key={usuario.id} value={usuario.id}>
-              {usuario.nombre_completo} ({usuario.usuario_red})
-            </option>
-          ))}
-        </select>
+          {isReserved ? 'Reservada' : 'Libre'} · automático
+        </div>
       </div>
 
-      {!ip.usuario && (
+      {isUserAssigned && (
+        <div>
+          <label style={{ ...labelStyle, color: '#2563eb' }}>
+            Usuario asignado
+          </label>
+
+          <div
+            style={{
+              ...inputStyle,
+              backgroundColor: '#eff6ff',
+              color: '#1d4ed8',
+              fontWeight: 700,
+            }}
+          >
+            {ip.usuario_nombre || 'Usuario asignado'}
+          </div>
+
+          <small style={{ color: '#64748b' }}>
+            Para cambiar o liberar esta asignación debes editar la ficha del usuario.
+          </small>
+        </div>
+      )}
+
+      {!isUserAssigned && (
         <div>
           <label
             style={{
@@ -131,24 +103,21 @@ export default function IpEditForm({
               color: '#0284c7',
             }}
           >
-            Otros (Servidor, CCTV, Impresora, etc.)
+            Asignado a otro artefacto o servicio
           </label>
 
           <input
             type="text"
-            placeholder="Ej: Servidor DB / CCTV Piso 1"
+            maxLength={150}
+            placeholder="Ej: Servidor DB / CCTV Piso 1 / Impresora Finanzas"
             value={ip.asignado_otro || ''}
-            onChange={(e) => {
-              const value = e.target.value;
-
-              onChange({
-                ...ip,
-                asignado_otro: value,
-                estado: value.trim() ? 'RESERVADA' : 'LIBRE',
-              });
-            }}
+            onChange={(e) => updateField('asignado_otro', e.target.value)}
             style={inputStyle}
           />
+
+          <small style={{ color: '#64748b' }}>
+            Las IP de usuarios se asignan únicamente desde el módulo Usuarios.
+          </small>
         </div>
       )}
 
@@ -159,6 +128,7 @@ export default function IpEditForm({
 
         <input
           type="text"
+          maxLength={255}
           value={ip.observacion || ''}
           onChange={(e) => updateField('observacion', e.target.value)}
           style={inputStyle}

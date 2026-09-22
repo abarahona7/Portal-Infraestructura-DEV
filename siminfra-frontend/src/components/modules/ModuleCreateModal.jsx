@@ -43,6 +43,7 @@ export default function ModuleCreateModal({
   onSubmit,
   onClose,
   departments,
+  departmentCatalog,
   usuarios,
   availableIps,
   formatEquipmentType,
@@ -61,7 +62,7 @@ export default function ModuleCreateModal({
         <UsuarioCreateForm
           usuario={newItem}
           onChange={setNewItem}
-          departments={departments}
+          departments={departmentCatalog}
           availableIps={availableIps}
         />
       )}
@@ -80,7 +81,7 @@ export default function ModuleCreateModal({
         <PerfilCreateForm
           perfil={newItem}
           onChange={setNewItem}
-          departments={departments}
+          departments={departmentCatalog}
         />
       )}
 

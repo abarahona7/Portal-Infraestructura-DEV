@@ -11,7 +11,6 @@ export default function ModuleTable({
   data,
   formatEquipmentType,
   visibleProfilePasswords,
-  setVisibleProfilePasswords,
   renderUsuarioStatusBadge,
   renderAccountTypeBadge,
   renderIpStatusBadge,
@@ -20,6 +19,7 @@ export default function ModuleTable({
   onShowEquipmentHistory,
   onEdit,
   onDelete,
+  onToggleProfileStatus,
   renderAnexoStatusBadge,
   onShowAnexoHistory,
   onShowPCGenericoHistory,
@@ -60,10 +60,9 @@ export default function ModuleTable({
       <PerfilesTable
         perfiles={data}
         visiblePasswords={visibleProfilePasswords}
-        setVisiblePasswords={setVisibleProfilePasswords}
         renderAccountTypeBadge={renderAccountTypeBadge}
         onEdit={onEdit}
-        onDelete={onDelete}
+        onToggleStatus={onToggleProfileStatus}
         role={role}
         onRevealSecret={onRevealSecret}
       />

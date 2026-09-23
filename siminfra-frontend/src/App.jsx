@@ -907,7 +907,7 @@ export default function App() {
         {/* SEGMENTOS DE IP */}
         {tab === 'ips' && (
           <IpSegmentCards
-            ips={ipsList}
+            ips={data}
             selectedSegment={selectedIpSegment}
             onSelectSegment={setSelectedIpSegment}
           />

@@ -65,19 +65,22 @@ export default function DepartamentosSubareasPage({
 
   const filteredDepartments = useMemo(() => {
     const term = normalize(search);
+    const matches = !term
+      ? departamentos
+      : departamentos.filter((department) => {
+          const departmentMatch = normalize(department.nombre).includes(term);
+          const subareaMatch = (department.subareas || []).some((subarea) =>
+            normalize(subarea.nombre).includes(term)
+          );
 
-    if (!term) {
-      return departamentos;
-    }
+          return departmentMatch || subareaMatch;
+        });
 
-    return departamentos.filter((department) => {
-      const departmentMatch = normalize(department.nombre).includes(term);
-      const subareaMatch = (department.subareas || []).some((subarea) =>
-        normalize(subarea.nombre).includes(term)
-      );
-
-      return departmentMatch || subareaMatch;
-    });
+    return [...matches].sort((left, right) =>
+      (left.nombre || '').localeCompare(right.nombre || '', 'es', {
+        sensitivity: 'base',
+      })
+    );
   }, [departamentos, search]);
 
   useEffect(() => {
@@ -526,7 +529,13 @@ export default function DepartamentosSubareasPage({
 
             {(selectedDepartment.subareas || []).length ? (
               <div className="subarea-chip-grid">
-                {(selectedDepartment.subareas || []).map((subarea) => (
+                {[...(selectedDepartment.subareas || [])]
+                  .sort((left, right) =>
+                    (left.nombre || '').localeCompare(right.nombre || '', 'es', {
+                      sensitivity: 'base',
+                    })
+                  )
+                  .map((subarea) => (
                   <div
                     key={subarea.id}
                     className={`subarea-chip ${!subarea.activo ? 'is-disabled' : ''}`}
@@ -570,7 +579,7 @@ export default function DepartamentosSubareasPage({
                       )}
                     </div>
                   </div>
-                ))}
+                  ))}
               </div>
             ) : (
               <div className="subareas-empty">

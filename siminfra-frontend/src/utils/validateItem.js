@@ -60,8 +60,10 @@ export const validateItem = (tab, item, data = []) => {
     const ip = normalize(item.ip);
     const hostname = normalize(item.hostname);
 
-    if (!ip) return { valid: false, message: 'Debe ingresar la dirección IP del servidor.' };
-    if (!isValidIPv4(ip)) return { valid: false, message: 'Ingrese una dirección IPv4 válida (ejemplo: 172.23.10.15).' };
+    if (!ip) return { valid: false, message: 'Debe seleccionar la dirección IP del servidor.' };
+    if (!isValidIPv4(ip) || !ip.startsWith('172.23.1.')) {
+      return { valid: false, message: 'Seleccione una IP disponible del segmento 172.23.1.0/24.' };
+    }
     if (data.some((servidor) => servidor.id !== item.id && normalize(servidor.ip) === ip)) {
       return { valid: false, message: `Error: La IP "${ip}" ya está registrada en otro servidor.` };
     }

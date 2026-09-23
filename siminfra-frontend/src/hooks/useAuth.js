@@ -32,7 +32,10 @@ const clearTabSession = () => {
 const requestBootstrapRefresh = () => {
   if (!bootstrapPromise) {
     bootstrapPromise = apiClient
-      .post('/auth/refresh/')
+      .post('/auth/refresh/', {}, {
+        headers: { 'X-Portal-Activity': '1' },
+        skipAuth: true,
+      })
       .then(({ data }) => data)
       .finally(() => {
         bootstrapPromise = null;
@@ -62,7 +65,10 @@ export const useAuth = () => {
 
   const refresh = useCallback(async () => {
     try {
-      const { data } = await apiClient.post('/auth/refresh/');
+      const { data } = await apiClient.post('/auth/refresh/', {}, {
+        headers: { 'X-Portal-Activity': '1' },
+        skipAuth: true,
+      });
       applySession(data);
       return data.access;
     } catch {
@@ -117,6 +123,8 @@ export const useAuth = () => {
       const { data } = await apiClient.post('/auth/login/', {
         username,
         password,
+      }, {
+        skipAuth: true,
       });
 
       applySession(data);
@@ -133,7 +141,7 @@ export const useAuth = () => {
 
   const logout = useCallback(async () => {
     try {
-      await apiClient.post('/auth/logout/');
+      await apiClient.post('/auth/logout/', {}, { skipAuth: true });
     } catch {
       // Aunque el backend no responda, limpiamos la sesión visible.
     }

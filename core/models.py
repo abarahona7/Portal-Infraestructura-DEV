@@ -1,6 +1,8 @@
+import uuid
+
 from django.db import models
 from django.core.exceptions import ValidationError
-from django.db.models.signals import post_save, pre_save, pre_delete
+from django.db.models.signals import post_delete, post_save, pre_save, pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
 from .crypto import encrypt_val, is_encrypted
@@ -165,6 +167,14 @@ class Usuario(models.Model):
     vpn_cisco = models.BooleanField(default=False)
     password_vpn = models.CharField(max_length=255, null=True, blank=True)
 
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=['estado', 'departamento'],
+                name='idx_usr_estado_dpto',
+            ),
+        ]
+
     def clean(self):
         if self.subarea_id and not self.departamento_id:
             raise ValidationError({
@@ -255,6 +265,12 @@ class Anexo(models.Model):
 
     class Meta:
         ordering = ['numero_anexo']
+        indexes = [
+            models.Index(
+                fields=['estado', 'numero_anexo'],
+                name='idx_anexo_estado_num',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.numero_anexo} - {self.estado}"
@@ -324,6 +340,12 @@ class IP(models.Model):
         verbose_name = 'IP'
         verbose_name_plural = 'IPs'
         ordering = ['direccion_ip']
+        indexes = [
+            models.Index(
+                fields=['estado', 'direccion_ip'],
+                name='idx_ip_estado_dir',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.direccion_ip} - {self.estado}"
@@ -333,9 +355,12 @@ class IP(models.Model):
 # =========================================
 
 class Servidor(models.Model):
-    ip = models.GenericIPAddressField(
-        protocol='IPv4',
-        unique=True
+    ip = models.OneToOneField(
+        IP,
+        on_delete=models.PROTECT,
+        related_name='servidor',
+        null=True,
+        blank=True,
     )
 
     hostname = models.CharField(
@@ -354,7 +379,8 @@ class Servidor(models.Model):
         verbose_name_plural = 'Servidores'
 
     def __str__(self):
-        return f"{self.hostname} - {self.ip}"
+        direccion_ip = self.ip.direccion_ip if self.ip_id else 'Sin IP'
+        return f"{self.hostname} - {direccion_ip}"
 
 
 class HistorialUsuario(models.Model):
@@ -451,9 +477,17 @@ class Equipamiento(models.Model):
         blank=True
     )
 
-
-
-    
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=['tipo', 'estado'],
+                name='idx_equipo_tipo_estado',
+            ),
+            models.Index(
+                fields=['usuario', 'tipo'],
+                name='idx_equipo_usr_tipo',
+            ),
+        ]
 
     def save(self, *args, **kwargs):
 
@@ -577,6 +611,12 @@ class PerfilGenerico(models.Model):
             'subarea__nombre',
             'nombre',
             'usuario',
+        ]
+        indexes = [
+            models.Index(
+                fields=['estado', 'departamento'],
+                name='idx_perfil_estado_dpto',
+            ),
         ]
 
     def clean(self):
@@ -745,6 +785,29 @@ class SecurityAuditLog(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+
+class PortalSession(models.Model):
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+    user = models.ForeignKey(
+        'auth.User',
+        on_delete=models.CASCADE,
+        related_name='portal_sessions',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_activity = models.DateTimeField(default=timezone.now)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    @property
+    def is_revoked(self):
+        return self.revoked_at is not None
 
 # --- HISTORIAL DE PCs GENERICOS ---
 
@@ -1107,6 +1170,20 @@ def sync_ip_con_usuario(sender, instance, **kwargs):
     else:
 
             instance.estado = 'LIBRE'
+
+
+@receiver(post_delete, sender=Servidor)
+def liberar_ip_al_eliminar_servidor(sender, instance, **kwargs):
+    if not instance.ip_id:
+        return
+
+    IP.objects.filter(
+        pk=instance.ip_id,
+        usuario__isnull=True,
+    ).update(
+        asignado_otro=None,
+        estado='LIBRE',
+    )
 
 
 @receiver(pre_save, sender=Usuario)

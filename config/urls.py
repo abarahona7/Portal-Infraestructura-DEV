@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from core.views import UsuarioViewSet, EquipamientoViewSet, PerfilGenericoViewSet, IPViewSet, AnexoViewSet, PCGenericoViewSet, ServidorViewSet, DepartamentoViewSet, SubAreaViewSet
-from core.auth_views import LoginView, RefreshCookieView, LogoutView, MeView
+from core.views import UsuarioViewSet, EquipamientoViewSet, PerfilGenericoViewSet, IPViewSet, AnexoViewSet, PCGenericoViewSet, ServidorViewSet, DepartamentoViewSet, SubAreaViewSet, ReferenceDataView
+from core.auth_views import ActivityView, LoginView, RefreshCookieView, LogoutView, MeView
 from core.security_views import RevealSecretView
 
 router = DefaultRouter()
@@ -21,7 +21,9 @@ urlpatterns = [
     path('api/auth/login/', LoginView.as_view(), name='login'),
     path('api/auth/refresh/', RefreshCookieView.as_view(), name='refresh'),
     path('api/auth/logout/', LogoutView.as_view(), name='logout'),
+    path('api/auth/activity/', ActivityView.as_view(), name='activity'),
     path('api/auth/me/', MeView.as_view(), name='me'),
     path('api/secrets/reveal/', RevealSecretView.as_view(), name='reveal-secret'),
+    path('api/reference-data/', ReferenceDataView.as_view(), name='reference-data'),
     path('api/', include(router.urls)),
 ]

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import PasswordInput from './PasswordInput';
+import AvailableIpSelector from './AvailableIpSelector';
 
 export default function UsuarioCreateForm({
   usuario,
@@ -213,36 +214,12 @@ export default function UsuarioCreateForm({
         onToggle={() => setShowPasswordVpn((prev) => !prev)}
       />
 
-      <div>
-        <label style={{ ...labelStyle, color: '#16a34a' }}>
-          Seleccionar IP Disponible
-        </label>
-        <select
-          value={usuario.ip_seleccionada ?? ''}
-          onChange={(e) =>
-            updateField('ip_seleccionada', e.target.value || null)
-          }
-          disabled={ipAssignmentDisabled}
-          style={{
-            ...inputStyle,
-            fontWeight: 'bold',
-            color: ipAssignmentDisabled ? '#94a3b8' : '#15803d',
-            backgroundColor: ipAssignmentDisabled ? '#f8fafc' : '#fff',
-          }}
-        >
-          <option value="">Sin IP Asignada</option>
-          {availableIps.map((ip) => (
-            <option key={ip.id} value={ip.direccion_ip}>
-              {ip.direccion_ip} ({ip.observacion || 'Libre'})
-            </option>
-          ))}
-        </select>
-        {ipAssignmentDisabled && (
-          <div style={{ marginTop: '6px', fontSize: '0.75rem', color: '#64748b' }}>
-            Las IP solo se pueden asignar a usuarios activos.
-          </div>
-        )}
-      </div>
+      <AvailableIpSelector
+        selectedIp={usuario.ip_seleccionada ?? ''}
+        availableIps={availableIps}
+        disabled={ipAssignmentDisabled}
+        onIpChange={(value) => updateField('ip_seleccionada', value)}
+      />
     </>
   );
 }

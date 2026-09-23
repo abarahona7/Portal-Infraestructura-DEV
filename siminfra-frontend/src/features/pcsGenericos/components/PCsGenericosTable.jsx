@@ -1,17 +1,14 @@
-import { useState } from 'react';
-
 import {
   Edit,
   Trash2,
   History,
   Eye,
-  EyeOff,
-  Copy,
-  Check,
   MonitorCog
 } from 'lucide-react';
 
 import './PCsGenericosTable.css';
+
+const MASKED_PASSWORD = '••••';
 
 export default function PCsGenericosTable({
   pcs,
@@ -21,35 +18,7 @@ export default function PCsGenericosTable({
   role,
   onRevealSecret,
 }) {
-  const [visiblePasswords, setVisiblePasswords] = useState({});
-  const [copiedPasswords, setCopiedPasswords] = useState({});
-
   const togglePassword = (id) => { if (role === 'Administrador') onRevealSecret?.({ module: 'pc-generico', object_id: id, secret_type: 'password' }); };
-
-  const copyPassword = async (pc) => {
-    if (!pc.password_configured) return;
-
-    try {
-      await navigator.clipboard.writeText('El secreto requiere reautenticación.');
-
-      setCopiedPasswords((prev) => ({
-        ...prev,
-        [pc.id]: true
-      }));
-
-      setTimeout(() => {
-        setCopiedPasswords((prev) => ({
-          ...prev,
-          [pc.id]: false
-        }));
-      }, 2000);
-    } catch (error) {
-      console.error(
-        'Error copiando contraseña:',
-        error
-      );
-    }
-  };
 
   const PasswordField = ({ pc }) => {
     if (!pc.password_configured) {
@@ -60,13 +29,10 @@ export default function PCsGenericosTable({
       );
     }
 
-    const visible = !!visiblePasswords[pc.id];
-    const copied = !!copiedPasswords[pc.id];
-
     return (
       <div className="pc-password-container">
         <span className="pc-password-value">
-          {'••••••••'}
+          {MASKED_PASSWORD}
         </span>
 
         <button
@@ -75,36 +41,11 @@ export default function PCsGenericosTable({
           onClick={() =>
             togglePassword(pc.id)
           }
-          title={
-            visible
-              ? 'Ocultar contraseña'
-              : 'Mostrar contraseña'
-          }
+          title="Mostrar contraseña"
+          aria-label="Mostrar contraseña"
         >
-          {visible ? (
-            <EyeOff size={16} />
-          ) : (
-            <Eye size={16} />
-          )}
+          <Eye size={16} />
         </button>
-
-        {false && <button
-          type="button"
-          className={`pc-password-button ${copied
-            ? 'pc-password-copied'
-            : ''
-            }`}
-          onClick={() =>
-            copyPassword(pc)
-          }
-          title="Copiar contraseña"
-        >
-          {copied ? (
-            <Check size={16} />
-          ) : (
-            <Copy size={16} />
-          )}
-        </button>}
       </div>
     );
   };

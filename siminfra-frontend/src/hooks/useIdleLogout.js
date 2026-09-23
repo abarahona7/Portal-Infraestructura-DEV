@@ -2,19 +2,27 @@ import { useEffect, useRef } from 'react';
 
 const DEFAULT_IDLE_MS = 5 * 60 * 1000;
 const ACTIVITY_THROTTLE_MS = 1000;
+const HEARTBEAT_THROTTLE_MS = 30 * 1000;
 
 export const useIdleLogout = ({
   enabled,
   onIdle,
+  onActivity,
   timeoutMs = DEFAULT_IDLE_MS,
 }) => {
   const timerRef = useRef(null);
   const lastResetRef = useRef(0);
   const onIdleRef = useRef(onIdle);
+  const onActivityRef = useRef(onActivity);
+  const lastHeartbeatRef = useRef(0);
 
   useEffect(() => {
     onIdleRef.current = onIdle;
   }, [onIdle]);
+
+  useEffect(() => {
+    onActivityRef.current = onActivity;
+  }, [onActivity]);
 
   useEffect(() => {
     if (!enabled) {
@@ -40,6 +48,14 @@ export const useIdleLogout = ({
       timerRef.current = setTimeout(() => {
         onIdleRef.current?.();
       }, timeoutMs);
+
+      if (
+        !force
+        && now - lastHeartbeatRef.current >= HEARTBEAT_THROTTLE_MS
+      ) {
+        lastHeartbeatRef.current = now;
+        onActivityRef.current?.();
+      }
     };
 
     const activityEvents = [
@@ -47,6 +63,8 @@ export const useIdleLogout = ({
       'mousedown',
       'keydown',
       'scroll',
+      'wheel',
+      'input',
       'touchstart',
       'pointerdown',
     ];

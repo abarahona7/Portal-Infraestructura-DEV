@@ -10,7 +10,6 @@ export default function ModuleTable({
   tab,
   data,
   formatEquipmentType,
-  visibleProfilePasswords,
   renderUsuarioStatusBadge,
   renderAccountTypeBadge,
   renderIpStatusBadge,
@@ -59,9 +58,9 @@ export default function ModuleTable({
     return (
       <PerfilesTable
         perfiles={data}
-        visiblePasswords={visibleProfilePasswords}
         renderAccountTypeBadge={renderAccountTypeBadge}
         onEdit={onEdit}
+        onDelete={onDelete}
         onToggleStatus={onToggleProfileStatus}
         role={role}
         onRevealSecret={onRevealSecret}

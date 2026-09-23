@@ -51,10 +51,17 @@ import {
   buildEquipmentStateFromHostname,
   filterEquiposByCategory,
 } from './utils/equipmentHelpers';
+import {
+  getEquipmentCategoryByTab,
+  getEquipmentLabelByTab,
+  getModuleTab,
+  isEquipmentTab,
+} from './utils/equipmentNavigation';
 
 import {
   sanitizeIpInput,
   getAvailableIpsForUser,
+  getAvailableIpsForServer,
   filterIpsBySegment,
   IP_SEGMENTS,
 } from './utils/ipHelpers';
@@ -62,12 +69,12 @@ import {
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import ModuleToolbar from './components/layout/ModuleToolbar';
-import EquipmentCategoryCards
-  from './features/equipos/components/EquipmentCategoryCards';
 import DepartamentosSubareasPage
   from './features/departamentos/components/DepartamentosSubareasPage';
 
 import { formatEquipmentType } from './utils/formatEquipmentType';
+import apiClient from './api/client';
+import { getItemDetailsByTab } from './services/getItemService';
 
 import {
   renderUsuarioStatusBadge,
@@ -182,8 +189,6 @@ export default function App() {
     logout,
   } = useAuth();
 
-  const [visibleProfilePasswords] = useState({});
-
   const [
     selectedIpSegment,
     setSelectedIpSegment
@@ -196,8 +201,8 @@ export default function App() {
     selectedDpto,
     setSelectedDpto,
 
-    selectedCategoriaEquipo,
-    setSelectedCategoriaEquipo,
+    selectedEstadoEquipo,
+    setSelectedEstadoEquipo,
 
     selectedEstadoIP,
     setSelectedEstadoIP,
@@ -220,6 +225,10 @@ export default function App() {
 
     selectTab,
   } = useModuleNavigation(resetFilters, authUser?.role);
+
+  const isEquipmentModule = isEquipmentTab(tab);
+  const equipmentCategory = getEquipmentCategoryByTab(tab);
+  const activeModuleTab = getModuleTab(tab);
 
   const {
     editingItem,
@@ -251,16 +260,28 @@ export default function App() {
     departamentosList,
     perfilesList,
     refreshReferenceData,
-  } = useReferenceData(token, authUser?.role);
+    ensureReferenceData,
+  } = useReferenceData(token, authUser?.role, activeModuleTab);
+
+  const hasOpenIpAssignmentForm = Boolean(newItem || editingItem) && (
+    activeModuleTab === 'usuarios' || activeModuleTab === 'servidores'
+  );
+
+  useEffect(() => {
+    if (hasOpenIpAssignmentForm) {
+      ensureReferenceData(['ips']);
+    }
+  }, [hasOpenIpAssignmentForm, ensureReferenceData]);
 
   const {
     data,
     refreshData,
   } = useModuleData({
     token,
-    tab,
+    tab: activeModuleTab,
     search,
     selectedDpto,
+    selectedEstadoEquipo,
     selectedEstadoIP,
     selectedEstadoAnexo,
     onUnauthorized: logout,
@@ -275,6 +296,19 @@ export default function App() {
   useIdleLogout({
     enabled: Boolean(token),
     timeoutMs: 5 * 60 * 1000,
+    onActivity: async () => {
+      try {
+        await apiClient.post('/auth/activity/');
+      } catch (error) {
+        if (error.response?.status === 401) {
+          await logout();
+          showToast(
+            'La sesión expiró por inactividad.',
+            'error'
+          );
+        }
+      }
+    },
     onIdle: async () => {
       await logout();
       showToast(
@@ -285,10 +319,21 @@ export default function App() {
   });
 
   const refreshAllData = async () => {
-    await Promise.all([
-      refreshData(),
-      refreshReferenceData(),
-    ]);
+    const referenceSections = {
+      usuarios: ['usuarios', 'ips'],
+      equipos: ['usuarios'],
+      ips: ['ips'],
+      servidores: ['ips'],
+      perfiles: ['perfiles'],
+      departamentos: ['departamentos', 'usuarios', 'perfiles'],
+    }[activeModuleTab] || [];
+
+    const refreshTasks = [refreshData()];
+    if (referenceSections.length > 0) {
+      refreshTasks.push(refreshReferenceData(referenceSections));
+    }
+
+    await Promise.all(refreshTasks);
   };
 
   const {
@@ -296,7 +341,7 @@ export default function App() {
     handleSave,
     handleDelete,
   } = useModuleCrud({
-    tab,
+    tab: activeModuleTab,
     data,
     newItem,
     editingItem,
@@ -396,24 +441,40 @@ export default function App() {
     });
   };
 
+  const openDetailedItem = async (module, item, setter) => {
+    try {
+      const detailedItem = await getItemDetailsByTab(module, item.id);
+      setter(detailedItem);
+    } catch (error) {
+      console.error('Error cargando detalle:', error.response?.data || error);
+      showToast('No se pudo cargar el detalle solicitado.', 'error');
+    }
+  };
+
   const handleOpenCreateModal = () => {
     if (isViewer) {
       return;
     }
 
-    setNewItem(
-      getInitialCreateItem(
-        tab,
-        dptosList
-      )
+    const initialItem = getInitialCreateItem(
+      activeModuleTab,
+      dptosList
     );
+
+    if (isEquipmentModule && initialItem) {
+      initialItem.tipo = equipmentCategory === 'PERIFERICOS'
+        ? 'Monitor'
+        : equipmentCategory;
+    }
+
+    setNewItem(initialItem);
   };
 
   const filteredData =
-    tab === 'equipos'
+    isEquipmentModule
       ? filterEquiposByCategory(
         data,
-        selectedCategoriaEquipo,
+        equipmentCategory,
         formatEquipmentType
       )
       : tab === 'ips'
@@ -423,9 +484,9 @@ export default function App() {
         )
         : data;
 
-  const handleExportUsuarios = () => {
+  const handleExportUsuarios = async () => {
     try {
-      exportUsuariosExcel({
+      await exportUsuariosExcel({
         rows: filteredData,
         selectedDpto,
       });
@@ -445,15 +506,15 @@ export default function App() {
     }
   };
 
-  const handleExportEquipos = () => {
+  const handleExportEquipos = async () => {
     try {
-      exportEquiposExcel({
+      await exportEquiposExcel({
         rows: filteredData,
-        selectedCategoriaEquipo,
+        selectedCategoriaEquipo: equipmentCategory,
       });
 
       showToast(
-        selectedCategoriaEquipo
+        equipmentCategory
           ? `Excel de ${selectedEquipmentLabel} exportado correctamente.`
           : 'Excel general de equipos exportado correctamente.',
         'success'
@@ -467,9 +528,9 @@ export default function App() {
     }
   };
 
-  const handleExportIps = () => {
+  const handleExportIps = async () => {
     try {
-      exportIpsExcel({
+      await exportIpsExcel({
         rows: filteredData,
         selectedIpSegment,
       });
@@ -489,9 +550,9 @@ export default function App() {
     }
   };
 
-  const handleExportServidores = () => {
+  const handleExportServidores = async () => {
     try {
-      exportServidoresExcel({
+      await exportServidoresExcel({
         rows: filteredData,
       });
 
@@ -508,9 +569,9 @@ export default function App() {
     }
   };
 
-  const handleExportPerfiles = () => {
+  const handleExportPerfiles = async () => {
     try {
-      exportPerfilesExcel({
+      await exportPerfilesExcel({
         rows: filteredData,
         selectedDpto: selectedProfileFilterLabel,
       });
@@ -530,9 +591,9 @@ export default function App() {
     }
   };
 
-  const handleExportAnexos = () => {
+  const handleExportAnexos = async () => {
     try {
-      exportAnexosExcel({
+      await exportAnexosExcel({
         rows: filteredData,
       });
 
@@ -549,9 +610,9 @@ export default function App() {
     }
   };
 
-  const handleExportPCsGenericos = () => {
+  const handleExportPCsGenericos = async () => {
     try {
-      exportPCsGenericosExcel({
+      await exportPCsGenericosExcel({
         rows: filteredData,
         selectedDpto,
       });
@@ -637,10 +698,7 @@ export default function App() {
     }
   }, [tab, selectedDpto]);
 
-  const selectedEquipmentLabel =
-    selectedCategoriaEquipo === 'PERIFERICOS'
-      ? 'Periféricos'
-      : selectedCategoriaEquipo;
+  const selectedEquipmentLabel = getEquipmentLabelByTab(tab);
 
   const selectedIpSegmentData =
     IP_SEGMENTS.find(
@@ -657,8 +715,7 @@ export default function App() {
 
   useEffect(() => {
     if (
-      tab === 'equipos' &&
-      selectedCategoriaEquipo &&
+      isEquipmentModule &&
       equipmentResultsRef.current
     ) {
       const timeout = setTimeout(() => {
@@ -670,7 +727,7 @@ export default function App() {
 
       return () => clearTimeout(timeout);
     }
-  }, [tab, selectedCategoriaEquipo]);
+  }, [tab, isEquipmentModule]);
 
 
   /* =========================
@@ -791,37 +848,8 @@ export default function App() {
 
         {/* FILTROS Y ACCIONES */}
         {/* CATEGORÍAS DE EQUIPOS */}
-        {tab === 'equipos' && (
-          <EquipmentCategoryCards
-            equipos={data}
-            selectedCategory={selectedCategoriaEquipo}
-            onSelectCategory={setSelectedCategoriaEquipo}
-            formatEquipmentType={formatEquipmentType}
-          />
-        )}
 
         {/* ACCIONES DE EQUIPOS SIN CATEGORÍA SELECCIONADA */}
-        {tab === 'equipos' && !selectedCategoriaEquipo && (
-          <ModuleToolbar
-            activeTab={tab}
-            readOnly={isViewer}
-            departments={dptosList}
-
-            selectedDepartment={selectedDpto}
-            onDepartmentChange={setSelectedDpto}
-
-            selectedIpStatus={selectedEstadoIP}
-            onIpStatusChange={setSelectedEstadoIP}
-
-            selectedAnexoStatus={selectedEstadoAnexo}
-            onAnexoStatusChange={setSelectedEstadoAnexo}
-
-            search={search}
-            onSearchChange={setSearch}
-            onCreate={handleOpenCreateModal}
-            onExport={handleExportEquipos}
-          />
-        )}
 
         {/* ÁREAS DE USUARIOS */}
         {tab === 'usuarios' && (
@@ -850,13 +878,6 @@ export default function App() {
 
             selectedDepartment={selectedDpto}
             onDepartmentChange={setSelectedDpto}
-
-            selectedEquipmentCategory={
-              selectedCategoriaEquipo
-            }
-            onEquipmentCategoryChange={
-              setSelectedCategoriaEquipo
-            }
 
             selectedIpStatus={selectedEstadoIP}
             onIpStatusChange={setSelectedEstadoIP}
@@ -927,11 +948,11 @@ export default function App() {
 
         {/* RESULTADOS DEL MÓDULO */}
         {(
-          (tab === 'equipos' && selectedCategoriaEquipo) ||
+          isEquipmentModule ||
           (tab === 'usuarios' && selectedDpto) ||
           (tab === 'ips' && selectedIpSegment) ||
           (
-            tab !== 'equipos' &&
+            !isEquipmentModule &&
             tab !== 'usuarios' &&
             tab !== 'ips' &&
             tab !== 'departamentos'
@@ -939,7 +960,7 @@ export default function App() {
         ) && (
             <>
               {/* ENCABEZADO DEL RESULTADO DE EQUIPOS */}
-              {tab === 'equipos' && (
+              {isEquipmentModule && (
                 <div
                   ref={equipmentResultsRef}
                   className="equipment-results-header"
@@ -1029,19 +1050,15 @@ export default function App() {
               )}
               {/* FILTROS Y ACCIONES */}
               <ModuleToolbar
-                activeTab={tab}
+                activeTab={activeModuleTab}
                 readOnly={isViewer}
                 departments={dptosList}
 
                 selectedDepartment={selectedDpto}
                 onDepartmentChange={setSelectedDpto}
 
-                selectedEquipmentCategory={
-                  selectedCategoriaEquipo
-                }
-                onEquipmentCategoryChange={
-                  setSelectedCategoriaEquipo
-                }
+                selectedEquipmentStatus={selectedEstadoEquipo}
+                onEquipmentStatusChange={setSelectedEstadoEquipo}
 
                 selectedIpStatus={selectedEstadoIP}
                 onIpStatusChange={setSelectedEstadoIP}
@@ -1059,7 +1076,7 @@ export default function App() {
                 onExport={
                   tab === 'usuarios'
                     ? handleExportUsuarios
-                    : tab === 'equipos'
+                    : isEquipmentModule
                       ? handleExportEquipos
                       : tab === 'ips'
                         ? handleExportIps
@@ -1076,17 +1093,12 @@ export default function App() {
               {/* TABLA PRINCIPAL */}
               <div className="app-table-container">
                 <ModuleTable
-                  tab={tab}
+                  tab={activeModuleTab}
                   data={filteredData}
 
                   formatEquipmentType={
                     formatEquipmentType
                   }
-
-                  visibleProfilePasswords={
-                    visibleProfilePasswords
-                  }
-
 
                   renderUsuarioStatusBadge={
                     renderUsuarioStatusBadge
@@ -1105,23 +1117,23 @@ export default function App() {
                   }
 
                   onSelectUser={
-                    setSelectedUser
+                    (item) => openDetailedItem('usuarios', item, setSelectedUser)
                   }
 
                   onShowUserHistory={
-                    setHistoryUsuario
+                    (item) => openDetailedItem('usuarios', item, setHistoryUsuario)
                   }
 
                   onShowEquipmentHistory={
-                    setHistoryEquipo
+                    (item) => openDetailedItem('equipos', item, setHistoryEquipo)
                   }
 
                   onShowAnexoHistory={
-                    setHistoryAnexo
+                    (item) => openDetailedItem('anexos', item, setHistoryAnexo)
                   }
 
                   onShowPCGenericoHistory={
-                    setHistoryPCGenerico
+                    (item) => openDetailedItem('pcs-genericos', item, setHistoryPCGenerico)
                   }
 
                   onEdit={
@@ -1193,7 +1205,7 @@ export default function App() {
         {/* CREAR */}
         {!isViewer && (
         <ModuleCreateModal
-          tab={tab}
+          tab={activeModuleTab}
           newItem={newItem}
           setNewItem={setNewItem}
 
@@ -1218,9 +1230,9 @@ export default function App() {
           }
 
           availableIps={
-            availableIpsForUser(
-              newItem?.ip_seleccionada
-            )
+            tab === 'servidores'
+              ? getAvailableIpsForServer(ipsList, newItem?.ip)
+              : availableIpsForUser(newItem?.ip_seleccionada)
           }
 
           formatEquipmentType={
@@ -1248,7 +1260,7 @@ export default function App() {
         {/* EDITAR */}
         {!isViewer && (
         <ModuleEditModal
-          tab={tab}
+          tab={activeModuleTab}
 
           editingItem={
             editingItem
@@ -1279,9 +1291,9 @@ export default function App() {
           }
 
           availableIps={
-            availableIpsForUser(
-              editingItem?.ip_actual
-            )
+            tab === 'servidores'
+              ? getAvailableIpsForServer(ipsList, editingItem?.ip)
+              : availableIpsForUser(editingItem?.ip_actual)
           }
 
           formatEquipmentType={

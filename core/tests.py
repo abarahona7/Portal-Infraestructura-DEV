@@ -1,8 +1,14 @@
+from datetime import timedelta
+
 from django.contrib.auth.models import User, Group
 from django.test import TestCase, override_settings
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
+from django.utils import timezone
 from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import AccessToken
 from cryptography.fernet import Fernet
-from core.models import Usuario, PerfilGenerico, IP, Equipamiento, Anexo, SecurityAuditLog, Departamento, SubArea, PCGenerico, Servidor
+from core.models import Usuario, PerfilGenerico, IP, Equipamiento, Anexo, SecurityAuditLog, Departamento, SubArea, PCGenerico, PortalSession, Servidor
 
 @override_settings(FIELD_ENCRYPTION_KEY=Fernet.generate_key().decode(), LEGACY_DJANGO_SECRET_KEY='legacy-key')
 class SecurityTests(TestCase):
@@ -327,6 +333,21 @@ class SecurityTests(TestCase):
         self.assertEqual(second_ip.estado, 'RESERVADA')
         self.assertEqual(IP.objects.filter(usuario=self.portal_user).count(), 1)
 
+    def test_usuario_can_release_ip_with_null(self):
+        self.auth(self.admin)
+        ip = IP.objects.create(direccion_ip='172.23.1.74', usuario=self.portal_user)
+
+        response = self.client.patch(
+            f'/api/usuarios/{self.portal_user.pk}/',
+            {'ip_seleccionada': None},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        ip.refresh_from_db()
+        self.assertIsNone(ip.usuario_id)
+        self.assertEqual(ip.estado, 'LIBRE')
+
     def test_baja_user_cannot_receive_ip(self):
         self.auth(self.admin)
         self.portal_user.estado = 'BAJA'
@@ -414,7 +435,7 @@ class SecurityTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('subarea', response.json())
 
-    def test_perfil_generico_delete_is_soft_deactivation(self):
+    def test_admin_can_permanently_delete_perfil_generico(self):
         self.auth(self.admin)
         perfil = PerfilGenerico.objects.create(
             nombre='Perfil Histórico',
@@ -427,9 +448,7 @@ class SecurityTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 204)
-        self.assertTrue(PerfilGenerico.objects.filter(pk=perfil.pk).exists())
-        perfil.refresh_from_db()
-        self.assertEqual(perfil.estado, 'INACTIVO')
+        self.assertFalse(PerfilGenerico.objects.filter(pk=perfil.pk).exists())
 
     def test_operator_can_deactivate_perfil_with_patch(self):
         self.auth(self.operator)
@@ -716,14 +735,289 @@ class SecurityTests(TestCase):
 
     def test_servidor_rejects_invalid_hostname(self):
         self.auth(self.operator)
+        ip = IP.objects.create(direccion_ip='172.23.1.90')
         response = self.client.post(
             '/api/servidores/',
             {
-                'ip': '172.23.50.10',
+                'ip': ip.direccion_ip,
                 'hostname': 'SERVIDOR INVALIDO',
             },
             format='json',
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn('hostname', response.json())
-        self.assertFalse(Servidor.objects.filter(ip='172.23.50.10').exists())
+        self.assertFalse(Servidor.objects.filter(ip=ip).exists())
+
+
+class ServerIpIntegrationTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        admin_group, _ = Group.objects.get_or_create(name='Administrador')
+        self.admin = User.objects.create_user(
+            'server-admin',
+            password='StrongPass!123',
+        )
+        self.admin.groups.add(admin_group)
+        self.client.force_authenticate(user=self.admin)
+
+        self.first_ip = IP.objects.create(direccion_ip='172.23.1.100')
+        self.second_ip = IP.objects.create(direccion_ip='172.23.1.101')
+
+    def test_server_assignment_change_and_delete_sync_ip_state(self):
+        created = self.client.post(
+            '/api/servidores/',
+            {
+                'ip': self.first_ip.direccion_ip,
+                'hostname': 'SRV-APP-01',
+                'descripcion': 'Aplicaciones',
+            },
+            format='json',
+        )
+
+        self.assertEqual(created.status_code, 201)
+        self.assertEqual(created.json()['ip'], self.first_ip.direccion_ip)
+        servidor_id = created.json()['id']
+
+        self.first_ip.refresh_from_db()
+        self.assertEqual(self.first_ip.estado, 'RESERVADA')
+        self.assertEqual(self.first_ip.asignado_otro, 'Servidor: SRV-APP-01')
+
+        changed = self.client.patch(
+            f'/api/servidores/{servidor_id}/',
+            {'ip': self.second_ip.direccion_ip},
+            format='json',
+        )
+        self.assertEqual(changed.status_code, 200)
+
+        self.first_ip.refresh_from_db()
+        self.second_ip.refresh_from_db()
+        self.assertEqual(self.first_ip.estado, 'LIBRE')
+        self.assertIsNone(self.first_ip.asignado_otro)
+        self.assertEqual(self.second_ip.estado, 'RESERVADA')
+
+        blocked_delete = self.client.delete(f'/api/ips/{self.second_ip.pk}/')
+        self.assertEqual(blocked_delete.status_code, 400)
+
+        deleted = self.client.delete(f'/api/servidores/{servidor_id}/')
+        self.assertEqual(deleted.status_code, 204)
+        self.second_ip.refresh_from_db()
+        self.assertEqual(self.second_ip.estado, 'LIBRE')
+        self.assertIsNone(self.second_ip.asignado_otro)
+
+    def test_server_rejects_reserved_or_wrong_segment_ip(self):
+        reserved = IP.objects.create(
+            direccion_ip='172.23.1.102',
+            asignado_otro='Impresora',
+        )
+        wrong_segment = IP.objects.create(direccion_ip='172.24.1.100')
+
+        reserved_response = self.client.post(
+            '/api/servidores/',
+            {'ip': reserved.direccion_ip, 'hostname': 'SRV-RES-01'},
+            format='json',
+        )
+        wrong_response = self.client.post(
+            '/api/servidores/',
+            {'ip': wrong_segment.direccion_ip, 'hostname': 'SRV-WRONG-01'},
+            format='json',
+        )
+
+        self.assertEqual(reserved_response.status_code, 400)
+        self.assertIn('ip', reserved_response.json())
+        self.assertEqual(wrong_response.status_code, 400)
+        self.assertIn('ip', wrong_response.json())
+
+    def test_notebook_ip_is_derived_from_assigned_user(self):
+        user = Usuario.objects.create(
+            nombre_completo='Usuario Notebook',
+            usuario_red='unotebook',
+            correo_corp='unotebook@example.com',
+        )
+        self.first_ip.usuario = user
+        self.first_ip.save()
+        notebook = Equipamiento.objects.create(
+            usuario=user,
+            tipo='Notebook',
+            marca='Lenovo',
+            modelo='T14',
+            numero_serie='NB-IP-001',
+        )
+
+        first_result = self.client.get(f'/api/equipos/{notebook.pk}/')
+        self.assertEqual(first_result.status_code, 200)
+        self.assertEqual(first_result.json()['ip_asignada'], '172.23.1.100')
+
+        self.first_ip.usuario = None
+        self.first_ip.save()
+        self.second_ip.usuario = user
+        self.second_ip.save()
+
+        second_result = self.client.get(f'/api/equipos/{notebook.pk}/')
+        self.assertEqual(second_result.json()['ip_asignada'], '172.23.1.101')
+
+
+@override_settings(PORTAL_IDLE_TIMEOUT_SECONDS=300)
+class PortalSessionTests(TestCase):
+    def setUp(self):
+        admin_group, _ = Group.objects.get_or_create(name='Administrador')
+        self.user = User.objects.create_user(
+            'session-admin',
+            password='StrongPass!123',
+        )
+        self.user.groups.add(admin_group)
+        self.client = APIClient()
+
+    def login(self):
+        return self.client.post(
+            '/api/auth/login/',
+            {'username': 'session-admin', 'password': 'StrongPass!123'},
+            format='json',
+        )
+
+    def test_login_creates_unique_tokenized_session(self):
+        first = self.login()
+        self.assertEqual(first.status_code, 200)
+        first_token = AccessToken(first.json()['access'])
+        first_sid = first_token['sid']
+        self.assertTrue(PortalSession.objects.filter(pk=first_sid).exists())
+
+        second_client = APIClient()
+        second = second_client.post(
+            '/api/auth/login/',
+            {'username': 'session-admin', 'password': 'StrongPass!123'},
+            format='json',
+        )
+        second_sid = AccessToken(second.json()['access'])['sid']
+        self.assertNotEqual(first_sid, second_sid)
+
+    def test_refresh_restores_active_session_and_activity_touches_it(self):
+        login = self.login()
+        token = login.json()['access']
+        sid = AccessToken(token)['sid']
+        portal_session = PortalSession.objects.get(pk=sid)
+        previous_activity = portal_session.last_activity
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        activity = self.client.post('/api/auth/activity/')
+        self.assertEqual(activity.status_code, 204)
+        portal_session.refresh_from_db()
+        self.assertGreaterEqual(portal_session.last_activity, previous_activity)
+
+        self.client.credentials()
+        refreshed = self.client.post(
+            '/api/auth/refresh/',
+            HTTP_X_PORTAL_ACTIVITY='1',
+        )
+        self.assertEqual(refreshed.status_code, 200)
+        self.assertEqual(AccessToken(refreshed.json()['access'])['sid'], str(sid))
+
+    def test_refresh_rejects_session_after_effective_inactivity(self):
+        login = self.login()
+        sid = AccessToken(login.json()['access'])['sid']
+        PortalSession.objects.filter(pk=sid).update(
+            last_activity=timezone.now() - timedelta(minutes=6)
+        )
+
+        refreshed = self.client.post(
+            '/api/auth/refresh/',
+            HTTP_X_PORTAL_ACTIVITY='1',
+        )
+        self.assertEqual(refreshed.status_code, 401)
+        self.assertIsNotNone(PortalSession.objects.get(pk=sid).revoked_at)
+
+
+class PerformanceQueryTests(TestCase):
+    def setUp(self):
+        admin_group, _ = Group.objects.get_or_create(name='Administrador')
+        self.admin = User.objects.create_user(
+            'performance-admin',
+            password='StrongPass!123',
+        )
+        self.admin.groups.add(admin_group)
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.admin)
+
+        self.department = Departamento.objects.create(nombre='Rendimiento')
+        for index in range(5):
+            user = Usuario.objects.create(
+                nombre_completo=f'Persona Rendimiento {index}',
+                usuario_red=f'perf{index}',
+                correo_corp=f'perf{index}@example.com',
+                departamento=self.department,
+            )
+            IP.objects.create(
+                direccion_ip=f'172.23.1.{150 + index}',
+                usuario=user,
+            )
+            Equipamiento.objects.create(
+                usuario=user,
+                tipo='Notebook',
+                marca='Lenovo',
+                modelo='T14',
+                numero_serie=f'PERF-{index}',
+            )
+            Anexo.objects.create(
+                numero_anexo=f'8{index:03d}',
+                usuario=user,
+            )
+
+    def test_list_endpoints_do_not_scale_queries_per_row(self):
+        with CaptureQueriesContext(connection) as user_queries:
+            users = self.client.get('/api/usuarios/')
+            users.content
+        with CaptureQueriesContext(connection) as equipment_queries:
+            equipment = self.client.get('/api/equipos/')
+            equipment.content
+        with CaptureQueriesContext(connection) as extension_queries:
+            extensions = self.client.get('/api/anexos/')
+            extensions.content
+
+        self.assertEqual(users.status_code, 200)
+        self.assertLessEqual(len(user_queries), 3)
+        self.assertLessEqual(len(equipment_queries), 2)
+        self.assertLessEqual(len(extension_queries), 2)
+        self.assertNotIn('historial', users.json()[0])
+        self.assertNotIn('historial', equipment.json()[0])
+        self.assertNotIn('historial', extensions.json()[0])
+
+    def test_history_is_loaded_only_on_detail(self):
+        user = Usuario.objects.get(usuario_red='perf0')
+        response = self.client.get(f'/api/usuarios/{user.pk}/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('historial', response.json())
+        self.assertIn('equipos', response.json())
+
+    def test_reference_endpoint_returns_lightweight_sections(self):
+        with CaptureQueriesContext(connection) as queries:
+            response = self.client.get('/api/reference-data/')
+            response.content
+
+        self.assertEqual(response.status_code, 200)
+        self.assertLessEqual(len(queries), 6)
+        self.assertEqual(
+            set(response.json()),
+            {'usuarios', 'ips', 'departamentos', 'perfiles'},
+        )
+        self.assertNotIn('correo_corp', response.json()['usuarios'][0])
+
+    def test_user_department_filter_uses_current_department_relation(self):
+        technology = Departamento.objects.create(nombre='TECNOLOGÍA')
+        technology_user = Usuario.objects.create(
+            nombre_completo='Persona Tecnología',
+            usuario_red='tecnologia-test',
+            correo_corp='tecnologia@example.com',
+            departamento=technology,
+        )
+        Usuario.objects.filter(pk=technology_user.pk).update(dpto_area='TI')
+
+        response = self.client.get(
+            '/api/usuarios/',
+            {'dpto_area': 'TECNOLOGÍA'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [item['id'] for item in response.json()],
+            [technology_user.id],
+        )

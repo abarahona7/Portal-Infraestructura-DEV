@@ -1,78 +1,110 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { getUsuarios } from '../api/usuariosApi';
-import { getIps } from '../api/ipsApi';
-import { getDepartamentos } from '../api/departamentosApi';
-import { getPerfiles } from '../api/perfilesApi';
+import { getReferenceData } from '../api/referenceApi';
 
-export const useReferenceData = (token, role) => {
-  const [dptosList, setDptosList] = useState([]);
+
+const REFERENCE_SECTIONS_BY_MODULE = {
+  usuarios: ['usuarios', 'departamentos'],
+  equipos: ['usuarios', 'departamentos'],
+  anexos: ['usuarios'],
+  perfiles: ['perfiles', 'departamentos'],
+  departamentos: ['departamentos', 'usuarios', 'perfiles'],
+  'pcs-genericos': ['departamentos'],
+};
+
+
+export const useReferenceData = (token, role, activeModule) => {
   const [usuariosList, setUsuariosList] = useState([]);
   const [ipsList, setIpsList] = useState([]);
   const [departamentosList, setDepartamentosList] = useState([]);
   const [perfilesList, setPerfilesList] = useState([]);
+  const loadedSectionsRef = useRef(new Set());
 
-  const refreshReferenceData = useCallback(async () => {
-    if (!token) {
-      setDptosList([]);
-      setUsuariosList([]);
-      setIpsList([]);
-      setDepartamentosList([]);
-      setPerfilesList([]);
+  const clearReferenceData = useCallback(() => {
+    setUsuariosList([]);
+    setIpsList([]);
+    setDepartamentosList([]);
+    setPerfilesList([]);
+    loadedSectionsRef.current.clear();
+  }, []);
+
+  const loadReferenceData = useCallback(async (sections = [], force = false) => {
+    if (!token || role === 'Visualizador') {
+      clearReferenceData();
       return;
     }
 
-    // El Visualizador no necesita datos de Usuarios/IP y el backend
-    // tampoco le permite consultar esos módulos.
-    if (role === 'Visualizador') {
-      setDptosList([]);
-      setUsuariosList([]);
-      setIpsList([]);
-      setDepartamentosList([]);
-      setPerfilesList([]);
+    const requestedSections = sections.length
+      ? [...new Set(sections)]
+      : force
+        ? ['usuarios', 'ips', 'departamentos', 'perfiles']
+        : [];
+    const pendingSections = force
+      ? requestedSections
+      : requestedSections.filter(
+        (section) => !loadedSectionsRef.current.has(section)
+      );
+
+    if (pendingSections.length === 0) {
       return;
     }
 
     try {
-      const [usuarios, ips, departamentos, perfiles] = await Promise.all([
-        getUsuarios(),
-        getIps(),
-        getDepartamentos(),
-        getPerfiles(),
-      ]);
+      const result = await getReferenceData(pendingSections);
 
-      setUsuariosList(usuarios);
-      setIpsList(ips);
-      setDepartamentosList(departamentos);
-      setPerfilesList(perfiles);
+      if (Object.prototype.hasOwnProperty.call(result, 'usuarios')) {
+        setUsuariosList(result.usuarios);
+      }
+      if (Object.prototype.hasOwnProperty.call(result, 'ips')) {
+        setIpsList(result.ips);
+      }
+      if (Object.prototype.hasOwnProperty.call(result, 'departamentos')) {
+        setDepartamentosList(result.departamentos);
+      }
+      if (Object.prototype.hasOwnProperty.call(result, 'perfiles')) {
+        setPerfilesList(result.perfiles);
+      }
 
-      const nombresDepartamentos = Array.from(
-        new Set(
-          departamentos
-            .map((departamento) => departamento.nombre)
-            .filter(Boolean)
-            .concat(
-              usuarios
-                .map((usuario) => usuario.departamento_nombre || usuario.dpto_area)
-                .filter(Boolean)
-            )
-        )
-      ).sort((a, b) =>
-        a.localeCompare(b, 'es', { sensitivity: 'base' })
-      );
-
-      setDptosList(nombresDepartamentos);
+      Object.keys(result).forEach((section) => {
+        loadedSectionsRef.current.add(section);
+      });
     } catch (error) {
       console.error(
         'Error cargando datos de referencia:',
         error.response?.data || error
       );
     }
-  }, [token, role]);
+  }, [token, role, clearReferenceData]);
+
+  const refreshReferenceData = useCallback(
+    (sections = []) => loadReferenceData(sections, true),
+    [loadReferenceData]
+  );
+
+  const ensureReferenceData = useCallback(
+    (sections = []) => loadReferenceData(sections, false),
+    [loadReferenceData]
+  );
 
   useEffect(() => {
-    refreshReferenceData();
-  }, [refreshReferenceData]);
+    const sections = REFERENCE_SECTIONS_BY_MODULE[activeModule] || [];
+    ensureReferenceData(sections);
+  }, [activeModule, ensureReferenceData]);
+
+  const dptosList = useMemo(() => Array.from(
+    new Set(
+      departamentosList
+        .map((departamento) => departamento.nombre)
+        .filter(Boolean)
+        .concat(
+          usuariosList
+            .map((usuario) => usuario.departamento_nombre || usuario.dpto_area)
+            .filter(Boolean)
+        )
+    )
+  ).sort((left, right) => (
+    left.localeCompare(right, 'es', { sensitivity: 'base' })
+  )), [departamentosList, usuariosList]);
 
   return {
     dptosList,
@@ -81,5 +113,6 @@ export const useReferenceData = (token, role) => {
     departamentosList,
     perfilesList,
     refreshReferenceData,
+    ensureReferenceData,
   };
 };

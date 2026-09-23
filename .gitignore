@@ -25,6 +25,13 @@ dist/
 *_BACKUP/
 src_BACKUP/
 
+# Local import and assignment reports (may contain operational data)
+*_apply.json
+*_dry_run.json
+limpieza_pre_import_v11.json
+equipos_pendientes_asignacion_v11.txt
+equipos_sin_usuario_v11.csv
+
 # Repository / OS / logs
 .git/
 *.log

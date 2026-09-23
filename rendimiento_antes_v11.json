@@ -1,0 +1,189 @@
+{
+  "repeticiones": 3,
+  "endpoints": {
+    "usuarios": {
+      "url": "/api/usuarios/",
+      "tiempo_mediana_ms": 541.1,
+      "consultas_sql_mediana": 1584,
+      "bytes": 410134,
+      "muestras": [
+        {
+          "tiempo_ms": 537.21,
+          "consultas_sql": 1584,
+          "bytes": 410134
+        },
+        {
+          "tiempo_ms": 541.1,
+          "consultas_sql": 1584,
+          "bytes": 410134
+        },
+        {
+          "tiempo_ms": 567.94,
+          "consultas_sql": 1584,
+          "bytes": 410134
+        }
+      ]
+    },
+    "equipos": {
+      "url": "/api/equipos/",
+      "tiempo_mediana_ms": 156.77,
+      "consultas_sql_mediana": 366,
+      "bytes": 256081,
+      "muestras": [
+        {
+          "tiempo_ms": 156.77,
+          "consultas_sql": 366,
+          "bytes": 256081
+        },
+        {
+          "tiempo_ms": 171.1,
+          "consultas_sql": 366,
+          "bytes": 256081
+        },
+        {
+          "tiempo_ms": 147.15,
+          "consultas_sql": 366,
+          "bytes": 256081
+        }
+      ]
+    },
+    "ips": {
+      "url": "/api/ips/",
+      "tiempo_mediana_ms": 22.89,
+      "consultas_sql_mediana": 2,
+      "bytes": 202962,
+      "muestras": [
+        {
+          "tiempo_ms": 23.35,
+          "consultas_sql": 2,
+          "bytes": 202962
+        },
+        {
+          "tiempo_ms": 22.89,
+          "consultas_sql": 2,
+          "bytes": 202962
+        },
+        {
+          "tiempo_ms": 22.3,
+          "consultas_sql": 2,
+          "bytes": 202962
+        }
+      ]
+    },
+    "anexos": {
+      "url": "/api/anexos/",
+      "tiempo_mediana_ms": 88.62,
+      "consultas_sql_mediana": 201,
+      "bytes": 104668,
+      "muestras": [
+        {
+          "tiempo_ms": 88.62,
+          "consultas_sql": 201,
+          "bytes": 104668
+        },
+        {
+          "tiempo_ms": 85.83,
+          "consultas_sql": 201,
+          "bytes": 104668
+        },
+        {
+          "tiempo_ms": 93.42,
+          "consultas_sql": 201,
+          "bytes": 104668
+        }
+      ]
+    },
+    "perfiles": {
+      "url": "/api/perfiles-genericos/",
+      "tiempo_mediana_ms": 3.26,
+      "consultas_sql_mediana": 1,
+      "bytes": 16767,
+      "muestras": [
+        {
+          "tiempo_ms": 4.06,
+          "consultas_sql": 1,
+          "bytes": 16767
+        },
+        {
+          "tiempo_ms": 3.22,
+          "consultas_sql": 1,
+          "bytes": 16767
+        },
+        {
+          "tiempo_ms": 3.26,
+          "consultas_sql": 1,
+          "bytes": 16767
+        }
+      ]
+    },
+    "pcs_genericos": {
+      "url": "/api/pcs-genericos/",
+      "tiempo_mediana_ms": 5.14,
+      "consultas_sql_mediana": 2,
+      "bytes": 7258,
+      "muestras": [
+        {
+          "tiempo_ms": 5.14,
+          "consultas_sql": 2,
+          "bytes": 7258
+        },
+        {
+          "tiempo_ms": 5.2,
+          "consultas_sql": 2,
+          "bytes": 7258
+        },
+        {
+          "tiempo_ms": 2.83,
+          "consultas_sql": 2,
+          "bytes": 7258
+        }
+      ]
+    },
+    "servidores": {
+      "url": "/api/servidores/",
+      "tiempo_mediana_ms": 0.63,
+      "consultas_sql_mediana": 1,
+      "bytes": 2,
+      "muestras": [
+        {
+          "tiempo_ms": 0.9,
+          "consultas_sql": 1,
+          "bytes": 2
+        },
+        {
+          "tiempo_ms": 0.58,
+          "consultas_sql": 1,
+          "bytes": 2
+        },
+        {
+          "tiempo_ms": 0.63,
+          "consultas_sql": 1,
+          "bytes": 2
+        }
+      ]
+    },
+    "departamentos": {
+      "url": "/api/departamentos/",
+      "tiempo_mediana_ms": 3.04,
+      "consultas_sql_mediana": 2,
+      "bytes": 5662,
+      "muestras": [
+        {
+          "tiempo_ms": 4.81,
+          "consultas_sql": 2,
+          "bytes": 5662
+        },
+        {
+          "tiempo_ms": 2.99,
+          "consultas_sql": 2,
+          "bytes": 5662
+        },
+        {
+          "tiempo_ms": 3.04,
+          "consultas_sql": 2,
+          "bytes": 5662
+        }
+      ]
+    }
+  }
+}

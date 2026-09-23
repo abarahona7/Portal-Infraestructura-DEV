@@ -114,6 +114,7 @@ export default function ModuleEditModal({
         <ServidorEditForm
           servidor={editingItem}
           onChange={setEditingItem}
+          availableIps={availableIps}
         />
       )}
     </EditModal>

@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.db.models import Prefetch, Q
 from rest_framework.decorators import action
 
 from .services.acta_entrega_pdf import (
@@ -6,6 +7,8 @@ from .services.acta_entrega_pdf import (
 )
 
 from rest_framework import viewsets, filters, serializers
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from .permissions import PortalRolePermission
 from django_filters.rest_framework import (
     DjangoFilterBackend
@@ -33,6 +36,13 @@ from .serializers import (
     ServidorSerializer,
     DepartamentoSerializer,
     SubAreaSerializer,
+    AnexoListSerializer,
+    EquipamientoListSerializer,
+    IPReferenceSerializer,
+    PCGenericoListSerializer,
+    PerfilGenericoReferenceSerializer,
+    UsuarioListSerializer,
+    UsuarioReferenceSerializer,
 )
 
 from .audit import (
@@ -137,7 +147,7 @@ class SubAreaViewSet(
 
 class IPViewSet(viewsets.ModelViewSet):
     permission_classes = [PortalRolePermission]
-    queryset = IP.objects.all()
+    queryset = IP.objects.select_related('usuario').all()
     serializer_class = IPSerializer
     filter_backends = [
         DjangoFilterBackend,
@@ -152,11 +162,11 @@ class IPViewSet(viewsets.ModelViewSet):
     ]
 
     def perform_destroy(self, instance):
-        if instance.usuario_id:
+        if instance.usuario_id or hasattr(instance, 'servidor'):
             raise serializers.ValidationError({
                 'detail': (
-                    'No se puede eliminar una IP asignada a un usuario. '
-                    'Libérala primero desde la ficha del usuario.'
+                    'No se puede eliminar una IP asignada. Libérala primero '
+                    'desde el módulo Usuarios o Servidores.'
                 )
             })
 
@@ -169,7 +179,7 @@ class IPViewSet(viewsets.ModelViewSet):
 
 class ServidorViewSet(viewsets.ModelViewSet):
     permission_classes = [PortalRolePermission]
-    queryset = Servidor.objects.all()
+    queryset = Servidor.objects.select_related('ip').all()
     serializer_class = ServidorSerializer
 
     filter_backends = [
@@ -177,7 +187,7 @@ class ServidorViewSet(viewsets.ModelViewSet):
     ]
 
     search_fields = [
-        'ip',
+        'ip__direccion_ip',
         'hostname',
         'descripcion',
     ]
@@ -190,11 +200,20 @@ class AnexoViewSet(
     # El permiso backend mantiene este acceso estrictamente de solo lectura.
     viewer_read_only = True
     permission_classes = [PortalRolePermission]
-    queryset = Anexo.objects.select_related(
-        'usuario'
-    ).all()
+    queryset = Anexo.objects.select_related('usuario').all()
 
     serializer_class = AnexoSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return AnexoListSerializer
+        return AnexoSerializer
+
+    def get_queryset(self):
+        queryset = Anexo.objects.select_related('usuario')
+        if self.action == 'retrieve':
+            queryset = queryset.prefetch_related('historial')
+        return queryset
 
     filter_backends = [
         DjangoFilterBackend,
@@ -223,11 +242,61 @@ class UsuarioViewSet(
     viewsets.ModelViewSet
 ):
     permission_classes = [PortalRolePermission]
-    queryset = Usuario.objects.select_related(
-        'departamento',
-        'subarea',
-    ).all()
+    queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return UsuarioListSerializer
+        return UsuarioSerializer
+
+    def get_queryset(self):
+        equipment_queryset = Equipamiento.objects.select_related(
+            'usuario',
+            'usuario__ip',
+        )
+
+        if self.action == 'retrieve':
+            equipment_queryset = equipment_queryset.prefetch_related('historial')
+
+        queryset = Usuario.objects.select_related(
+            'departamento',
+            'subarea',
+            'ip',
+            'anexo_asignado',
+        ).prefetch_related(
+            Prefetch('equipos', queryset=equipment_queryset),
+        )
+
+        if self.action == 'retrieve':
+            queryset = queryset.prefetch_related('historial')
+
+        department_filter = self.request.query_params.get('dpto_area')
+        if department_filter and department_filter.strip():
+            value = department_filter.strip()
+
+            if value.startswith('dept:'):
+                try:
+                    queryset = queryset.filter(
+                        departamento_id=int(value.split(':', 1)[1])
+                    )
+                except (TypeError, ValueError):
+                    return queryset.none()
+            elif value.startswith('subarea:'):
+                try:
+                    queryset = queryset.filter(
+                        subarea_id=int(value.split(':', 1)[1])
+                    )
+                except (TypeError, ValueError):
+                    return queryset.none()
+            else:
+                queryset = queryset.filter(
+                    Q(departamento__nombre__iexact=value)
+                    | Q(subarea__nombre__iexact=value)
+                    | Q(dpto_area__iexact=value)
+                )
+
+        return queryset
 
     filter_backends = [
         DjangoFilterBackend,
@@ -235,7 +304,6 @@ class UsuarioViewSet(
     ]
 
     filterset_fields = [
-        'dpto_area',
         'departamento',
         'subarea',
         'estado'
@@ -314,8 +382,19 @@ class EquipamientoViewSet(
     viewsets.ModelViewSet
 ):
     permission_classes = [PortalRolePermission]
-    queryset = Equipamiento.objects.all()
+    queryset = Equipamiento.objects.select_related('usuario', 'usuario__ip').all()
     serializer_class = EquipamientoSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return EquipamientoListSerializer
+        return EquipamientoSerializer
+
+    def get_queryset(self):
+        queryset = Equipamiento.objects.select_related('usuario', 'usuario__ip')
+        if self.action == 'retrieve':
+            queryset = queryset.prefetch_related('historial')
+        return queryset
 
     filter_backends = [
         DjangoFilterBackend,
@@ -410,13 +489,6 @@ class PerfilGenericoViewSet(
             'usuario',
         )
 
-    def perform_destroy(self, instance):
-        # Perfil Genérico usa baja lógica: nunca se elimina físicamente desde
-        # la API para conservar evidencia de que el perfil existió.
-        instance.estado = 'INACTIVO'
-        instance.save(update_fields=['estado'])
-
-
 class PCGenericoViewSet(
     AuditUserMixin,
     viewsets.ModelViewSet
@@ -427,6 +499,11 @@ class PCGenericoViewSet(
     ).all()
 
     serializer_class = PCGenericoSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return PCGenericoListSerializer
+        return PCGenericoSerializer
 
     filter_backends = [
         DjangoFilterBackend,
@@ -450,9 +527,10 @@ class PCGenericoViewSet(
     ]
 
     def get_queryset(self):
-        queryset = PCGenerico.objects.prefetch_related(
-            'historial'
-        ).all()
+        queryset = PCGenerico.objects.all()
+
+        if self.action == 'retrieve':
+            queryset = queryset.prefetch_related('historial')
 
         dpto = self.request.query_params.get(
             'dpto_area',
@@ -465,3 +543,60 @@ class PCGenericoViewSet(
             )
 
         return queryset
+
+
+class ReferenceDataView(APIView):
+    permission_classes = [PortalRolePermission]
+
+    def get(self, request):
+        requested = request.query_params.get('include', '')
+        sections = {
+            item.strip()
+            for item in requested.split(',')
+            if item.strip()
+        } or {'usuarios', 'ips', 'departamentos', 'perfiles'}
+
+        payload = {}
+
+        if 'usuarios' in sections:
+            users = Usuario.objects.select_related(
+                'departamento',
+                'subarea',
+            ).all()
+            payload['usuarios'] = UsuarioReferenceSerializer(
+                users,
+                many=True,
+            ).data
+
+        if 'ips' in sections:
+            ips = IP.objects.only(
+                'id',
+                'direccion_ip',
+                'estado',
+                'observacion',
+            ).all()
+            payload['ips'] = IPReferenceSerializer(ips, many=True).data
+
+        if 'departamentos' in sections:
+            departments = Departamento.objects.prefetch_related(
+                Prefetch(
+                    'subareas',
+                    queryset=SubArea.objects.select_related('departamento'),
+                )
+            ).all()
+            payload['departamentos'] = DepartamentoSerializer(
+                departments,
+                many=True,
+            ).data
+
+        if 'perfiles' in sections:
+            profiles = PerfilGenerico.objects.select_related(
+                'departamento',
+                'subarea',
+            ).all()
+            payload['perfiles'] = PerfilGenericoReferenceSerializer(
+                profiles,
+                many=True,
+            ).data
+
+        return Response(payload)

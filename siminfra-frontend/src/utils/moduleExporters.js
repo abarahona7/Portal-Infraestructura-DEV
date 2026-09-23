@@ -11,7 +11,7 @@ export const exportUsuariosExcel = ({
   rows,
   selectedDpto,
 }) => {
-  exportToExcel({
+  return exportToExcel({
     rows,
 
     fileName: selectedDpto
@@ -226,7 +226,7 @@ export const exportEquiposExcel = ({
   rows,
   selectedCategoriaEquipo,
 }) => {
-  exportToExcel({
+  return exportToExcel({
     rows,
 
     fileName: selectedCategoriaEquipo
@@ -265,6 +265,12 @@ export const exportEquiposExcel = ({
         header: 'Hostname',
         value: (equipo) =>
           equipo.hostname || 'N/I',
+      },
+      {
+        key: 'ip_asignada',
+        header: 'IP asignada',
+        value: (equipo) =>
+          equipo.ip_asignada || 'N/A',
       },
       {
         key: 'numero_telefono',
@@ -327,7 +333,7 @@ export const exportIpsExcel = ({
   rows,
   selectedIpSegment,
 }) => {
-  exportToExcel({
+  return exportToExcel({
     rows,
 
     fileName: selectedIpSegment
@@ -409,7 +415,7 @@ export const exportIpsExcel = ({
 export const exportServidoresExcel = ({
   rows,
 }) => {
-  exportToExcel({
+  return exportToExcel({
     rows,
 
     fileName: 'servidores_general',
@@ -448,7 +454,7 @@ export const exportPerfilesExcel = ({
   rows,
   selectedDpto,
 }) => {
-  exportToExcel({
+  return exportToExcel({
     rows,
 
     fileName: selectedDpto
@@ -526,7 +532,7 @@ export const exportPerfilesExcel = ({
 export const exportAnexosExcel = ({
   rows,
 }) => {
-  exportToExcel({
+  return exportToExcel({
     rows,
 
     fileName: 'anexos_general',
@@ -596,7 +602,7 @@ export const exportPCsGenericosExcel = ({
   rows,
   selectedDpto,
 }) => {
-  exportToExcel({
+  return exportToExcel({
     rows,
 
     fileName: selectedDpto

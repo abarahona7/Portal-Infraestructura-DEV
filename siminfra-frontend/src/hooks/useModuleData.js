@@ -6,6 +6,7 @@ export const useModuleData = ({
   tab,
   search,
   selectedDpto,
+  selectedEstadoEquipo,
   selectedEstadoIP,
   selectedEstadoAnexo,
   onUnauthorized,
@@ -41,6 +42,10 @@ export const useModuleData = ({
         params.estado = selectedEstadoIP;
       }
 
+      if (selectedEstadoEquipo && tab === 'equipos') {
+        params.estado = selectedEstadoEquipo;
+      }
+
       if (selectedEstadoAnexo && tab === 'anexos') {
         params.estado = selectedEstadoAnexo;
       }
@@ -63,6 +68,7 @@ export const useModuleData = ({
     tab,
     search,
     selectedDpto,
+    selectedEstadoEquipo,
     selectedEstadoIP,
     selectedEstadoAnexo,
     onUnauthorized,

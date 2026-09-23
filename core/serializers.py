@@ -1,6 +1,7 @@
 from ipaddress import ip_address, ip_network
 import re
 from rest_framework import serializers
+from django.db import transaction
 from django.db.models.functions import Lower, Trim
 
 from .models import (
@@ -174,6 +175,8 @@ IP_ALLOWED_NETWORKS = tuple(
     )
 )
 
+SERVER_IP_NETWORK = ip_network('172.23.1.0/24')
+
 
 class IPSerializer(serializers.ModelSerializer):
     usuario = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -228,6 +231,35 @@ class IPSerializer(serializers.ModelSerializer):
             attrs['asignado_otro'] = asignado_otro.strip() or None
 
         instance = getattr(self, 'instance', None)
+        server = None
+        if instance:
+            try:
+                server = instance.servidor
+            except Servidor.DoesNotExist:
+                server = None
+
+        if server:
+            if (
+                'direccion_ip' in attrs
+                and attrs['direccion_ip'] != instance.direccion_ip
+            ):
+                raise serializers.ValidationError({
+                    'direccion_ip': (
+                        'La dirección de una IP asignada a un servidor no se '
+                        'puede modificar. Cambia la IP desde Servidores.'
+                    )
+                })
+
+            if (
+                'asignado_otro' in attrs
+                and attrs.get('asignado_otro') != instance.asignado_otro
+            ):
+                raise serializers.ValidationError({
+                    'asignado_otro': (
+                        'La asignación de esta IP se administra desde Servidores.'
+                    )
+                })
+
         if (
             instance
             and instance.usuario_id
@@ -249,28 +281,98 @@ class IPSerializer(serializers.ModelSerializer):
 
 
 class ServidorSerializer(serializers.ModelSerializer):
+    ip = serializers.SlugRelatedField(
+        slug_field='direccion_ip',
+        queryset=IP.objects.all(),
+        required=True,
+        allow_null=False,
+    )
 
     class Meta:
         model = Servidor
         fields = '__all__'
 
     def validate_ip(self, value):
-        instance = getattr(
-            self,
-            'instance',
-            None
-        )
-
-        if Servidor.objects.filter(
-            ip=value
-        ).exclude(
-            pk=getattr(instance, 'pk', None)
-        ).exists():
+        parsed_ip = ip_address(value.direccion_ip)
+        if parsed_ip not in SERVER_IP_NETWORK or parsed_ip in (
+            SERVER_IP_NETWORK.network_address,
+            SERVER_IP_NETWORK.broadcast_address,
+        ):
             raise serializers.ValidationError(
-                "Ya existe un servidor registrado con esta IP."
+                'Los servidores solo pueden usar IP del segmento 172.23.1.0/24.'
             )
 
+        self._validate_ip_available(value)
         return value
+
+    def _validate_ip_available(self, ip):
+        instance = getattr(self, 'instance', None)
+        is_current = bool(instance and instance.ip_id == ip.pk)
+
+        used_by_other_server = Servidor.objects.filter(ip=ip).exclude(
+            pk=getattr(instance, 'pk', None)
+        ).exists()
+
+        if used_by_other_server:
+            raise serializers.ValidationError(
+                'Esta IP ya está asignada a otro servidor.'
+            )
+
+        if not is_current and (
+            ip.usuario_id
+            or ip.asignado_otro
+            or ip.estado != 'LIBRE'
+        ):
+            raise serializers.ValidationError(
+                'Solo se pueden asignar IP que estén disponibles.'
+            )
+
+    @staticmethod
+    def _reserve_ip(ip, hostname):
+        ip.usuario = None
+        ip.asignado_otro = f'Servidor: {hostname}'
+        ip.save(update_fields=['usuario', 'asignado_otro', 'estado'])
+
+    @staticmethod
+    def _release_ip(ip):
+        if not ip or ip.usuario_id:
+            return
+        ip.asignado_otro = None
+        ip.save(update_fields=['asignado_otro', 'estado'])
+
+    @transaction.atomic
+    def create(self, validated_data):
+        selected_ip = validated_data.pop('ip')
+        locked_ip = IP.objects.select_for_update().get(pk=selected_ip.pk)
+        self._validate_ip_available(locked_ip)
+        servidor = Servidor.objects.create(ip=locked_ip, **validated_data)
+        self._reserve_ip(locked_ip, servidor.hostname)
+        return servidor
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        Servidor.objects.select_for_update().get(pk=instance.pk)
+        previous_ip = instance.ip
+        selected_ip = validated_data.pop('ip', previous_ip)
+
+        if selected_ip is None:
+            raise serializers.ValidationError({
+                'ip': 'Debe seleccionar una IP disponible.'
+            })
+
+        locked_ip = IP.objects.select_for_update().get(pk=selected_ip.pk)
+        self._validate_ip_available(locked_ip)
+
+        servidor = super().update(
+            instance,
+            {**validated_data, 'ip': locked_ip},
+        )
+
+        if previous_ip and previous_ip.pk != locked_ip.pk:
+            self._release_ip(previous_ip)
+
+        self._reserve_ip(locked_ip, servidor.hostname)
+        return servidor
 
     def validate_hostname(self, value):
         value = _validate_hostname_format(value)
@@ -430,6 +532,7 @@ class EquipamientoSerializer(serializers.ModelSerializer):
     pin = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
     icloud_password_configured = serializers.SerializerMethodField()
     pin_configured = serializers.SerializerMethodField()
+    ip_asignada = serializers.SerializerMethodField()
 
     class Meta:
         model = Equipamiento
@@ -440,6 +543,15 @@ class EquipamientoSerializer(serializers.ModelSerializer):
 
     def get_pin_configured(self, obj):
         return bool(obj.pin)
+
+    def get_ip_asignada(self, obj):
+        if obj.tipo != 'Notebook' or not obj.usuario_id:
+            return None
+
+        try:
+            return obj.usuario.ip.direccion_ip
+        except IP.DoesNotExist:
+            return None
 
     def update(self, instance, validated_data):
         for field in ('icloud_password', 'pin'):
@@ -754,6 +866,23 @@ class UsuarioSerializer(serializers.ModelSerializer):
         return value
 
     def _asignar_ip(self, usuario, direccion_ip):
+        if direccion_ip is None:
+            IP.objects.filter(usuario=usuario).update(usuario=None, estado='LIBRE')
+            return
+
+        try:
+            ip = IP.objects.select_for_update().get(direccion_ip=direccion_ip)
+        except IP.DoesNotExist as exc:
+            raise serializers.ValidationError({
+                'ip_seleccionada': 'La IP seleccionada ya no existe.'
+            }) from exc
+        if ip.usuario_id not in (None, usuario.pk) or ip.asignado_otro or (
+            ip.estado != 'LIBRE' and ip.usuario_id != usuario.pk
+        ):
+            raise serializers.ValidationError({
+                'ip_seleccionada': 'Esta IP ya no está disponible.'
+            })
+
         IP.objects.filter(
         usuario=usuario
     ).exclude(
@@ -763,14 +892,13 @@ class UsuarioSerializer(serializers.ModelSerializer):
         estado='LIBRE'
     )
 
-        IP.objects.filter(
-            direccion_ip=direccion_ip
-        ).update(
+        IP.objects.filter(pk=ip.pk).update(
             usuario=usuario,
             estado='RESERVADA',
             asignado_otro=None
         )
 
+    @transaction.atomic
     def create(self, validated_data):
         ip_seleccionada = validated_data.pop(
             'ip_seleccionada',
@@ -787,7 +915,10 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
         return usuario
 
+    @transaction.atomic
     def update(self, instance, validated_data):
+        # Serializa las modificaciones de un mismo usuario en MySQL.
+        Usuario.objects.select_for_update().get(pk=instance.pk)
         ip_enviada = 'ip_seleccionada' in validated_data
 
         ip_seleccionada = validated_data.pop(
@@ -1221,4 +1352,146 @@ class PCGenericoSerializer(serializers.ModelSerializer):
                 attrs['observaciones'].strip()
             )
 
-        return attrs   
+        return attrs
+
+
+# =========================================
+# SERIALIZADORES OPTIMIZADOS DE LISTADO / REFERENCIA
+# =========================================
+
+class EquipamientoListSerializer(serializers.ModelSerializer):
+    usuario_red = serializers.ReadOnlyField(source='usuario.usuario_red')
+    usuario_nombre = serializers.ReadOnlyField(source='usuario.nombre_completo')
+    icloud_password_configured = serializers.SerializerMethodField()
+    pin_configured = serializers.SerializerMethodField()
+    ip_asignada = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Equipamiento
+        fields = [
+            'id', 'usuario', 'usuario_red', 'usuario_nombre', 'tipo', 'marca',
+            'modelo', 'numero_serie', 'hostname', 'af', 'accesorios',
+            'fecha_asignacion', 'estado', 'numero_telefono', 'imei',
+            'icloud_cuenta', 'icloud_password_configured', 'pin_configured',
+            'ip_asignada',
+        ]
+
+    def get_icloud_password_configured(self, obj):
+        return bool(obj.icloud_password)
+
+    def get_pin_configured(self, obj):
+        return bool(obj.pin)
+
+    def get_ip_asignada(self, obj):
+        if obj.tipo != 'Notebook' or not obj.usuario_id:
+            return None
+        try:
+            return obj.usuario.ip.direccion_ip
+        except IP.DoesNotExist:
+            return None
+
+
+class UsuarioListSerializer(serializers.ModelSerializer):
+    equipos = EquipamientoListSerializer(many=True, read_only=True)
+    departamento_nombre = serializers.ReadOnlyField(source='departamento.nombre')
+    subarea_nombre = serializers.ReadOnlyField(source='subarea.nombre')
+    ip_actual = serializers.SerializerMethodField()
+    anexo_actual = serializers.SerializerMethodField()
+    password_gmail_configured = serializers.SerializerMethodField()
+    password_vpn_configured = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Usuario
+        fields = [
+            'id', 'nombre_completo', 'usuario_red', 'correo_corp', 'dpto_area',
+            'departamento', 'departamento_nombre', 'subarea', 'subarea_nombre',
+            'cargo', 'hostname', 'estado', 'gmail', 'celular', 'telefono',
+            'anexo', 'sif', 'vpn_cisco', 'equipos', 'ip_actual', 'anexo_actual',
+            'password_gmail_configured', 'password_vpn_configured',
+        ]
+
+    def get_ip_actual(self, obj):
+        try:
+            return obj.ip.direccion_ip
+        except IP.DoesNotExist:
+            return None
+
+    def get_anexo_actual(self, obj):
+        try:
+            anexo = obj.anexo_asignado
+        except Anexo.DoesNotExist:
+            return None
+        return {
+            'id': anexo.id,
+            'numero_anexo': anexo.numero_anexo,
+            'exterior': anexo.exterior,
+            'estado': anexo.estado,
+        }
+
+    def get_password_gmail_configured(self, obj):
+        return bool(obj.password_gmail)
+
+    def get_password_vpn_configured(self, obj):
+        return bool(obj.password_vpn)
+
+
+class AnexoListSerializer(serializers.ModelSerializer):
+    usuario_nombre = serializers.ReadOnlyField(source='usuario.nombre_completo')
+    departamento = serializers.ReadOnlyField(source='usuario.dpto_area')
+    cargo = serializers.ReadOnlyField(source='usuario.cargo')
+    correo = serializers.ReadOnlyField(source='usuario.correo_corp')
+
+    class Meta:
+        model = Anexo
+        fields = [
+            'id', 'numero_anexo', 'exterior', 'usuario', 'usuario_nombre',
+            'departamento', 'cargo', 'correo', 'estado', 'observaciones',
+            'fecha_creacion', 'fecha_actualizacion',
+        ]
+
+
+class PCGenericoListSerializer(serializers.ModelSerializer):
+    password_configured = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PCGenerico
+        fields = [
+            'id', 'usuario_local', 'password_configured', 'hostname',
+            'dpto_area', 'marca', 'modelo', 'numero_serie', 'activo_fijo',
+            'teamviewer_id', 'observaciones', 'fecha_creacion',
+            'fecha_actualizacion',
+        ]
+
+    def get_password_configured(self, obj):
+        return bool(obj.password)
+
+
+class UsuarioReferenceSerializer(serializers.ModelSerializer):
+    departamento_nombre = serializers.ReadOnlyField(source='departamento.nombre')
+    subarea_nombre = serializers.ReadOnlyField(source='subarea.nombre')
+
+    class Meta:
+        model = Usuario
+        fields = [
+            'id', 'nombre_completo', 'usuario_red', 'estado', 'hostname',
+            'dpto_area', 'departamento', 'departamento_nombre', 'subarea',
+            'subarea_nombre',
+        ]
+
+
+class IPReferenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IP
+        fields = ['id', 'direccion_ip', 'estado', 'observacion']
+
+
+class PerfilGenericoReferenceSerializer(serializers.ModelSerializer):
+    departamento_nombre = serializers.ReadOnlyField(source='departamento.nombre')
+    subarea_nombre = serializers.ReadOnlyField(source='subarea.nombre')
+
+    class Meta:
+        model = PerfilGenerico
+        fields = [
+            'id', 'dpto_area', 'departamento', 'departamento_nombre',
+            'subarea', 'subarea_nombre', 'estado',
+        ]

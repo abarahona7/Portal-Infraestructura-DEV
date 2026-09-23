@@ -6,38 +6,76 @@ import { getAnexos } from '../api/anexosApi';
 import { getPcsGenericos } from '../api/pcsGenericosApi';
 import { getServidores } from '../api/servidoresApi';
 import { getDepartamentos } from '../api/departamentosApi';
+import apiClient from '../api/client';
 
 
-export const getItemsByTab = async (
+const pendingRequests = new Map();
+
+const buildRequestKey = (tab, params) => JSON.stringify([
+  tab,
+  Object.entries(params).sort(([left], [right]) => left.localeCompare(right)),
+]);
+
+const fetchItemsByTab = (
   tab,
   params = {}
 ) => {
   switch (tab) {
     case 'usuarios':
-      return await getUsuarios(params);
+      return getUsuarios(params);
 
     case 'equipos':
-      return await getEquipos(params);
+      return getEquipos(params);
 
     case 'perfiles':
-      return await getPerfiles(params);
+      return getPerfiles(params);
 
     case 'ips':
-      return await getIps(params);
+      return getIps(params);
 
     case 'anexos':
-      return await getAnexos(params);
+      return getAnexos(params);
 
     case 'pcs-genericos':
-      return await getPcsGenericos(params);
+      return getPcsGenericos(params);
 
     case 'servidores':
-      return await getServidores(params);
+      return getServidores(params);
 
     case 'departamentos':
-      return await getDepartamentos(params);
+      return getDepartamentos(params);
 
     default:
       return [];
   }
+};
+
+export const getItemsByTab = (tab, params = {}) => {
+  const key = buildRequestKey(tab, params);
+  if (pendingRequests.has(key)) {
+    return pendingRequests.get(key);
+  }
+
+  const request = Promise.resolve(fetchItemsByTab(tab, params))
+    .finally(() => pendingRequests.delete(key));
+
+  pendingRequests.set(key, request);
+  return request;
+};
+
+const detailPaths = {
+  usuarios: 'usuarios',
+  equipos: 'equipos',
+  anexos: 'anexos',
+  'pcs-genericos': 'pcs-genericos',
+};
+
+export const getItemDetailsByTab = async (tab, id) => {
+  const path = detailPaths[tab];
+  if (!path) {
+    throw new Error(`El módulo ${tab} no dispone de detalle diferido.`);
+  }
+
+  const response = await apiClient.get(`/${path}/${id}/`);
+  return response.data;
 };

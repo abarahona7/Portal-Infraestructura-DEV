@@ -1,12 +1,10 @@
 export default function ServidorCreateForm({
   servidor,
   onChange,
+  availableIps = [],
 }) {
   const updateField = (field, value) => {
-    onChange({
-      ...servidor,
-      [field]: value,
-    });
+    onChange({ ...servidor, [field]: value });
   };
 
   const inputStyle = {
@@ -26,106 +24,48 @@ export default function ServidorCreateForm({
     fontWeight: '700',
   };
 
-  const fieldStyle = {
-    marginBottom: '1rem',
-  };
+  const fieldStyle = { marginBottom: '1rem' };
 
   return (
     <>
-      {/* IP */}
       <div style={fieldStyle}>
-        <label style={labelStyle}>
-          Dirección IP *
-        </label>
-
-        <input
-          type="text"
-          inputMode="decimal"
+        <label style={labelStyle}>Dirección IP *</label>
+        <select
           required
-          maxLength={15}
           value={servidor.ip || ''}
-          onChange={(e) => {
-            const value = e.target.value.replace(
-              /[^0-9.]/g,
-              ''
-            );
-
-            const partes = value.split('.');
-
-            // Máximo 4 bloques
-            if (partes.length > 4) {
-              return;
-            }
-
-            // Máximo 3 números por bloque
-            if (
-              partes.some(
-                (parte) => parte.length > 3
-              )
-            ) {
-              return;
-            }
-
-            // Cada bloque entre 0 y 255
-            if (
-              partes.some(
-                (parte) =>
-                  parte !== '' &&
-                  Number(parte) > 255
-              )
-            ) {
-              return;
-            }
-
-            updateField(
-              'ip',
-              value
-            );
-          }}
-          placeholder="Ej: 172.23.10.15"
-          style={{
-            ...inputStyle,
-            fontFamily: 'monospace',
-          }}
-        />
+          onChange={(event) => updateField('ip', event.target.value)}
+          style={{ ...inputStyle, fontFamily: 'monospace' }}
+        >
+          <option value="">Selecciona una IP disponible...</option>
+          {availableIps.map((ip) => (
+            <option key={ip.id} value={ip.direccion_ip}>
+              {ip.direccion_ip}
+            </option>
+          ))}
+        </select>
+        <small style={{ color: '#64748b' }}>
+          Solo se muestran direcciones libres del segmento 172.23.1.0/24.
+        </small>
       </div>
 
-      {/* HOSTNAME */}
       <div style={fieldStyle}>
-        <label style={labelStyle}>
-          Hostname *
-        </label>
-
+        <label style={labelStyle}>Hostname *</label>
         <input
           type="text"
           required
           maxLength={100}
           value={servidor.hostname || ''}
-          onChange={(e) =>
-            updateField(
-              'hostname',
-              e.target.value
-            )
-          }
+          onChange={(event) => updateField('hostname', event.target.value)}
           placeholder="Ej: SRV-SQL-01"
           style={inputStyle}
         />
       </div>
 
-      {/* DESCRIPCIÓN */}
       <div style={fieldStyle}>
-        <label style={labelStyle}>
-          Descripción
-        </label>
-
+        <label style={labelStyle}>Descripción</label>
         <textarea
           value={servidor.descripcion || ''}
-          onChange={(e) =>
-            updateField(
-              'descripcion',
-              e.target.value
-            )
-          }
+          onChange={(event) => updateField('descripcion', event.target.value)}
           placeholder="Ej: Servidor SQL de producción"
           rows={4}
           style={{

@@ -65,6 +65,9 @@ export default function EquiposTable({
   onEdit,
   onDelete,
 }) {
+  const showAssignedIp = equipos.length > 0 && equipos.every(
+    (equipo) => formatEquipmentType(equipo.tipo) === 'Notebook'
+  );
 
   /* =========================
      NORMALIZAR EQUIPO
@@ -312,6 +315,10 @@ export default function EquiposTable({
                 {getIdentifierColumnLabel()}
               </th>
 
+              {showAssignedIp && (
+                <th>IP asignada</th>
+              )}
+
               <th>
                 Detalles
               </th>
@@ -375,6 +382,12 @@ export default function EquiposTable({
                 <td className="equipo-identifier">
                   {renderIdentifier(equipo)}
                 </td>
+
+                {showAssignedIp && (
+                  <td className="equipo-monospace">
+                    {equipo.ip_asignada || 'N/A'}
+                  </td>
+                )}
 
 
                 {/* DETALLES */}
@@ -516,6 +529,14 @@ export default function EquiposTable({
                       identifier ||
                       'N/A'
                     }
+                    monospace
+                  />
+                )}
+
+                {showAssignedIp && (
+                  <MobileField
+                    label="IP asignada"
+                    value={equipo.ip_asignada || 'N/A'}
                     monospace
                   />
                 )}

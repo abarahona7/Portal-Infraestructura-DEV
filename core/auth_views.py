@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.auth import authenticate
+from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -9,7 +10,12 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from .permissions import get_role
-from .models import SecurityAuditLog
+from .models import PortalSession, SecurityAuditLog
+from .session_auth import (
+    get_active_portal_session,
+    revoke_portal_session,
+    touch_portal_session,
+)
 
 
 def _cookie_kwargs():
@@ -45,7 +51,9 @@ class LoginView(APIView):
         role = get_role(user)
         if not role:
             return Response({'detail': 'Usuario autenticado sin rol del portal.'}, status=status.HTTP_403_FORBIDDEN)
+        portal_session = PortalSession.objects.create(user=user)
         refresh = RefreshToken.for_user(user)
+        refresh['sid'] = str(portal_session.pk)
         response = Response({'access': str(refresh.access_token), 'user': {'username': user.get_username(), 'role': role}})
         _set_refresh_cookie(response, refresh)
         return response
@@ -61,15 +69,21 @@ class RefreshCookieView(APIView):
         try:
             old = RefreshToken(raw)
             user_id = old.get('user_id')
-            from django.contrib.auth import get_user_model
+            portal_session = get_active_portal_session(
+                old.get('sid'),
+                user_id=user_id,
+            )
             user = get_user_model().objects.get(pk=user_id)
             if not user.is_active or not get_role(user):
                 raise TokenError('Usuario sin acceso')
+            if request.headers.get('X-Portal-Activity') == '1':
+                touch_portal_session(portal_session)
             try:
                 old.blacklist()
             except AttributeError:
                 pass
             new = RefreshToken.for_user(user)
+            new['sid'] = str(portal_session.pk)
             response = Response({'access': str(new.access_token), 'user': {'username': user.get_username(), 'role': get_role(user)}})
             _set_refresh_cookie(response, new)
             return response
@@ -80,18 +94,32 @@ class RefreshCookieView(APIView):
 
 
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         raw = request.COOKIES.get(settings.JWT_REFRESH_COOKIE)
         if raw:
             try:
-                RefreshToken(raw).blacklist()
+                refresh = RefreshToken(raw)
+                revoke_portal_session(refresh.get('sid'))
+                refresh.blacklist()
             except TokenError:
                 pass
         response = Response(status=status.HTTP_204_NO_CONTENT)
         response.delete_cookie(settings.JWT_REFRESH_COOKIE, path=settings.JWT_COOKIE_PATH)
         return response
+
+
+class ActivityView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        portal_session = get_active_portal_session(
+            request.auth.get('sid'),
+            user_id=request.user.pk,
+        )
+        touch_portal_session(portal_session)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class MeView(APIView):

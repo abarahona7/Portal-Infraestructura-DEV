@@ -6,6 +6,31 @@ export const sanitizeIpInput = (value) => {
   return value.replace(/[^0-9.]/g, '');
 };
 
+export const compareIpAddresses = (left = '', right = '') => {
+  const leftParts = left.split('.').map(Number);
+  const rightParts = right.split('.').map(Number);
+  const validLeft = leftParts.length === 4 && leftParts.every(Number.isInteger);
+  const validRight = rightParts.length === 4 && rightParts.every(Number.isInteger);
+
+  if (!validLeft || !validRight) {
+    return left.localeCompare(right, 'es', { numeric: true });
+  }
+
+  for (let index = 0; index < 4; index += 1) {
+    if (leftParts[index] !== rightParts[index]) {
+      return leftParts[index] - rightParts[index];
+    }
+  }
+
+  return 0;
+};
+
+export const sortIpsByAddress = (ips = []) => {
+  return [...ips].sort((left, right) =>
+    compareIpAddresses(left.direccion_ip || '', right.direccion_ip || '')
+  );
+};
+
 
 /* =========================
    IPs DISPONIBLES
@@ -15,14 +40,14 @@ export const getAvailableIpsForUser = (
   ipsList = [],
   currentIp
 ) => {
-  return ipsList.filter(
+  return sortIpsByAddress(ipsList.filter(
     (ip) =>
       isManagedIpAddress(ip.direccion_ip) &&
       (
         ip.estado === 'LIBRE' ||
         ip.direccion_ip === currentIp
       )
-  );
+  ));
 };
 
 
@@ -125,7 +150,7 @@ export const filterIpsBySegment = (
   selectedSegment
 ) => {
   if (!selectedSegment) {
-    return ips;
+    return sortIpsByAddress(ips);
   }
 
   const segment = IP_SEGMENTS.find(
@@ -134,15 +159,24 @@ export const filterIpsBySegment = (
   );
 
   if (!segment) {
-    return ips;
+    return sortIpsByAddress(ips);
   }
 
-  return ips.filter((ip) =>
+  return sortIpsByAddress(ips.filter((ip) =>
     ip.direccion_ip
       ?.trim()
       .startsWith(segment.prefix)
-  );
+  ));
 };
+
+export const getAvailableIpsForServer = (
+  ipsList = [],
+  currentIp
+) => sortIpsByAddress(ipsList.filter(
+  (ip) =>
+    ip.direccion_ip?.startsWith('172.23.1.')
+    && (ip.estado === 'LIBRE' || ip.direccion_ip === currentIp)
+));
 
 
 /* =========================

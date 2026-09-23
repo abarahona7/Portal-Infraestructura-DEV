@@ -125,18 +125,20 @@
   font-size: 0.8rem;
 }
 
-/* Formato compacto tipo pill/chip solicitado */
 .department-chip-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 0.5rem;
   margin-bottom: 0.9rem;
 }
 
 .department-chip {
   min-height: 34px;
-  display: inline-flex;
+  width: 100%;
+  min-width: 0;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.55rem;
   padding: 0.4rem 0.75rem;
   border: 1px solid #d8e1eb;
@@ -148,6 +150,13 @@
   font-weight: 750;
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.department-chip > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .department-chip:hover {
@@ -284,15 +293,18 @@
 }
 
 .subarea-chip-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 0.45rem;
 }
 
 .subarea-chip {
   min-height: 34px;
-  display: inline-flex;
+  width: 100%;
+  min-width: 0;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.45rem;
   padding: 0.28rem 0.32rem 0.28rem 0.65rem;
   border: 1px solid #dbe4ec;
@@ -420,6 +432,7 @@
 @media (max-width: 480px) {
   .department-chip-list,
   .subarea-chip-grid {
+    grid-template-columns: 1fr;
     gap: 0.38rem;
   }
 

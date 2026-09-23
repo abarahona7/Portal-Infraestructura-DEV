@@ -43,17 +43,18 @@
   border-color: #94a3b8;
 }
 
-/* Tarjetas compactas tipo pill/chip */
 .user-department-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 0.5rem;
 }
 
 .user-department-card {
   min-height: 34px;
-  display: inline-flex;
+  width: 100%;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.55rem;
   padding: 0.4rem 0.7rem;
   border: 1px solid #d7e1e8;
@@ -114,6 +115,7 @@
   }
 
   .user-department-grid {
+    grid-template-columns: 1fr;
     gap: 0.4rem;
   }
 

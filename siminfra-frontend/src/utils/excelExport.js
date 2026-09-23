@@ -1,5 +1,3 @@
-import * as XLSX from 'xlsx';
-
 const sanitizeFileName = (value) => {
   return String(value || 'exportacion')
     .trim()
@@ -35,7 +33,7 @@ const getColumnWidth = (
   };
 };
 
-export const exportToExcel = ({
+export const exportToExcel = async ({
   rows = [],
   columns = [],
   fileName = 'exportacion',
@@ -55,6 +53,10 @@ export const exportToExcel = ({
       'No se definieron columnas para la exportación.'
     );
   }
+
+  // XLSX representa una parte importante del bundle. Se carga solamente
+  // cuando el usuario solicita una exportación.
+  const XLSX = await import('xlsx');
 
   const formattedRows = rows.map((row) => {
     const result = {};

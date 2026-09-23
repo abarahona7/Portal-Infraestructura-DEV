@@ -4,6 +4,10 @@ import {
 } from 'lucide-react';
 
 import './Header.css';
+import {
+  getEquipmentLabelByTab,
+  isEquipmentTab,
+} from '../../utils/equipmentNavigation';
 
 export default function Header({
   activeTab,
@@ -12,6 +16,10 @@ export default function Header({
   onLogout,
 }) {
   const getTitle = () => {
+    if (isEquipmentTab(activeTab)) {
+      return `Equipos / ${getEquipmentLabelByTab(activeTab)}`;
+    }
+
     switch (activeTab) {
       case 'usuarios':
         return 'Usuarios';

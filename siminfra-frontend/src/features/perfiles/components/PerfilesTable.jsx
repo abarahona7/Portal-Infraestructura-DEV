@@ -1,19 +1,21 @@
 import {
   Eye,
-  EyeOff,
   Edit,
   Power,
   PowerOff,
+  Trash2,
   UserCog,
 } from 'lucide-react';
 
 import './PerfilesTable.css';
 
+const MASKED_PASSWORD = '••••';
+
 export default function PerfilesTable({
   perfiles,
-  visiblePasswords,
   renderAccountTypeBadge,
   onEdit,
+  onDelete,
   onToggleStatus,
   role,
   onRevealSecret,
@@ -29,24 +31,22 @@ export default function PerfilesTable({
   };
 
   const PasswordField = ({ perfil }) => {
-    const passwordVisible = Boolean(visiblePasswords?.[perfil.id]);
-
     if (!perfil.password_configured) {
       return <span className="perfil-no-password">Sin contraseña</span>;
     }
 
     return (
       <div className="perfil-password">
-        <span className="perfil-password-value">••••••••</span>
+        <span className="perfil-password-value">{MASKED_PASSWORD}</span>
 
         <button
           type="button"
           className="perfil-password-action"
           onClick={() => togglePassword(perfil.id)}
-          title={passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-          aria-label={passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          title="Mostrar contraseña"
+          aria-label="Mostrar contraseña"
         >
-          {passwordVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+          <Eye size={16} />
         </button>
       </div>
     );
@@ -86,6 +86,23 @@ export default function PerfilesTable({
         >
           {active ? <PowerOff size={17} /> : <Power size={17} />}
         </button>
+
+        {role === 'Administrador' && (
+          <button
+            type="button"
+            className="perfil-action perfil-action-delete"
+            onClick={() =>
+              onDelete?.(
+                perfil.id,
+                perfil.nombre || perfil.usuario || 'Perfil Genérico'
+              )
+            }
+            title="Eliminar perfil permanentemente"
+            aria-label={`Eliminar ${perfil.nombre || perfil.usuario || 'perfil'}`}
+          >
+            <Trash2 size={17} />
+          </button>
+        )}
       </div>
     );
   };

@@ -101,7 +101,7 @@ CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'core.authentication.PortalJWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -123,6 +123,7 @@ JWT_REFRESH_COOKIE = os.getenv('JWT_REFRESH_COOKIE', 'siminfra_refresh')
 JWT_COOKIE_SECURE = env_bool('JWT_COOKIE_SECURE', not DEBUG)
 JWT_COOKIE_SAMESITE = os.getenv('JWT_COOKIE_SAMESITE', 'Lax')
 JWT_COOKIE_PATH = os.getenv('JWT_COOKIE_PATH', '/api/auth/')
+PORTAL_IDLE_TIMEOUT_SECONDS = int(os.getenv('PORTAL_IDLE_TIMEOUT_SECONDS', '300'))
 
 FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY', '')
 LEGACY_DJANGO_SECRET_KEY = os.getenv('LEGACY_DJANGO_SECRET_KEY', '')

@@ -39,16 +39,19 @@
 
 .perfil-department-grid,
 .perfil-subarea-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 0.5rem;
 }
 
 .perfil-department-card,
 .perfil-subarea-chip {
   min-height: 34px;
-  display: inline-flex;
+  width: 100%;
+  min-width: 0;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.55rem;
   padding: 0.4rem 0.7rem;
   border: 1px solid #d7e1e8;
@@ -119,5 +122,12 @@
 @media (max-width: 700px) {
   .perfil-department-heading {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .perfil-department-grid,
+  .perfil-subarea-grid {
+    grid-template-columns: 1fr;
   }
 }

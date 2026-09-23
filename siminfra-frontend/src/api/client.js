@@ -14,7 +14,9 @@ export const setAccessToken = (token) => { accessToken = token || null; };
 export const getAccessToken = () => accessToken;
 
 apiClient.interceptors.request.use((config) => {
-  if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+  if (accessToken && !config.skipAuth) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
+  }
   return config;
 });
 
@@ -22,8 +24,12 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
-    const isAuthEndpoint = original?.url?.startsWith('/auth/');
-    if (error.response?.status !== 401 || original?._retry || isAuthEndpoint) {
+    const isSessionEndpoint = [
+      '/auth/login/',
+      '/auth/refresh/',
+      '/auth/logout/',
+    ].some((url) => original?.url?.startsWith(url));
+    if (error.response?.status !== 401 || original?._retry || isSessionEndpoint) {
       return Promise.reject(error);
     }
 

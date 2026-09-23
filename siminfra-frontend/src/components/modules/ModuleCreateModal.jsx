@@ -114,6 +114,7 @@ export default function ModuleCreateModal({
         <ServidorCreateForm
           servidor={newItem}
           onChange={setNewItem}
+          availableIps={availableIps}
         />
       )}
     </CreateModal>

@@ -1,22 +1,24 @@
 import { useEffect, useState } from 'react';
+import { EQUIPMENT_NAV_ITEMS } from '../utils/equipmentNavigation';
 
 const ACTIVE_TAB_KEY = 'portal-infra-ti-chile-active-tab';
 const SIDEBAR_KEY = 'portal-infra-ti-chile-sidebar-collapsed';
 
 const VALID_TABS = new Set([
   'usuarios',
-  'equipos',
   'pcs-genericos',
   'servidores',
   'perfiles',
   'ips',
   'anexos',
   'departamentos',
+  ...EQUIPMENT_NAV_ITEMS.map((item) => item.id),
 ]);
 
 const readSavedTab = () => {
   try {
     const saved = sessionStorage.getItem(ACTIVE_TAB_KEY);
+    if (saved === 'equipos') return 'equipos-notebook';
     return VALID_TABS.has(saved) ? saved : 'usuarios';
   } catch {
     return 'usuarios';
@@ -69,16 +71,20 @@ export const useModuleNavigation = (resetFilters, role) => {
   }, [role, tab, resetFilters]);
 
   const selectTab = (selectedTab) => {
-    if (!VALID_TABS.has(selectedTab)) {
+    const nextTab = selectedTab === 'equipos'
+      ? 'equipos-notebook'
+      : selectedTab;
+
+    if (!VALID_TABS.has(nextTab)) {
       return;
     }
 
-    if (role === 'Visualizador' && selectedTab !== 'anexos') {
+    if (role === 'Visualizador' && nextTab !== 'anexos') {
       return;
     }
 
-    setTab(selectedTab);
-    saveTab(selectedTab);
+    setTab(nextTab);
+    saveTab(nextTab);
     resetFilters?.();
     setSidebarOpen(false);
   };

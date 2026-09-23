@@ -1,0 +1,235 @@
+{
+  "repeticiones": 3,
+  "endpoints": {
+    "usuarios": {
+      "url": "/api/usuarios/",
+      "tiempo_mediana_ms": 59.33,
+      "consultas_sql_mediana": 2,
+      "bytes": 293571,
+      "muestras": [
+        {
+          "tiempo_ms": 59.33,
+          "consultas_sql": 2,
+          "bytes": 293571
+        },
+        {
+          "tiempo_ms": 65.7,
+          "consultas_sql": 2,
+          "bytes": 293571
+        },
+        {
+          "tiempo_ms": 50.22,
+          "consultas_sql": 2,
+          "bytes": 293571
+        }
+      ]
+    },
+    "equipos": {
+      "url": "/api/equipos/",
+      "tiempo_mediana_ms": 13.79,
+      "consultas_sql_mediana": 1,
+      "bytes": 147628,
+      "muestras": [
+        {
+          "tiempo_ms": 28.76,
+          "consultas_sql": 1,
+          "bytes": 147628
+        },
+        {
+          "tiempo_ms": 13.79,
+          "consultas_sql": 1,
+          "bytes": 147628
+        },
+        {
+          "tiempo_ms": 13.39,
+          "consultas_sql": 1,
+          "bytes": 147628
+        }
+      ]
+    },
+    "ips": {
+      "url": "/api/ips/",
+      "tiempo_mediana_ms": 23.22,
+      "consultas_sql_mediana": 1,
+      "bytes": 202962,
+      "muestras": [
+        {
+          "tiempo_ms": 29.92,
+          "consultas_sql": 1,
+          "bytes": 202962
+        },
+        {
+          "tiempo_ms": 23.22,
+          "consultas_sql": 1,
+          "bytes": 202962
+        },
+        {
+          "tiempo_ms": 23.02,
+          "consultas_sql": 1,
+          "bytes": 202962
+        }
+      ]
+    },
+    "anexos": {
+      "url": "/api/anexos/",
+      "tiempo_mediana_ms": 9.02,
+      "consultas_sql_mediana": 1,
+      "bytes": 54267,
+      "muestras": [
+        {
+          "tiempo_ms": 11.63,
+          "consultas_sql": 1,
+          "bytes": 54267
+        },
+        {
+          "tiempo_ms": 9.02,
+          "consultas_sql": 1,
+          "bytes": 54267
+        },
+        {
+          "tiempo_ms": 8.01,
+          "consultas_sql": 1,
+          "bytes": 54267
+        }
+      ]
+    },
+    "perfiles": {
+      "url": "/api/perfiles-genericos/",
+      "tiempo_mediana_ms": 3.8,
+      "consultas_sql_mediana": 1,
+      "bytes": 16767,
+      "muestras": [
+        {
+          "tiempo_ms": 4.02,
+          "consultas_sql": 1,
+          "bytes": 16767
+        },
+        {
+          "tiempo_ms": 3.8,
+          "consultas_sql": 1,
+          "bytes": 16767
+        },
+        {
+          "tiempo_ms": 3.55,
+          "consultas_sql": 1,
+          "bytes": 16767
+        }
+      ]
+    },
+    "pcs_genericos": {
+      "url": "/api/pcs-genericos/",
+      "tiempo_mediana_ms": 1.53,
+      "consultas_sql_mediana": 1,
+      "bytes": 4818,
+      "muestras": [
+        {
+          "tiempo_ms": 1.95,
+          "consultas_sql": 1,
+          "bytes": 4818
+        },
+        {
+          "tiempo_ms": 1.53,
+          "consultas_sql": 1,
+          "bytes": 4818
+        },
+        {
+          "tiempo_ms": 1.47,
+          "consultas_sql": 1,
+          "bytes": 4818
+        }
+      ]
+    },
+    "servidores": {
+      "url": "/api/servidores/",
+      "tiempo_mediana_ms": 0.94,
+      "consultas_sql_mediana": 1,
+      "bytes": 2,
+      "muestras": [
+        {
+          "tiempo_ms": 1.14,
+          "consultas_sql": 1,
+          "bytes": 2
+        },
+        {
+          "tiempo_ms": 0.7,
+          "consultas_sql": 1,
+          "bytes": 2
+        },
+        {
+          "tiempo_ms": 0.94,
+          "consultas_sql": 1,
+          "bytes": 2
+        }
+      ]
+    },
+    "departamentos": {
+      "url": "/api/departamentos/",
+      "tiempo_mediana_ms": 3.21,
+      "consultas_sql_mediana": 2,
+      "bytes": 5662,
+      "muestras": [
+        {
+          "tiempo_ms": 4.03,
+          "consultas_sql": 2,
+          "bytes": 5662
+        },
+        {
+          "tiempo_ms": 3.21,
+          "consultas_sql": 2,
+          "bytes": 5662
+        },
+        {
+          "tiempo_ms": 3.02,
+          "consultas_sql": 2,
+          "bytes": 5662
+        }
+      ]
+    },
+    "datos_referencia": {
+      "url": "/api/reference-data/",
+      "tiempo_mediana_ms": 25.78,
+      "consultas_sql_mediana": 5,
+      "bytes": 226183,
+      "muestras": [
+        {
+          "tiempo_ms": 28.74,
+          "consultas_sql": 5,
+          "bytes": 226183
+        },
+        {
+          "tiempo_ms": 25.78,
+          "consultas_sql": 5,
+          "bytes": 226183
+        },
+        {
+          "tiempo_ms": 25.43,
+          "consultas_sql": 5,
+          "bytes": 226183
+        }
+      ]
+    },
+    "referencia_inicio_usuarios": {
+      "url": "/api/reference-data/?include=usuarios,departamentos",
+      "tiempo_mediana_ms": 13.53,
+      "consultas_sql_mediana": 3,
+      "bytes": 80139,
+      "muestras": [
+        {
+          "tiempo_ms": 13.53,
+          "consultas_sql": 3,
+          "bytes": 80139
+        },
+        {
+          "tiempo_ms": 52.29,
+          "consultas_sql": 3,
+          "bytes": 80139
+        },
+        {
+          "tiempo_ms": 10.82,
+          "consultas_sql": 3,
+          "bytes": 80139
+        }
+      ]
+    }
+  }
+}

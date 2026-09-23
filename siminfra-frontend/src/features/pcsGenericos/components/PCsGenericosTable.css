@@ -95,7 +95,12 @@
 }
 
 .pc-password-value {
-  max-width: 180px;
+  width: 2.65rem;
+  flex: 0 0 2.65rem;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
   padding: 0.25rem 0.45rem;
 
@@ -106,7 +111,10 @@
   font-family: monospace;
   font-weight: 700;
 
-  overflow-wrap: anywhere;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 
 .pc-password-empty {

@@ -11,6 +11,8 @@ export default function ModuleToolbar({
   departments,
   selectedDepartment,
   onDepartmentChange,
+  selectedEquipmentStatus,
+  onEquipmentStatusChange,
   selectedIpStatus,
   onIpStatusChange,
   selectedAnexoStatus,
@@ -141,6 +143,27 @@ export default function ModuleToolbar({
                   </option>
                 )
               )}
+            </select>
+          </div>
+        )}
+
+
+        {/* FILTRO EQUIPOS */}
+        {activeTab === 'equipos' && (
+          <div className="module-toolbar-filter">
+            <Filter size={16} />
+
+            <select
+              value={selectedEquipmentStatus}
+              onChange={(event) =>
+                onEquipmentStatusChange(event.target.value)
+              }
+            >
+              <option value="">Todos los Estados</option>
+              <option value="ASIGNADO">Asignado</option>
+              <option value="STOCK">Stock / Disponible</option>
+              <option value="MANTENCION">En Mantención</option>
+              <option value="BAJA">Dado de Baja</option>
             </select>
           </div>
         )}

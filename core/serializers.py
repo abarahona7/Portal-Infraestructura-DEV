@@ -15,7 +15,9 @@ from .models import (
     HistorialAnexo,
     PCGenerico,
     HistorialPCGenerico,
+    HistorialAsignacionIP,
     Servidor,
+    TipoAsignacionIP,
     Departamento,
     SubArea,
     _normalize_key,
@@ -180,10 +182,20 @@ class IPSerializer(serializers.ModelSerializer):
         source='usuario.nombre_completo'
     )
     estado = serializers.CharField(read_only=True)
+    tipo_asignacion = serializers.SerializerMethodField()
+    asignado_a = serializers.SerializerMethodField()
 
     class Meta:
         model = IP
         fields = '__all__'
+
+    def get_tipo_asignacion(self, obj):
+        assignment = getattr(obj, 'asignacion_activa', None)
+        return assignment.tipo if assignment else None
+
+    def get_asignado_a(self, obj):
+        assignment = getattr(obj, 'asignacion_activa', None)
+        return assignment.propietario_nombre if assignment else None
 
     def validate_direccion_ip(self, value):
         parsed_ip = ip_address(value)
@@ -229,7 +241,9 @@ class IPSerializer(serializers.ModelSerializer):
         instance = getattr(self, 'instance', None)
         server = None
         pc_generico = None
+        assignment = None
         if instance:
+            assignment = getattr(instance, 'asignacion_activa', None)
             try:
                 server = instance.servidor
             except Servidor.DoesNotExist:
@@ -239,8 +253,18 @@ class IPSerializer(serializers.ModelSerializer):
             except PCGenerico.DoesNotExist:
                 pc_generico = None
 
-        if server or pc_generico:
+        assignment_modules = {
+            TipoAsignacionIP.USUARIO: 'Usuarios',
+            TipoAsignacionIP.SERVIDOR: 'Servidores',
+            TipoAsignacionIP.PC_GENERICO: 'PCs Genéricos',
+        }
+        assignment_module = assignment_modules.get(
+            getattr(assignment, 'tipo', None)
+        )
+        if not assignment_module and (server or pc_generico):
             assignment_module = 'Servidores' if server else 'PCs Genéricos'
+
+        if assignment_module:
             if (
                 'direccion_ip' in attrs
                 and attrs['direccion_ip'] != instance.direccion_ip
@@ -263,24 +287,32 @@ class IPSerializer(serializers.ModelSerializer):
                     )
                 })
 
-        if (
-            instance
-            and instance.usuario_id
-            and 'asignado_otro' in attrs
-            and attrs.get('asignado_otro')
-        ):
-            raise serializers.ValidationError({
-                'asignado_otro': (
-                    'Esta IP está vinculada a un usuario. Para cambiar su asignación, '
-                    'debe gestionarla desde el módulo Usuarios.'
-                )
-            })
-
         observacion = attrs.get('observacion')
         if isinstance(observacion, str):
             attrs['observacion'] = observacion.strip() or None
 
         return attrs
+
+
+class HistorialAsignacionIPSerializer(serializers.ModelSerializer):
+    tipo_nombre = serializers.CharField(source='get_tipo_display', read_only=True)
+    accion_nombre = serializers.CharField(source='get_accion_display', read_only=True)
+
+    class Meta:
+        model = HistorialAsignacionIP
+        fields = [
+            'id',
+            'direccion_ip',
+            'accion',
+            'accion_nombre',
+            'tipo',
+            'tipo_nombre',
+            'propietario_id',
+            'propietario_nombre',
+            'realizado_por',
+            'fecha_movimiento',
+        ]
+        read_only_fields = fields
 
 
 class ServidorSerializer(serializers.ModelSerializer):

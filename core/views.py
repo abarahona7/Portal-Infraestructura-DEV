@@ -34,6 +34,7 @@ from .serializers import (
     EquipamientoSerializer,
     PerfilGenericoSerializer,
     IPSerializer,
+    HistorialAsignacionIPSerializer,
     AnexoSerializer,
     PCGenericoSerializer,
     ServidorSerializer,
@@ -162,11 +163,20 @@ class IPViewSet(viewsets.ModelViewSet):
         'direccion_ip',
         'observacion',
         'usuario__nombre_completo',
-        'asignado_otro'
+        'asignado_otro',
+        'asignacion_activa__usuario__nombre_completo',
+        'asignacion_activa__servidor__hostname',
+        'asignacion_activa__pc_generico__hostname',
+        'asignacion_activa__detalle',
     ]
 
     def get_queryset(self):
-        queryset = IP.objects.select_related('usuario')
+        queryset = IP.objects.select_related(
+            'usuario',
+            'asignacion_activa__usuario',
+            'asignacion_activa__servidor',
+            'asignacion_activa__pc_generico',
+        )
         if self.action in {'retrieve', 'update', 'partial_update', 'destroy'}:
             queryset = queryset.select_related('servidor', 'pc_generico')
         segment_id = self.request.query_params.get('segmento', '').strip()
@@ -185,6 +195,7 @@ class IPViewSet(viewsets.ModelViewSet):
             instance.usuario_id
             or hasattr(instance, 'servidor')
             or hasattr(instance, 'pc_generico')
+            or hasattr(instance, 'asignacion_activa')
         ):
             raise serializers.ValidationError({
                 'detail': (
@@ -194,6 +205,14 @@ class IPViewSet(viewsets.ModelViewSet):
             })
 
         instance.delete()
+
+    @action(detail=True, methods=['get'], url_path='historial')
+    def assignment_history(self, request, pk=None):
+        ip = self.get_object()
+        records = ip.historial_asignaciones.all()
+        return Response(
+            HistorialAsignacionIPSerializer(records, many=True).data
+        )
 
 
 # =========================================

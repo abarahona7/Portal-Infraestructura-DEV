@@ -1,8 +1,8 @@
 import uuid
 
-from django.db import models
+from django.db import models, transaction
 from django.core.exceptions import ValidationError
-from django.db.models.signals import post_delete, post_save, pre_save, pre_delete
+from django.db.models.signals import post_save, pre_save, pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
 from .crypto import encrypt_val, is_encrypted
@@ -349,6 +349,12 @@ class IP(models.Model):
 
     def __str__(self):
         return f"{self.direccion_ip} - {self.estado}"
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+            from .services.asignacion_ips import sync_ip_assignment_from_legacy
+            sync_ip_assignment_from_legacy(self.pk)
 
 # =========================================
 # SERVIDORES
@@ -741,6 +747,146 @@ class PCGenerico(models.Model):
 
     def __str__(self):
         return f"{self.hostname} - {self.usuario_local}"
+
+
+class TipoAsignacionIP(models.TextChoices):
+    USUARIO = 'USUARIO', 'Usuario'
+    SERVIDOR = 'SERVIDOR', 'Servidor'
+    PC_GENERICO = 'PC_GENERICO', 'PC Genérico'
+    OTRO = 'OTRO', 'Otro dispositivo o servicio'
+
+
+class AsignacionIP(models.Model):
+    """Propietario formal y único de una dirección IP administrada."""
+
+    ip = models.OneToOneField(
+        IP,
+        on_delete=models.CASCADE,
+        related_name='asignacion_activa',
+    )
+    tipo = models.CharField(max_length=20, choices=TipoAsignacionIP.choices)
+    usuario = models.OneToOneField(
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name='asignacion_ip_activa',
+        null=True,
+        blank=True,
+    )
+    servidor = models.OneToOneField(
+        Servidor,
+        on_delete=models.CASCADE,
+        related_name='asignacion_ip_activa',
+        null=True,
+        blank=True,
+    )
+    pc_generico = models.OneToOneField(
+        PCGenerico,
+        on_delete=models.CASCADE,
+        related_name='asignacion_ip_activa',
+        null=True,
+        blank=True,
+    )
+    detalle = models.CharField(max_length=150, null=True, blank=True)
+    fecha_asignacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Asignación IP activa'
+        verbose_name_plural = 'Asignaciones IP activas'
+        ordering = ['ip__direccion_ip']
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        tipo=TipoAsignacionIP.USUARIO,
+                        usuario__isnull=False,
+                        servidor__isnull=True,
+                        pc_generico__isnull=True,
+                        detalle__isnull=True,
+                    )
+                    | models.Q(
+                        tipo=TipoAsignacionIP.SERVIDOR,
+                        usuario__isnull=True,
+                        servidor__isnull=False,
+                        pc_generico__isnull=True,
+                        detalle__isnull=True,
+                    )
+                    | models.Q(
+                        tipo=TipoAsignacionIP.PC_GENERICO,
+                        usuario__isnull=True,
+                        servidor__isnull=True,
+                        pc_generico__isnull=False,
+                        detalle__isnull=True,
+                    )
+                    | (
+                        models.Q(
+                            tipo=TipoAsignacionIP.OTRO,
+                            usuario__isnull=True,
+                            servidor__isnull=True,
+                            pc_generico__isnull=True,
+                            detalle__isnull=False,
+                        )
+                        & ~models.Q(detalle='')
+                    )
+                ),
+                name='ck_asignacion_ip_propietario_valido',
+            ),
+        ]
+
+    @property
+    def propietario_nombre(self):
+        if self.tipo == TipoAsignacionIP.USUARIO and self.usuario_id:
+            return self.usuario.nombre_completo
+        if self.tipo == TipoAsignacionIP.SERVIDOR and self.servidor_id:
+            return self.servidor.hostname
+        if self.tipo == TipoAsignacionIP.PC_GENERICO and self.pc_generico_id:
+            return self.pc_generico.hostname
+        return self.detalle
+
+    def __str__(self):
+        return f'{self.ip.direccion_ip} - {self.propietario_nombre}'
+
+
+class HistorialAsignacionIP(models.Model):
+    ACCIONES = [
+        ('ASIGNACION', 'Asignación'),
+        ('LIBERACION', 'Liberación'),
+        ('MIGRACION', 'Migración inicial'),
+    ]
+
+    ip = models.ForeignKey(
+        IP,
+        on_delete=models.SET_NULL,
+        related_name='historial_asignaciones',
+        null=True,
+        blank=True,
+    )
+    direccion_ip = models.GenericIPAddressField()
+    accion = models.CharField(max_length=20, choices=ACCIONES)
+    tipo = models.CharField(
+        max_length=20,
+        choices=TipoAsignacionIP.choices,
+        null=True,
+        blank=True,
+    )
+    propietario_id = models.PositiveBigIntegerField(null=True, blank=True)
+    propietario_nombre = models.CharField(max_length=150, null=True, blank=True)
+    realizado_por = models.CharField(max_length=150, null=True, blank=True)
+    fecha_movimiento = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Historial de asignación IP'
+        verbose_name_plural = 'Historial de asignaciones IP'
+        ordering = ['-fecha_movimiento', '-pk']
+        indexes = [
+            models.Index(
+                fields=['direccion_ip', '-fecha_movimiento'],
+                name='idx_hist_ip_direccion_fecha',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.direccion_ip} - {self.accion}'
 
 
 class HistorialPCGenerico(models.Model):
@@ -1185,31 +1331,29 @@ def sync_ip_con_usuario(sender, instance, **kwargs):
             instance.estado = 'LIBRE'
 
 
-@receiver(post_delete, sender=Servidor)
+@receiver(pre_delete, sender=Servidor)
 def liberar_ip_al_eliminar_servidor(sender, instance, **kwargs):
     if not instance.ip_id:
         return
 
-    IP.objects.filter(
-        pk=instance.ip_id,
-        usuario__isnull=True,
-    ).update(
-        asignado_otro=None,
-        estado='LIBRE',
+    from .services.asignacion_ips import release_ip_for_owner
+    release_ip_for_owner(
+        instance.ip_id,
+        TipoAsignacionIP.SERVIDOR,
+        instance.pk,
     )
 
 
-@receiver(post_delete, sender=PCGenerico)
+@receiver(pre_delete, sender=PCGenerico)
 def liberar_ip_al_eliminar_pc_generico(sender, instance, **kwargs):
     if not instance.ip_id:
         return
 
-    IP.objects.filter(
-        pk=instance.ip_id,
-        usuario__isnull=True,
-    ).update(
-        asignado_otro=None,
-        estado='LIBRE',
+    from .services.asignacion_ips import release_ip_for_owner
+    release_ip_for_owner(
+        instance.ip_id,
+        TipoAsignacionIP.PC_GENERICO,
+        instance.pk,
     )
 
 
@@ -1309,14 +1453,9 @@ def auto_sync_usuario(sender, instance, created, **kwargs):
             fecha_asignacion=None
         )
 
-        # Liberar su IP
-        IP.objects.filter(
-            usuario=instance
-        ).update(
-            usuario=None,
-            estado='LIBRE',
-            asignado_otro=None
-        )
+        # Liberar su IP y cerrar la asignación activa.
+        from .services.asignacion_ips import assign_ip_to_user
+        assign_ip_to_user(instance.pk, None)
 
         # Liberar su anexo
         anexo = Anexo.objects.filter(
@@ -1402,14 +1541,9 @@ def liberar_recursos_al_eliminar_usuario(
         fecha_asignacion=None
     )
 
-    # Liberar IP
-    IP.objects.filter(
-        usuario=instance
-    ).update(
-        usuario=None,
-        estado='LIBRE',
-        asignado_otro=None
-    )
+    # Liberar IP y cerrar la asignación activa.
+    from .services.asignacion_ips import assign_ip_to_user
+    assign_ip_to_user(instance.pk, None)
 
     # Liberar anexo
     anexo = Anexo.objects.filter(

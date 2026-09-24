@@ -27,9 +27,16 @@ export default function IpEditForm({
     fontWeight: 'bold',
   };
 
-  const isUserAssigned = Boolean(ip.usuario);
+  const isUserAssigned = Boolean(
+    ip.usuario || ip.tipo_asignacion === 'USUARIO'
+  );
+  const isModuleManaged = ['SERVIDOR', 'PC_GENERICO'].includes(
+    ip.tipo_asignacion
+  );
   const isOtherAssigned = Boolean(ip.asignado_otro?.trim());
-  const isReserved = isUserAssigned || isOtherAssigned;
+  const isReserved = Boolean(
+    ip.tipo_asignacion || isUserAssigned || isOtherAssigned
+  );
   const segment = getIpSegment(ip.direccion_ip || '');
 
   return (
@@ -46,6 +53,7 @@ export default function IpEditForm({
           maxLength={15}
           value={ip.direccion_ip || ''}
           onChange={(e) => onIpChange(e.target.value)}
+          disabled={isUserAssigned || isModuleManaged}
           style={inputStyle}
         />
 
@@ -96,7 +104,30 @@ export default function IpEditForm({
         </div>
       )}
 
-      {!isUserAssigned && (
+      {isModuleManaged && (
+        <div>
+          <label style={{ ...labelStyle, color: '#2563eb' }}>
+            Asignación administrada
+          </label>
+
+          <div
+            style={{
+              ...inputStyle,
+              backgroundColor: '#eff6ff',
+              color: '#1d4ed8',
+              fontWeight: 700,
+            }}
+          >
+            {ip.asignado_a || ip.asignado_otro || 'Registro asignado'}
+          </div>
+
+          <small style={{ color: '#64748b' }}>
+            Para cambiar o liberar esta IP debes editar el servidor o PC genérico relacionado.
+          </small>
+        </div>
+      )}
+
+      {!isUserAssigned && !isModuleManaged && (
         <div>
           <label
             style={{

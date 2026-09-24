@@ -379,6 +379,17 @@ export const exportIpsExcel = ({
         key: 'tipo_asignacion',
         header: 'Tipo Asignación',
         value: (ip) => {
+          const assignmentLabels = {
+            USUARIO: 'Usuario',
+            SERVIDOR: 'Servidor',
+            PC_GENERICO: 'PC Genérico',
+            OTRO: 'Otro dispositivo',
+          };
+
+          if (ip.tipo_asignacion) {
+            return assignmentLabels[ip.tipo_asignacion] || ip.tipo_asignacion;
+          }
+
           if (ip.usuario_nombre) {
             return 'Usuario';
           }
@@ -394,6 +405,7 @@ export const exportIpsExcel = ({
         key: 'asignado_a',
         header: 'Asignado a',
         value: (ip) =>
+          ip.asignado_a ||
           ip.usuario_nombre ||
           ip.asignado_otro ||
           'Sin asignar',

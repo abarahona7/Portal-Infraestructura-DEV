@@ -13,7 +13,9 @@ export default function IpsTable({
   onDelete,
 }) {
   const Actions = ({ ip }) => {
-    const deleteBlocked = Boolean(ip.usuario);
+    const deleteBlocked = Boolean(
+      ip.tipo_asignacion || ip.usuario || ip.asignado_otro
+    );
 
     return (
       <div className="ips-actions">
@@ -38,12 +40,12 @@ export default function IpsTable({
           disabled={deleteBlocked}
           title={
             deleteBlocked
-              ? 'Libera esta IP desde la ficha del usuario antes de eliminarla'
+              ? 'Libera esta IP desde el módulo que administra su asignación'
               : 'Eliminar'
           }
           aria-label={
             deleteBlocked
-              ? 'IP asignada a usuario; no se puede eliminar'
+              ? 'IP asignada; no se puede eliminar'
               : 'Eliminar IP'
           }
           style={
@@ -91,13 +93,15 @@ export default function IpsTable({
 
                 <td
                   className={
-                    ip.usuario_nombre ||
+                    ip.asignado_a ||
+                      ip.usuario_nombre ||
                       ip.asignado_otro
                       ? 'ip-assigned'
                       : 'ip-unassigned'
                   }
                 >
-                  {ip.usuario_nombre ||
+                  {ip.asignado_a ||
+                    ip.usuario_nombre ||
                     ip.asignado_otro ||
                     'Sin asignar'}
                 </td>
@@ -151,6 +155,7 @@ export default function IpsTable({
               <MobileField
                 label="Asignado a"
                 value={
+                  ip.asignado_a ||
                   ip.usuario_nombre ||
                   ip.asignado_otro ||
                   'Sin asignar'

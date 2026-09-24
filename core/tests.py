@@ -650,11 +650,13 @@ class SecurityTests(TestCase):
 
     def test_pc_generico_rejects_duplicate_serial_and_asset(self):
         self.auth(self.operator)
+        department = Departamento.objects.create(nombre='Soporte PCs')
         PCGenerico.objects.create(
             usuario_local='local1',
             hostname='PC-GEN-01',
             numero_serie='PCSER-01',
             activo_fijo='AFPC001',
+            departamento=department,
         )
 
         duplicate_serial = self.client.post(
@@ -663,6 +665,7 @@ class SecurityTests(TestCase):
                 'usuario_local': 'local2',
                 'hostname': 'PC-GEN-02',
                 'numero_serie': 'pcser-01',
+                'departamento': department.pk,
             },
             format='json',
         )
@@ -672,6 +675,7 @@ class SecurityTests(TestCase):
                 'usuario_local': 'local3',
                 'hostname': 'PC-GEN-03',
                 'activo_fijo': 'afpc001',
+                'departamento': department.pk,
             },
             format='json',
         )
@@ -874,6 +878,7 @@ class PCGenericoIpIntegrationTests(TestCase):
 
         self.first_ip = IP.objects.create(direccion_ip='172.24.1.120')
         self.second_ip = IP.objects.create(direccion_ip='192.168.30.120')
+        self.department = Departamento.objects.create(nombre='Infraestructura')
 
     def test_pc_assignment_change_release_and_delete_sync_ip_state(self):
         created = self.client.post(
@@ -882,6 +887,7 @@ class PCGenericoIpIntegrationTests(TestCase):
                 'usuario_local': 'soporte.local',
                 'hostname': 'PC-GEN-IP-01',
                 'ip_seleccionada': self.first_ip.direccion_ip,
+                'departamento': self.department.pk,
             },
             format='json',
         )
@@ -977,6 +983,7 @@ class PCGenericoIpIntegrationTests(TestCase):
                     'usuario_local': f'local{index}',
                     'hostname': f'PC-CONFLICT-{index}',
                     'ip_seleccionada': address,
+                    'departamento': self.department.pk,
                 },
                 format='json',
             )

@@ -42,7 +42,6 @@ export default function ModuleEditModal({
   setEditingItem,
   onSubmit,
   onClose,
-  departments,
   departmentCatalog,
   usuarios,
   availableIps,
@@ -106,7 +105,7 @@ export default function ModuleEditModal({
         <PCGenericoEditForm
           pc={editingItem}
           onChange={setEditingItem}
-          departments={departments}
+          departments={departmentCatalog}
           availableIps={availableIps}
         />
       )}

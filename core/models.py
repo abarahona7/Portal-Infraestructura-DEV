@@ -691,6 +691,20 @@ class PCGenerico(models.Model):
         null=True,
         blank=True
     )
+    departamento = models.ForeignKey(
+        Departamento,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='pcs_genericos',
+    )
+    subarea = models.ForeignKey(
+        SubArea,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='pcs_genericos',
+    )
 
     marca = models.CharField(
         max_length=100,
@@ -737,13 +751,51 @@ class PCGenerico(models.Model):
     )
 
     def save(self, *args, **kwargs):
+        self.usuario_local = _normalize_spaces(self.usuario_local) or ''
+        self.hostname = _normalize_spaces(self.hostname) or ''
+
+        if not self.departamento_id and self.dpto_area:
+            normalized_area = _normalize_key(self.dpto_area)
+            self.departamento = Departamento.objects.filter(
+                nombre_normalizado=normalized_area
+            ).first()
+
+        if self.subarea_id:
+            self.dpto_area = self.subarea.nombre
+        elif self.departamento_id:
+            self.dpto_area = self.departamento.nombre
+        else:
+            self.dpto_area = _normalize_spaces(self.dpto_area)
+
+        self.clean()
+
         if self.password and not is_encrypted(self.password):
             self.password = encrypt_val(self.password)
 
         super().save(*args, **kwargs)
 
+    def clean(self):
+        if self.subarea_id and not self.departamento_id:
+            raise ValidationError({
+                'departamento': 'Debe indicar el departamento de la subárea seleccionada.'
+            })
+        if (
+            self.subarea_id
+            and self.departamento_id
+            and self.subarea.departamento_id != self.departamento_id
+        ):
+            raise ValidationError({
+                'subarea': 'La subárea seleccionada no pertenece al departamento indicado.'
+            })
+
     class Meta:
         ordering = ['hostname']
+        indexes = [
+            models.Index(
+                fields=['departamento', 'subarea'],
+                name='idx_pc_generico_dpto_sub',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.hostname} - {self.usuario_local}"
@@ -971,7 +1023,11 @@ def track_historial_pc_generico(sender, instance, **kwargs):
         return
 
     try:
-        pc_previo = PCGenerico.objects.get(pk=instance.pk)
+        pc_previo = PCGenerico.objects.select_related(
+            'departamento',
+            'subarea',
+            'ip',
+        ).get(pk=instance.pk)
     except PCGenerico.DoesNotExist:
         return
 
@@ -996,9 +1052,23 @@ def track_historial_pc_generico(sender, instance, **kwargs):
     )
 
     add_cambio(
-        "Departamento / Área",
-        pc_previo.dpto_area,
-        instance.dpto_area
+        "Departamento",
+        (
+            pc_previo.departamento.nombre
+            if pc_previo.departamento_id
+            else pc_previo.dpto_area
+        ),
+        (
+            instance.departamento.nombre
+            if instance.departamento_id
+            else instance.dpto_area
+        ),
+    )
+
+    add_cambio(
+        "Subárea",
+        pc_previo.subarea.nombre if pc_previo.subarea_id else None,
+        instance.subarea.nombre if instance.subarea_id else None,
     )
 
     add_cambio(

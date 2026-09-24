@@ -133,6 +133,7 @@ export const validateItem = (tab, item, data = []) => {
     if (!hostname) return { valid: false, message: 'Debe ingresar el Hostname del PC Genérico.' };
     if (hostname.length > 100) return { valid: false, message: 'El Hostname puede tener como máximo 100 caracteres.' };
     if (!isValidHostname(hostname)) return { valid: false, message: 'El Hostname solo puede contener letras, números, punto, guion y guion bajo, sin espacios.' };
+    if (!item.departamento) return { valid: false, message: 'Debe seleccionar un Departamento.' };
     if (data.some((pc) => pc.id !== item.id && normalizeLower(pc.hostname) === hostname.toLowerCase())) {
       return { valid: false, message: `Error: El Hostname "${hostname}" ya está registrado en otro PC Genérico.` };
     }

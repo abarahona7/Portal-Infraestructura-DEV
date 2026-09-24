@@ -470,10 +470,7 @@ export default function App() {
       return;
     }
 
-    const initialItem = getInitialCreateItem(
-      activeModuleTab,
-      dptosList
-    );
+    const initialItem = getInitialCreateItem(activeModuleTab);
 
     if (isEquipmentModule && initialItem) {
       initialItem.tipo = equipmentCategory === 'PERIFERICOS'
@@ -1248,10 +1245,6 @@ export default function App() {
             setNewItem(null)
           }
 
-          departments={
-            dptosList
-          }
-
           departmentCatalog={
             departamentosList
           }
@@ -1307,10 +1300,6 @@ export default function App() {
 
           onClose={() =>
             setEditingItem(null)
-          }
-
-          departments={
-            dptosList
           }
 
           departmentCatalog={

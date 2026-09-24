@@ -42,7 +42,6 @@ export default function ModuleCreateModal({
   setNewItem,
   onSubmit,
   onClose,
-  departments,
   departmentCatalog,
   usuarios,
   availableIps,
@@ -106,7 +105,7 @@ export default function ModuleCreateModal({
         <PCGenericoCreateForm
           pc={newItem}
           onChange={setNewItem}
-          departments={departments}
+          departments={departmentCatalog}
           availableIps={availableIps}
         />
       )}

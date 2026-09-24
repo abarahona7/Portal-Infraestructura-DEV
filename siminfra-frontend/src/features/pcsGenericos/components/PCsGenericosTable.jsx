@@ -10,6 +10,11 @@ import './PCsGenericosTable.css';
 
 const MASKED_PASSWORD = '••••';
 
+const getOrganizationalUnit = (pc) => {
+  const department = pc.departamento_nombre || pc.dpto_area;
+  return [department, pc.subarea_nombre].filter(Boolean).join(' / ') || 'N/I';
+};
+
 export default function PCsGenericosTable({
   pcs,
   onShowHistory,
@@ -104,7 +109,7 @@ export default function PCsGenericosTable({
               <th>Contraseña</th>
               <th>Hostname</th>
               <th>Dirección IP</th>
-              <th>Departamento / Área</th>
+              <th>Departamento / Subárea</th>
               <th>Marca</th>
               <th>Modelo</th>
               <th>N.º de Serie</th>
@@ -137,7 +142,7 @@ export default function PCsGenericosTable({
                 </td>
 
                 <td>
-                  {pc.dpto_area || 'N/I'}
+                  {getOrganizationalUnit(pc)}
                 </td>
 
                 <td>
@@ -217,10 +222,8 @@ export default function PCsGenericosTable({
               />
 
               <MobileField
-                label="Departamento / Área"
-                value={
-                  pc.dpto_area || 'N/I'
-                }
+                label="Departamento / Subárea"
+                value={getOrganizationalUnit(pc)}
                 full
               />
 

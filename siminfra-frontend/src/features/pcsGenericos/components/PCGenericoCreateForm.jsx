@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import PasswordInput from '../../usuarios/components/PasswordInput';
 import AvailableIpSelector from '../../usuarios/components/AvailableIpSelector';
+import PCGenericoDepartmentFields from './PCGenericoDepartmentFields';
 
 export default function PCGenericoCreateForm({
   pc,
@@ -98,37 +99,11 @@ export default function PCGenericoCreateForm({
         />
       </div>
 
-      {/* Departamento */}
-      <div>
-        <label style={labelStyle}>
-          Departamento / Área
-        </label>
-
-        <select
-          aria-label="Departamento o área"
-          value={pc.dpto_area || ''}
-          onChange={(e) =>
-            updateField(
-              'dpto_area',
-              e.target.value
-            )
-          }
-          style={inputStyle}
-        >
-          <option value="">
-            Selecciona un área...
-          </option>
-
-          {departments.map((department, index) => (
-            <option
-              key={index}
-              value={department}
-            >
-              {department}
-            </option>
-          ))}
-        </select>
-      </div>
+      <PCGenericoDepartmentFields
+        pc={pc}
+        onChange={onChange}
+        departments={departments}
+      />
 
       <AvailableIpSelector
         selectedIp={pc.ip_seleccionada ?? ''}

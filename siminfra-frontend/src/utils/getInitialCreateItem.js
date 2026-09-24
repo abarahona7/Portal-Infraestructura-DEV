@@ -1,7 +1,4 @@
-export const getInitialCreateItem = (
-  tab,
-  dptosList = []
-) => {
+export const getInitialCreateItem = (tab) => {
   switch (tab) {
     case 'usuarios':
       return {
@@ -72,7 +69,9 @@ export const getInitialCreateItem = (
         usuario_local: '',
         password: '',
         hostname: '',
-        dpto_area: dptosList[0] || '',
+        dpto_area: '',
+        departamento: null,
+        subarea: null,
         marca: '',
         modelo: '',
         numero_serie: '',

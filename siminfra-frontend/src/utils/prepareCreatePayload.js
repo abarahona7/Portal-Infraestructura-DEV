@@ -135,10 +135,7 @@ export const prepareCreatePayload = (
         payload.hostname.trim();
     }
 
-    if (payload.dpto_area) {
-      payload.dpto_area =
-        payload.dpto_area.trim();
-    }
+    delete payload.dpto_area;
 
     if (payload.marca) {
       payload.marca =

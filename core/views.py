@@ -102,11 +102,15 @@ class DepartamentoViewSet(
     search_fields = ['nombre', 'subareas__nombre']
 
     def perform_destroy(self, instance):
-        if instance.usuarios.exists() or instance.perfiles_genericos.exists():
+        if (
+            instance.usuarios.exists()
+            or instance.perfiles_genericos.exists()
+            or instance.pcs_genericos.exists()
+        ):
             raise serializers.ValidationError({
                 'detail': (
                     'No se puede eliminar este departamento porque tiene '
-                    'usuarios o perfiles genéricos asociados. Puedes desactivarlo.'
+                    'usuarios, perfiles genéricos o PCs asociados. Puedes desactivarlo.'
                 )
             })
 
@@ -137,11 +141,15 @@ class SubAreaViewSet(
     search_fields = ['nombre', 'departamento__nombre']
 
     def perform_destroy(self, instance):
-        if instance.usuarios.exists() or instance.perfiles_genericos.exists():
+        if (
+            instance.usuarios.exists()
+            or instance.perfiles_genericos.exists()
+            or instance.pcs_genericos.exists()
+        ):
             raise serializers.ValidationError({
                 'detail': (
-                    'No se puede eliminar esta subárea porque tiene usuarios '
-                    'o perfiles genéricos asociados. Puedes desactivarla para '
+                    'No se puede eliminar esta subárea porque tiene usuarios, '
+                    'perfiles genéricos o PCs asociados. Puedes desactivarla para '
                     'conservar las relaciones existentes.'
                 )
             })
@@ -554,7 +562,11 @@ class PCGenericoViewSet(
     viewsets.ModelViewSet
 ):
     permission_classes = [PortalRolePermission]
-    queryset = PCGenerico.objects.select_related('ip').prefetch_related(
+    queryset = PCGenerico.objects.select_related(
+        'ip',
+        'departamento',
+        'subarea',
+    ).prefetch_related(
         'historial'
     ).all()
 
@@ -572,13 +584,17 @@ class PCGenericoViewSet(
     ]
 
     filterset_fields = [
-        'dpto_area'
+        'departamento',
+        'subarea',
+        'dpto_area',
     ]
 
     search_fields = [
         'usuario_local',
         'hostname',
         'dpto_area',
+        'departamento__nombre',
+        'subarea__nombre',
         'marca',
         'modelo',
         'numero_serie',
@@ -589,22 +605,46 @@ class PCGenericoViewSet(
     ]
 
     def get_queryset(self):
-        queryset = PCGenerico.objects.select_related('ip')
+        queryset = PCGenerico.objects.select_related(
+            'ip',
+            'departamento',
+            'subarea',
+        )
 
         if self.action == 'retrieve':
             queryset = queryset.prefetch_related('historial')
 
-        dpto = self.request.query_params.get(
-            'dpto_area',
-            None
-        )
+        dpto = self.request.query_params.get('dpto_area')
 
         if dpto and dpto.strip():
-            queryset = queryset.filter(
-                dpto_area__icontains=dpto.strip()
-            )
+            value = dpto.strip()
+            if value.startswith('dept:'):
+                try:
+                    queryset = queryset.filter(
+                        departamento_id=int(value.split(':', 1)[1])
+                    )
+                except (TypeError, ValueError):
+                    return queryset.none()
+            elif value.startswith('subarea:'):
+                try:
+                    queryset = queryset.filter(
+                        subarea_id=int(value.split(':', 1)[1])
+                    )
+                except (TypeError, ValueError):
+                    return queryset.none()
+            else:
+                queryset = queryset.filter(
+                    Q(departamento__nombre__icontains=value)
+                    | Q(subarea__nombre__icontains=value)
+                    | Q(dpto_area__icontains=value)
+                )
 
-        return queryset.order_by('dpto_area', 'usuario_local', 'pk')
+        return queryset.order_by(
+            'departamento__nombre',
+            'subarea__nombre',
+            'usuario_local',
+            'pk',
+        )
 
 
 class ReferenceDataView(APIView):

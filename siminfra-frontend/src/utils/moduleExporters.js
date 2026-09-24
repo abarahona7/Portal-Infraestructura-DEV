@@ -651,10 +651,16 @@ export const exportPCsGenericosExcel = ({
           pc.ip_actual || 'Sin IP asignada',
       },
       {
-        key: 'dpto_area',
-        header: 'Departamento / Área',
+        key: 'departamento',
+        header: 'Departamento',
         value: (pc) =>
-          pc.dpto_area || 'N/I',
+          pc.departamento_nombre || pc.dpto_area || 'N/I',
+      },
+      {
+        key: 'subarea',
+        header: 'Subárea',
+        value: (pc) =>
+          pc.subarea_nombre || 'N/I',
       },
       {
         key: 'marca',

@@ -1176,6 +1176,8 @@ class PCGenericoSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
     password_configured = serializers.SerializerMethodField()
     ip_actual = serializers.SerializerMethodField()
+    departamento_nombre = serializers.ReadOnlyField(source='departamento.nombre')
+    subarea_nombre = serializers.ReadOnlyField(source='subarea.nombre')
     ip_seleccionada = serializers.IPAddressField(
         write_only=True,
         required=False,
@@ -1186,7 +1188,8 @@ class PCGenericoSerializer(serializers.ModelSerializer):
         model = PCGenerico
         fields = [
             'id', 'usuario_local', 'password', 'password_configured',
-            'hostname', 'dpto_area', 'marca', 'modelo', 'numero_serie',
+            'hostname', 'dpto_area', 'departamento', 'departamento_nombre',
+            'subarea', 'subarea_nombre', 'marca', 'modelo', 'numero_serie',
             'activo_fijo', 'teamviewer_id', 'observaciones', 'ip_actual',
             'ip_seleccionada', 'fecha_creacion', 'fecha_actualizacion',
             'historial',
@@ -1194,6 +1197,7 @@ class PCGenericoSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'fecha_creacion',
             'fecha_actualizacion',
+            'dpto_area',
         ]
 
     def get_password_configured(self, obj):
@@ -1297,11 +1301,6 @@ class PCGenericoSerializer(serializers.ModelSerializer):
                 attrs['usuario_local'].strip()
             )
 
-        if attrs.get('dpto_area'):
-            attrs['dpto_area'] = (
-                attrs['dpto_area'].strip()
-            )
-
         if attrs.get('marca'):
             attrs['marca'] = attrs['marca'].strip()
 
@@ -1318,6 +1317,54 @@ class PCGenericoSerializer(serializers.ModelSerializer):
             attrs['observaciones'] = (
                 attrs['observaciones'].strip()
             )
+
+        instance = getattr(self, 'instance', None)
+        departamento = attrs.get(
+            'departamento',
+            getattr(instance, 'departamento', None),
+        )
+        subarea = attrs.get(
+            'subarea',
+            getattr(instance, 'subarea', None),
+        )
+
+        if instance is None and not departamento:
+            raise serializers.ValidationError({
+                'departamento': 'Debe seleccionar un Departamento.'
+            })
+        if subarea and not departamento:
+            raise serializers.ValidationError({
+                'departamento': (
+                    'Debe seleccionar el Departamento correspondiente a la Subárea.'
+                )
+            })
+        if subarea and departamento:
+            if subarea.departamento_id != departamento.id:
+                raise serializers.ValidationError({
+                    'subarea': (
+                        'La Subárea seleccionada no pertenece al Departamento indicado.'
+                    )
+                })
+        if departamento and not departamento.activo:
+            current_id = getattr(
+                getattr(instance, 'departamento', None),
+                'id',
+                None,
+            )
+            if departamento.id != current_id:
+                raise serializers.ValidationError({
+                    'departamento': 'No se puede asignar un Departamento inactivo.'
+                })
+        if subarea and not subarea.activo:
+            current_id = getattr(
+                getattr(instance, 'subarea', None),
+                'id',
+                None,
+            )
+            if subarea.id != current_id:
+                raise serializers.ValidationError({
+                    'subarea': 'No se puede asignar una Subárea inactiva.'
+                })
 
         return attrs
 
@@ -1449,12 +1496,15 @@ class AnexoListSerializer(serializers.ModelSerializer):
 class PCGenericoListSerializer(serializers.ModelSerializer):
     password_configured = serializers.SerializerMethodField()
     ip_actual = serializers.SerializerMethodField()
+    departamento_nombre = serializers.ReadOnlyField(source='departamento.nombre')
+    subarea_nombre = serializers.ReadOnlyField(source='subarea.nombre')
 
     class Meta:
         model = PCGenerico
         fields = [
             'id', 'usuario_local', 'password_configured', 'hostname',
-            'dpto_area', 'marca', 'modelo', 'numero_serie', 'activo_fijo',
+            'dpto_area', 'departamento', 'departamento_nombre', 'subarea',
+            'subarea_nombre', 'marca', 'modelo', 'numero_serie', 'activo_fijo',
             'teamviewer_id', 'observaciones', 'fecha_creacion',
             'fecha_actualizacion', 'ip_actual',
         ]

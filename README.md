@@ -41,12 +41,14 @@ La versión `v1.0.0` congela el alcance funcional. A partir de esta versión se 
 
 1. Crear y activar un entorno virtual Python.
 2. Instalar `requirements.txt`.
-3. Configurar las variables locales requeridas, especialmente una `FIELD_ENCRYPTION_KEY` estable.
+3. Crear `.env` desde `.env.example` y configurar las variables locales,
+   especialmente una `FIELD_ENCRYPTION_KEY` estable. Django carga este archivo
+   automáticamente y las variables definidas por el sistema tienen prioridad.
 4. Ejecutar migraciones y `python manage.py runserver`.
 5. En `siminfra-frontend`, instalar dependencias con `npm ci` y crear `.env.local` con:
 
 ```env
-VITE_API_URL=http://127.0.0.1:8000/api
+VITE_API_URL=/api
 ```
 
 6. Ejecutar `npm run dev`.

@@ -1,9 +1,41 @@
 import os
+import re
 import secrets
 from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def load_env_file(path):
+    """Carga variables locales sin reemplazar las definidas por el sistema."""
+    if not path.exists():
+        return
+
+    for raw_line in path.read_text(encoding='utf-8-sig').splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith('#'):
+            continue
+        if line.startswith('export '):
+            line = line[7:].strip()
+        if '=' not in line:
+            continue
+
+        name, value = line.split('=', 1)
+        name = name.strip()
+        if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', name):
+            continue
+
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+            value = value[1:-1]
+        elif ' #' in value:
+            value = value.split(' #', 1)[0].rstrip()
+
+        os.environ.setdefault(name, value)
+
+
+load_env_file(BASE_DIR / '.env')
 
 
 def env_bool(name, default=False):

@@ -204,6 +204,7 @@ export const prepareUpdatePayload = (
       payload.observaciones =
         payload.observaciones.trim();
     }
+
   }
 
 

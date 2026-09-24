@@ -264,7 +264,9 @@ export default function App() {
   } = useReferenceData(token, authUser?.role, activeModuleTab);
 
   const hasOpenIpAssignmentForm = Boolean(newItem || editingItem) && (
-    activeModuleTab === 'usuarios' || activeModuleTab === 'servidores'
+    activeModuleTab === 'usuarios'
+    || activeModuleTab === 'servidores'
+    || activeModuleTab === 'pcs-genericos'
   );
 
   useEffect(() => {
@@ -335,6 +337,7 @@ export default function App() {
       equipos: ['usuarios'],
       ips: ['ips', 'ips_stats'],
       servidores: ['ips'],
+      'pcs-genericos': ['ips'],
       perfiles: ['perfiles'],
       departamentos: ['departamentos', 'usuarios', 'perfiles'],
     }[activeModuleTab] || [];
@@ -1104,7 +1107,9 @@ export default function App() {
                             ? handleExportPerfiles
                             : tab === 'anexos'
                               ? handleExportAnexos
-                              : undefined
+                              : tab === 'pcs-genericos'
+                                ? handleExportPCsGenericos
+                                : undefined
                 }
               />
 

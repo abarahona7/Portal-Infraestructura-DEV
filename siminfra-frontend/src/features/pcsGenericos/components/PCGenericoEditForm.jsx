@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import PasswordInput from '../../usuarios/components/PasswordInput';
+import AvailableIpSelector from '../../usuarios/components/AvailableIpSelector';
 
 export default function PCGenericoEditForm({
   pc,
   onChange,
   departments = [],
+  availableIps = [],
 }) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -125,6 +127,16 @@ export default function PCGenericoEditForm({
           ))}
         </select>
       </div>
+
+      <AvailableIpSelector
+        selectedIp={
+          pc.ip_seleccionada !== undefined
+            ? pc.ip_seleccionada ?? ''
+            : pc.ip_actual ?? ''
+        }
+        availableIps={availableIps}
+        onIpChange={(value) => updateField('ip_seleccionada', value)}
+      />
 
       {/* Marca + Modelo */}
       <div className="responsive-form-grid">

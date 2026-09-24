@@ -65,6 +65,13 @@
   color: #0284c7;
 }
 
+.pc-ip-address {
+  color: #15803d;
+  font-family: monospace;
+  font-weight: 700;
+  white-space: nowrap !important;
+}
+
 .pc-monospace {
   font-family: monospace;
 }

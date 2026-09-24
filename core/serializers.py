@@ -25,8 +25,11 @@ from .services.asignacion_ips import (
     IP_ALLOWED_NETWORKS,
     IpAssignmentError,
     assign_ip_to_user,
+    create_pc_generico_with_ip,
     create_server_with_ip,
+    update_pc_generico_with_ip,
     update_server_with_ip,
+    validate_pc_generico_ip,
     validate_server_ip,
     validate_user_ip,
 )
@@ -225,21 +228,27 @@ class IPSerializer(serializers.ModelSerializer):
 
         instance = getattr(self, 'instance', None)
         server = None
+        pc_generico = None
         if instance:
             try:
                 server = instance.servidor
             except Servidor.DoesNotExist:
                 server = None
+            try:
+                pc_generico = instance.pc_generico
+            except PCGenerico.DoesNotExist:
+                pc_generico = None
 
-        if server:
+        if server or pc_generico:
+            assignment_module = 'Servidores' if server else 'PCs Genéricos'
             if (
                 'direccion_ip' in attrs
                 and attrs['direccion_ip'] != instance.direccion_ip
             ):
                 raise serializers.ValidationError({
                     'direccion_ip': (
-                        'La dirección de una IP asignada a un servidor no se '
-                        'puede modificar. Cambia la IP desde Servidores.'
+                        'La dirección de una IP asignada no se puede modificar. '
+                        f'Cambia la IP desde {assignment_module}.'
                     )
                 })
 
@@ -249,7 +258,8 @@ class IPSerializer(serializers.ModelSerializer):
             ):
                 raise serializers.ValidationError({
                     'asignado_otro': (
-                        'La asignación de esta IP se administra desde Servidores.'
+                        'La asignación de esta IP se administra desde '
+                        f'{assignment_module}.'
                     )
                 })
 
@@ -1133,10 +1143,22 @@ class PCGenericoSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
     password_configured = serializers.SerializerMethodField()
+    ip_actual = serializers.SerializerMethodField()
+    ip_seleccionada = serializers.IPAddressField(
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
 
     class Meta:
         model = PCGenerico
-        fields = '__all__'
+        fields = [
+            'id', 'usuario_local', 'password', 'password_configured',
+            'hostname', 'dpto_area', 'marca', 'modelo', 'numero_serie',
+            'activo_fijo', 'teamviewer_id', 'observaciones', 'ip_actual',
+            'ip_seleccionada', 'fecha_creacion', 'fecha_actualizacion',
+            'historial',
+        ]
         read_only_fields = [
             'fecha_creacion',
             'fecha_actualizacion',
@@ -1145,10 +1167,8 @@ class PCGenericoSerializer(serializers.ModelSerializer):
     def get_password_configured(self, obj):
         return bool(obj.password)
 
-    def update(self, instance, validated_data):
-        if validated_data.get('password') in ('', None):
-            validated_data.pop('password', None)
-        return super().update(instance, validated_data)
+    def get_ip_actual(self, obj):
+        return obj.ip.direccion_ip if obj.ip_id else None
 
     def validate_usuario_local(self, value):
         value = _normalize_spaces(value)
@@ -1220,6 +1240,25 @@ class PCGenericoSerializer(serializers.ModelSerializer):
 
         return value
 
+    def validate_ip_seleccionada(self, value):
+        if value is None:
+            return None
+
+        try:
+            ip = IP.objects.get(direccion_ip=value)
+            validate_pc_generico_ip(
+                ip,
+                pc_id=getattr(getattr(self, 'instance', None), 'pk', None),
+            )
+        except IP.DoesNotExist as exc:
+            raise serializers.ValidationError(
+                'La IP seleccionada ya no existe.'
+            ) from exc
+        except IpAssignmentError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+
+        return value
+
     def validate(self, attrs):
         if attrs.get('usuario_local'):
             attrs['usuario_local'] = (
@@ -1249,6 +1288,35 @@ class PCGenericoSerializer(serializers.ModelSerializer):
             )
 
         return attrs
+
+    def create(self, validated_data):
+        selected_ip = validated_data.pop('ip_seleccionada', None)
+        try:
+            return create_pc_generico_with_ip(selected_ip, validated_data)
+        except IpAssignmentError as exc:
+            raise serializers.ValidationError({
+                'ip_seleccionada': str(exc),
+            }) from exc
+
+    def update(self, instance, validated_data):
+        if validated_data.get('password') in ('', None):
+            validated_data.pop('password', None)
+
+        if 'ip_seleccionada' in validated_data:
+            selected_ip = validated_data.pop('ip_seleccionada')
+        else:
+            selected_ip = instance.ip.direccion_ip if instance.ip_id else None
+
+        try:
+            return update_pc_generico_with_ip(
+                instance.pk,
+                selected_ip,
+                validated_data,
+            )
+        except IpAssignmentError as exc:
+            raise serializers.ValidationError({
+                'ip_seleccionada': str(exc),
+            }) from exc
 
 
 # =========================================
@@ -1348,6 +1416,7 @@ class AnexoListSerializer(serializers.ModelSerializer):
 
 class PCGenericoListSerializer(serializers.ModelSerializer):
     password_configured = serializers.SerializerMethodField()
+    ip_actual = serializers.SerializerMethodField()
 
     class Meta:
         model = PCGenerico
@@ -1355,11 +1424,14 @@ class PCGenericoListSerializer(serializers.ModelSerializer):
             'id', 'usuario_local', 'password_configured', 'hostname',
             'dpto_area', 'marca', 'modelo', 'numero_serie', 'activo_fijo',
             'teamviewer_id', 'observaciones', 'fecha_creacion',
-            'fecha_actualizacion',
+            'fecha_actualizacion', 'ip_actual',
         ]
 
     def get_password_configured(self, obj):
         return bool(obj.password)
+
+    def get_ip_actual(self, obj):
+        return obj.ip.direccion_ip if obj.ip_id else None
 
 
 class UsuarioReferenceSerializer(serializers.ModelSerializer):

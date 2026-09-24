@@ -60,7 +60,7 @@ export default function ModuleToolbar({
         return 'Buscar por marca, modelo, serie, hostname, AF...';
 
       case 'pcs-genericos':
-        return 'Buscar por usuario, hostname, marca, modelo...';
+        return 'Buscar por usuario, hostname, IP, marca o modelo...';
 
       case 'servidores':
         return 'Buscar por IP, hostname o descripción...';

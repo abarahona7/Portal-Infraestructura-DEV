@@ -4,7 +4,7 @@ from ipaddress import ip_address, ip_network
 
 from django.db import transaction
 
-from core.models import IP, Servidor, Usuario
+from core.models import IP, PCGenerico, Servidor, Usuario
 
 
 IP_ALLOWED_NETWORKS = tuple(
@@ -81,6 +81,44 @@ def validate_server_ip(ip, server_id=None):
         )
 
 
+def validate_pc_generico_ip(ip, pc_id=None):
+    parsed_ip = ip_address(ip.direccion_ip)
+    network = next(
+        (item for item in IP_ALLOWED_NETWORKS if parsed_ip in item),
+        None,
+    )
+    if network is None or parsed_ip in (
+        network.network_address,
+        network.broadcast_address,
+    ):
+        raise IpAssignmentError(
+            'La IP no pertenece a un segmento administrado en Gestión IPs.'
+        )
+
+    assigned_pc_id = PCGenerico.objects.filter(ip_id=ip.pk).values_list(
+        'pk', flat=True
+    ).first()
+    if assigned_pc_id and assigned_pc_id != pc_id:
+        raise IpAssignmentError('Esta IP ya está asignada a otro PC Genérico.')
+
+    assigned_server_id = Servidor.objects.filter(ip_id=ip.pk).values_list(
+        'pk', flat=True
+    ).first()
+    if assigned_server_id:
+        raise IpAssignmentError('Esta IP ya está asignada a un servidor.')
+
+    is_current = bool(pc_id and assigned_pc_id == pc_id)
+    if is_current:
+        if ip.usuario_id:
+            raise IpAssignmentError('Esta IP ya está asignada a un usuario.')
+        return
+
+    if ip.usuario_id or ip.asignado_otro or ip.estado != 'LIBRE':
+        raise IpAssignmentError(
+            'Solo se pueden asignar IP que estén disponibles.'
+        )
+
+
 def _reserve_user_ip(ip_id, user_id):
     IP.objects.filter(pk=ip_id).update(
         usuario_id=user_id,
@@ -93,6 +131,14 @@ def _reserve_server_ip(ip_id, hostname):
     IP.objects.filter(pk=ip_id).update(
         usuario=None,
         asignado_otro=f'Servidor: {hostname}',
+        estado='RESERVADA',
+    )
+
+
+def _reserve_pc_generico_ip(ip_id, hostname):
+    IP.objects.filter(pk=ip_id).update(
+        usuario=None,
+        asignado_otro=f'PC Genérico: {hostname}',
         estado='RESERVADA',
     )
 
@@ -197,3 +243,60 @@ def update_server_with_ip(server_id, ip_id, attributes):
         _release_ip(previous_ip_id)
     _reserve_server_ip(selected_ip.pk, server.hostname)
     return server
+
+
+@transaction.atomic
+def create_pc_generico_with_ip(address, attributes):
+    if address is None:
+        return PCGenerico.objects.create(**attributes)
+
+    try:
+        target_id = IP.objects.only('pk').get(direccion_ip=address).pk
+        locked_ip = IP.objects.select_for_update().get(pk=target_id)
+    except IP.DoesNotExist as exc:
+        raise IpAssignmentError('La IP seleccionada ya no existe.') from exc
+
+    validate_pc_generico_ip(locked_ip)
+    pc = PCGenerico.objects.create(ip=locked_ip, **attributes)
+    _reserve_pc_generico_ip(locked_ip.pk, pc.hostname)
+    return pc
+
+
+@transaction.atomic
+def update_pc_generico_with_ip(pc_id, address, attributes):
+    pc = PCGenerico.objects.select_for_update().get(pk=pc_id)
+    previous_ip_id = pc.ip_id
+
+    target_id = None
+    if address is not None:
+        try:
+            target_id = IP.objects.only('pk').get(direccion_ip=address).pk
+        except IP.DoesNotExist as exc:
+            raise IpAssignmentError('La IP seleccionada ya no existe.') from exc
+
+    ip_ids = {item for item in (previous_ip_id, target_id) if item is not None}
+    locked_ips = {
+        item.pk: item
+        for item in IP.objects.select_for_update()
+        .filter(pk__in=ip_ids)
+        .order_by('pk')
+    }
+
+    selected_ip = None
+    if target_id is not None:
+        try:
+            selected_ip = locked_ips[target_id]
+        except KeyError as exc:
+            raise IpAssignmentError('La IP seleccionada ya no existe.') from exc
+        validate_pc_generico_ip(selected_ip, pc_id=pc.pk)
+
+    for field, value in attributes.items():
+        setattr(pc, field, value)
+    pc.ip = selected_ip
+    pc.save()
+
+    if previous_ip_id and previous_ip_id != target_id:
+        _release_ip(previous_ip_id)
+    if selected_ip:
+        _reserve_pc_generico_ip(selected_ip.pk, pc.hostname)
+    return pc

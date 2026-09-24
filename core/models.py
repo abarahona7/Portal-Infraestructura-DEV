@@ -657,6 +657,14 @@ class PerfilGenerico(models.Model):
 
 
 class PCGenerico(models.Model):
+    ip = models.OneToOneField(
+        IP,
+        on_delete=models.PROTECT,
+        related_name='pc_generico',
+        null=True,
+        blank=True,
+    )
+
     usuario_local = models.CharField(
         max_length=150
     )
@@ -875,6 +883,11 @@ def track_historial_pc_generico(sender, instance, **kwargs):
         "ID TeamViewer",
         pc_previo.teamviewer_id,
         instance.teamviewer_id
+    )
+    add_cambio(
+        "Dirección IP",
+        pc_previo.ip.direccion_ip if pc_previo.ip_id else None,
+        instance.ip.direccion_ip if instance.ip_id else None,
     )
     add_cambio(
             "Observaciones",
@@ -1174,6 +1187,20 @@ def sync_ip_con_usuario(sender, instance, **kwargs):
 
 @receiver(post_delete, sender=Servidor)
 def liberar_ip_al_eliminar_servidor(sender, instance, **kwargs):
+    if not instance.ip_id:
+        return
+
+    IP.objects.filter(
+        pk=instance.ip_id,
+        usuario__isnull=True,
+    ).update(
+        asignado_otro=None,
+        estado='LIBRE',
+    )
+
+
+@receiver(post_delete, sender=PCGenerico)
+def liberar_ip_al_eliminar_pc_generico(sender, instance, **kwargs):
     if not instance.ip_id:
         return
 

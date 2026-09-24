@@ -861,6 +861,129 @@ class ServerIpIntegrationTests(TestCase):
         self.assertEqual(second_result.json()['ip_asignada'], '172.23.1.101')
 
 
+class PCGenericoIpIntegrationTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        admin_group, _ = Group.objects.get_or_create(name='Administrador')
+        self.admin = User.objects.create_user(
+            'pc-ip-admin',
+            password='StrongPass!123',
+        )
+        self.admin.groups.add(admin_group)
+        self.client.force_authenticate(user=self.admin)
+
+        self.first_ip = IP.objects.create(direccion_ip='172.24.1.120')
+        self.second_ip = IP.objects.create(direccion_ip='192.168.30.120')
+
+    def test_pc_assignment_change_release_and_delete_sync_ip_state(self):
+        created = self.client.post(
+            '/api/pcs-genericos/',
+            {
+                'usuario_local': 'soporte.local',
+                'hostname': 'PC-GEN-IP-01',
+                'ip_seleccionada': self.first_ip.direccion_ip,
+            },
+            format='json',
+        )
+
+        self.assertEqual(created.status_code, 201)
+        self.assertEqual(created.json()['ip_actual'], self.first_ip.direccion_ip)
+        pc_id = created.json()['id']
+
+        self.first_ip.refresh_from_db()
+        self.assertEqual(self.first_ip.estado, 'RESERVADA')
+        self.assertEqual(
+            self.first_ip.asignado_otro,
+            'PC Genérico: PC-GEN-IP-01',
+        )
+
+        renamed = self.client.patch(
+            f'/api/pcs-genericos/{pc_id}/',
+            {'hostname': 'PC-GEN-IP-RENAMED'},
+            format='json',
+        )
+        self.assertEqual(renamed.status_code, 200)
+        self.first_ip.refresh_from_db()
+        self.assertEqual(
+            self.first_ip.asignado_otro,
+            'PC Genérico: PC-GEN-IP-RENAMED',
+        )
+
+        changed = self.client.patch(
+            f'/api/pcs-genericos/{pc_id}/',
+            {'ip_seleccionada': self.second_ip.direccion_ip},
+            format='json',
+        )
+        self.assertEqual(changed.status_code, 200)
+        self.assertEqual(changed.json()['ip_actual'], self.second_ip.direccion_ip)
+
+        self.first_ip.refresh_from_db()
+        self.second_ip.refresh_from_db()
+        self.assertEqual(self.first_ip.estado, 'LIBRE')
+        self.assertIsNone(self.first_ip.asignado_otro)
+        self.assertEqual(self.second_ip.estado, 'RESERVADA')
+
+        blocked_ip_edit = self.client.patch(
+            f'/api/ips/{self.second_ip.pk}/',
+            {'asignado_otro': 'Asignación manual'},
+            format='json',
+        )
+        self.assertEqual(blocked_ip_edit.status_code, 400)
+
+        released = self.client.patch(
+            f'/api/pcs-genericos/{pc_id}/',
+            {'ip_seleccionada': None},
+            format='json',
+        )
+        self.assertEqual(released.status_code, 200)
+        self.assertIsNone(released.json()['ip_actual'])
+        self.second_ip.refresh_from_db()
+        self.assertEqual(self.second_ip.estado, 'LIBRE')
+
+        reassigned = self.client.patch(
+            f'/api/pcs-genericos/{pc_id}/',
+            {'ip_seleccionada': self.first_ip.direccion_ip},
+            format='json',
+        )
+        self.assertEqual(reassigned.status_code, 200)
+        deleted = self.client.delete(f'/api/pcs-genericos/{pc_id}/')
+        self.assertEqual(deleted.status_code, 204)
+        self.first_ip.refresh_from_db()
+        self.assertEqual(self.first_ip.estado, 'LIBRE')
+        self.assertIsNone(self.first_ip.asignado_otro)
+
+    def test_pc_rejects_ip_reserved_by_another_owner(self):
+        reserved = IP.objects.create(
+            direccion_ip='172.25.1.120',
+            asignado_otro='Impresora',
+        )
+        user = Usuario.objects.create(
+            nombre_completo='Usuario con IP',
+            usuario_red='usuario.ip.pc',
+            correo_corp='usuario.ip.pc@example.com',
+        )
+        user_ip = IP.objects.create(
+            direccion_ip='192.168.20.120',
+            usuario=user,
+        )
+
+        for index, address in enumerate(
+            (reserved.direccion_ip, user_ip.direccion_ip),
+            start=1,
+        ):
+            response = self.client.post(
+                '/api/pcs-genericos/',
+                {
+                    'usuario_local': f'local{index}',
+                    'hostname': f'PC-CONFLICT-{index}',
+                    'ip_seleccionada': address,
+                },
+                format='json',
+            )
+            self.assertEqual(response.status_code, 400)
+            self.assertIn('ip_seleccionada', response.json())
+
+
 @override_settings(PORTAL_IDLE_TIMEOUT_SECONDS=300)
 class PortalSessionTests(TestCase):
     def setUp(self):

@@ -167,6 +167,8 @@ class IPViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = IP.objects.select_related('usuario')
+        if self.action in {'retrieve', 'update', 'partial_update', 'destroy'}:
+            queryset = queryset.select_related('servidor', 'pc_generico')
         segment_id = self.request.query_params.get('segmento', '').strip()
         prefix = MANAGED_IP_SEGMENT_PREFIXES.get(segment_id)
         if segment_id and not prefix:
@@ -179,11 +181,15 @@ class IPViewSet(viewsets.ModelViewSet):
         return queryset.order_by('direccion_ip')
 
     def perform_destroy(self, instance):
-        if instance.usuario_id or hasattr(instance, 'servidor'):
+        if (
+            instance.usuario_id
+            or hasattr(instance, 'servidor')
+            or hasattr(instance, 'pc_generico')
+        ):
             raise serializers.ValidationError({
                 'detail': (
                     'No se puede eliminar una IP asignada. Libérala primero '
-                    'desde el módulo Usuarios o Servidores.'
+                    'desde el módulo que administra su asignación.'
                 )
             })
 
@@ -529,7 +535,7 @@ class PCGenericoViewSet(
     viewsets.ModelViewSet
 ):
     permission_classes = [PortalRolePermission]
-    queryset = PCGenerico.objects.prefetch_related(
+    queryset = PCGenerico.objects.select_related('ip').prefetch_related(
         'historial'
     ).all()
 
@@ -560,10 +566,11 @@ class PCGenericoViewSet(
         'activo_fijo',
         'teamviewer_id',
         'observaciones',
+        'ip__direccion_ip',
     ]
 
     def get_queryset(self):
-        queryset = PCGenerico.objects.all()
+        queryset = PCGenerico.objects.select_related('ip')
 
         if self.action == 'retrieve':
             queryset = queryset.prefetch_related('historial')

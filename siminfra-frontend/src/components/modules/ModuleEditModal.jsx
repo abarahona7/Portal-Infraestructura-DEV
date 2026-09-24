@@ -107,6 +107,7 @@ export default function ModuleEditModal({
           pc={editingItem}
           onChange={setEditingItem}
           departments={departments}
+          availableIps={availableIps}
         />
       )}
 

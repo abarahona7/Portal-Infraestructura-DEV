@@ -103,6 +103,7 @@ export default function PCsGenericosTable({
               <th>Usuario Local</th>
               <th>Contraseña</th>
               <th>Hostname</th>
+              <th>Dirección IP</th>
               <th>Departamento / Área</th>
               <th>Marca</th>
               <th>Modelo</th>
@@ -129,6 +130,10 @@ export default function PCsGenericosTable({
 
                 <td className="pc-hostname">
                   {pc.hostname || 'N/I'}
+                </td>
+
+                <td className="pc-ip-address">
+                  {pc.ip_actual || 'Sin IP asignada'}
                 </td>
 
                 <td>
@@ -204,6 +209,13 @@ export default function PCsGenericosTable({
             </div>
 
             <div className="pc-card-grid">
+              <MobileField
+                label="Dirección IP"
+                value={pc.ip_actual || 'Sin IP asignada'}
+                monospace
+                full
+              />
+
               <MobileField
                 label="Departamento / Área"
                 value={

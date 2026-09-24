@@ -633,6 +633,12 @@ export const exportPCsGenericosExcel = ({
           pc.hostname || 'N/I',
       },
       {
+        key: 'ip_actual',
+        header: 'Dirección IP',
+        value: (pc) =>
+          pc.ip_actual || 'Sin IP asignada',
+      },
+      {
         key: 'dpto_area',
         header: 'Departamento / Área',
         value: (pc) =>

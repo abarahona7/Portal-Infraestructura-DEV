@@ -107,6 +107,7 @@ export default function ModuleCreateModal({
           pc={newItem}
           onChange={setNewItem}
           departments={departments}
+          availableIps={availableIps}
         />
       )}
 

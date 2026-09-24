@@ -78,6 +78,7 @@ export const getInitialCreateItem = (
         numero_serie: '',
         activo_fijo: '',
         observaciones: '',
+        ip_seleccionada: null,
       };
 
     case 'servidores':

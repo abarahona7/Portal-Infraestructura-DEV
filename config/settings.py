@@ -103,6 +103,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'core.middleware.RequestContextMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -189,7 +190,9 @@ CORS_ALLOWED_ORIGINS = env_list(
     'http://localhost:5173,http://127.0.0.1:5173' if DEBUG else ''
 )
 CORS_ALLOW_CREDENTIALS = True
+CORS_EXPOSE_HEADERS = ['X-Request-ID']
 CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS')
+CSRF_COOKIE_SAMESITE = os.getenv('CSRF_COOKIE_SAMESITE', 'Lax')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -261,12 +264,41 @@ if IS_PRODUCTION:
     if SECURE_HSTS_SECONDS <= 0:
         raise ImproperlyConfigured('SECURE_HSTS_SECONDS debe ser mayor que cero en producción.')
 
+LOG_FORMAT = os.getenv('DJANGO_LOG_FORMAT', 'json' if IS_PRODUCTION else 'simple').lower()
+if LOG_FORMAT not in {'simple', 'json'}:
+    raise ImproperlyConfigured('DJANGO_LOG_FORMAT debe ser simple o json.')
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'formatters': {'simple': {'format': '{levelname} {name}: {message}', 'style': '{'}},
-    'handlers': {'console': {'class': 'logging.StreamHandler', 'formatter': 'simple'}},
+    'filters': {
+        'request_id': {'()': 'config.logging_utils.RequestIdFilter'},
+    },
+    'formatters': {
+        'simple': {
+            'format': '{levelname} {name} [{request_id}]: {message}',
+            'style': '{',
+        },
+        'json': {'()': 'config.logging_utils.JsonFormatter'},
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': LOG_FORMAT,
+            'filters': ['request_id'],
+        },
+    },
     'root': {'handlers': ['console'], 'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')},
+    'loggers': {
+        'portal.request': {
+            'handlers': ['console'],
+            'level': os.getenv(
+                'DJANGO_REQUEST_LOG_LEVEL',
+                'INFO' if IS_PRODUCTION else 'WARNING',
+            ),
+            'propagate': False,
+        },
+    },
 }
 
 ALLOW_LEGACY_IMPORT = env_bool('ALLOW_LEGACY_IMPORT', False)

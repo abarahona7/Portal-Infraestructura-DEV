@@ -99,7 +99,8 @@ npm run build
 ```
 
 El proxy HTTPS debe servir `dist`, enviar `/api` al backend y servir
-`staticfiles` como contenido estático.
+`staticfiles` como contenido estático. Mantener frontend y API bajo el mismo
+origen permite que Axios envíe el token CSRF sin exponerlo a otros dominios.
 
 ## 6. Ejecutar el backend
 
@@ -114,6 +115,11 @@ $env:DJANGO_SETTINGS_MODULE='config.settings_production'
 El proxy debe reemplazar `X-Forwarded-Proto` y evitar que el cliente se conecte
 directamente a Waitress. Solo después de confirmar HTTPS en todo el sitio se
 debe habilitar HSTS.
+
+En producción los logs se escriben como JSON en la salida estándar. Cada
+respuesta incluye `X-Request-ID`, y el mismo valor aparece en los logs internos
+del ciclo de esa solicitud. El recolector de logs debe conservar este campo y
+restringir el acceso a los registros.
 
 ## 7. Verificación funcional
 

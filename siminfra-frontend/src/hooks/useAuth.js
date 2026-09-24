@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import apiClient, { setAccessToken } from '../api/client';
+import apiClient, { ensureCsrfToken, setAccessToken } from '../api/client';
 
 const TAB_SESSION_KEY = 'portal-infra-ti-tab-session-active';
 let bootstrapPromise = null;
@@ -31,11 +31,11 @@ const clearTabSession = () => {
 
 const requestBootstrapRefresh = () => {
   if (!bootstrapPromise) {
-    bootstrapPromise = apiClient
-      .post('/auth/refresh/', {}, {
+    bootstrapPromise = ensureCsrfToken()
+      .then(() => apiClient.post('/auth/refresh/', {}, {
         headers: { 'X-Portal-Activity': '1' },
         skipAuth: true,
-      })
+      }))
       .then(({ data }) => data)
       .finally(() => {
         bootstrapPromise = null;
@@ -65,6 +65,7 @@ export const useAuth = () => {
 
   const refresh = useCallback(async () => {
     try {
+      await ensureCsrfToken();
       const { data } = await apiClient.post('/auth/refresh/', {}, {
         headers: { 'X-Portal-Activity': '1' },
         skipAuth: true,
@@ -120,6 +121,7 @@ export const useAuth = () => {
     setLoginError('');
 
     try {
+      await ensureCsrfToken();
       const { data } = await apiClient.post('/auth/login/', {
         username,
         password,
@@ -141,6 +143,7 @@ export const useAuth = () => {
 
   const logout = useCallback(async () => {
     try {
+      await ensureCsrfToken();
       await apiClient.post('/auth/logout/', {}, { skipAuth: true });
     } catch {
       // Aunque el backend no responda, limpiamos la sesión visible.

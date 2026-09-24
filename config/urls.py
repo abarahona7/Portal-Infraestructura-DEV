@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from core.views import UsuarioViewSet, EquipamientoViewSet, PerfilGenericoViewSet, IPViewSet, AnexoViewSet, PCGenericoViewSet, ServidorViewSet, DepartamentoViewSet, SubAreaViewSet, ReferenceDataView
-from core.auth_views import ActivityView, LoginView, RefreshCookieView, LogoutView, MeView
+from core.auth_views import ActivityView, CsrfTokenView, LoginView, RefreshCookieView, LogoutView, MeView
 from core.security_views import RevealSecretView
 
 router = DefaultRouter()
@@ -18,6 +18,7 @@ router.register(r'subareas', SubAreaViewSet, basename='subarea')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/auth/csrf/', CsrfTokenView.as_view(), name='csrf-token'),
     path('api/auth/login/', LoginView.as_view(), name='login'),
     path('api/auth/refresh/', RefreshCookieView.as_view(), name='refresh'),
     path('api/auth/logout/', LogoutView.as_view(), name='logout'),

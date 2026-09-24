@@ -1,6 +1,8 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.contrib.auth.models import User, Group
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
@@ -924,6 +926,92 @@ class PortalSessionTests(TestCase):
         )
         self.assertEqual(refreshed.status_code, 401)
         self.assertIsNotNone(PortalSession.objects.get(pk=sid).revoked_at)
+
+    def test_unexpected_refresh_error_is_not_reported_as_expired_session(self):
+        self.login()
+
+        with patch(
+            'core.auth_views.get_active_portal_session',
+            side_effect=RuntimeError('fallo interno de prueba'),
+        ), self.assertLogs('core.auth_views', level='ERROR') as captured:
+            refreshed = self.client.post('/api/auth/refresh/')
+
+        self.assertEqual(refreshed.status_code, 503)
+        self.assertEqual(
+            refreshed.json()['detail'],
+            'No fue posible renovar la sesión.',
+        )
+        self.assertTrue(
+            any('session_refresh_unexpected_error' in line for line in captured.output)
+        )
+
+
+class CsrfSessionProtectionTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.addCleanup(cache.clear)
+        admin_group, _ = Group.objects.get_or_create(name='Administrador')
+        self.user = User.objects.create_user(
+            'csrf-admin',
+            password='StrongPass!123',
+        )
+        self.user.groups.add(admin_group)
+        self.client = APIClient(enforce_csrf_checks=True)
+
+    def csrf_token(self):
+        response = self.client.get('/api/auth/csrf/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('csrftoken', response.cookies)
+        self.assertRegex(response['X-Request-ID'], r'^[0-9a-f]{32}$')
+        return response.json()['csrfToken']
+
+    def credentials(self):
+        return {'username': 'csrf-admin', 'password': 'StrongPass!123'}
+
+    def test_login_requires_csrf_token(self):
+        rejected = self.client.post(
+            '/api/auth/login/',
+            self.credentials(),
+            format='json',
+        )
+        self.assertEqual(rejected.status_code, 403)
+
+        csrf_token = self.csrf_token()
+        accepted = self.client.post(
+            '/api/auth/login/',
+            self.credentials(),
+            format='json',
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.assertEqual(accepted.status_code, 200)
+
+    def test_refresh_and_logout_require_csrf_token(self):
+        csrf_token = self.csrf_token()
+        login = self.client.post(
+            '/api/auth/login/',
+            self.credentials(),
+            format='json',
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.assertEqual(login.status_code, 200)
+
+        rejected_refresh = self.client.post('/api/auth/refresh/')
+        self.assertEqual(rejected_refresh.status_code, 403)
+
+        refreshed = self.client.post(
+            '/api/auth/refresh/',
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.assertEqual(refreshed.status_code, 200)
+
+        rejected_logout = self.client.post('/api/auth/logout/')
+        self.assertEqual(rejected_logout.status_code, 403)
+
+        logged_out = self.client.post(
+            '/api/auth/logout/',
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.assertEqual(logged_out.status_code, 204)
 
 
 class PerformanceQueryTests(TestCase):

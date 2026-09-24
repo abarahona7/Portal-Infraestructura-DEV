@@ -1,21 +1,29 @@
+import logging
+
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
+from django.middleware.csrf import get_token
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from .permissions import get_role
 from .models import PortalSession, SecurityAuditLog
 from .session_auth import (
+    PortalSessionError,
     get_active_portal_session,
     revoke_portal_session,
     touch_portal_session,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def _cookie_kwargs():
@@ -36,6 +44,28 @@ def _client_ip(request):
     return forwarded.split(',')[0].strip() if forwarded else request.META.get('REMOTE_ADDR')
 
 
+def _expired_session_response():
+    response = Response(
+        {'detail': 'Sesión expirada.'},
+        status=status.HTTP_401_UNAUTHORIZED,
+    )
+    response.delete_cookie(
+        settings.JWT_REFRESH_COOKIE,
+        path=settings.JWT_COOKIE_PATH,
+    )
+    return response
+
+
+class CsrfTokenView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        response = Response({'csrfToken': get_token(request)})
+        response['Cache-Control'] = 'no-store, private'
+        return response
+
+
+@method_decorator(csrf_protect, name='dispatch')
 class LoginView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
@@ -59,13 +89,14 @@ class LoginView(APIView):
         return response
 
 
+@method_decorator(csrf_protect, name='dispatch')
 class RefreshCookieView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
         raw = request.COOKIES.get(settings.JWT_REFRESH_COOKIE)
         if not raw:
-            return Response({'detail': 'Sesión expirada.'}, status=status.HTTP_401_UNAUTHORIZED)
+            return _expired_session_response()
         try:
             old = RefreshToken(raw)
             user_id = old.get('user_id')
@@ -87,12 +118,33 @@ class RefreshCookieView(APIView):
             response = Response({'access': str(new.access_token), 'user': {'username': user.get_username(), 'role': get_role(user)}})
             _set_refresh_cookie(response, new)
             return response
+        except (
+            TokenError,
+            PortalSessionError,
+            get_user_model().DoesNotExist,
+            ValueError,
+            TypeError,
+        ) as exc:
+            logger.warning(
+                'session_refresh_rejected',
+                extra={
+                    'event': 'SESSION_REFRESH_REJECTED',
+                    'reason': type(exc).__name__,
+                },
+            )
+            return _expired_session_response()
         except Exception:
-            response = Response({'detail': 'Sesión expirada.'}, status=status.HTTP_401_UNAUTHORIZED)
-            response.delete_cookie(settings.JWT_REFRESH_COOKIE, path=settings.JWT_COOKIE_PATH)
-            return response
+            logger.exception(
+                'session_refresh_unexpected_error',
+                extra={'event': 'SESSION_REFRESH_ERROR'},
+            )
+            return Response(
+                {'detail': 'No fue posible renovar la sesión.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
 
+@method_decorator(csrf_protect, name='dispatch')
 class LogoutView(APIView):
     permission_classes = [AllowAny]
 

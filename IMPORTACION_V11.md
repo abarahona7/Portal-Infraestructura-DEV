@@ -2,6 +2,10 @@
 
 El comando `importar_datos_v11` procesa los cinco Excel de `Portal SimInfra/IMPORTAR`. No modifica registros ya existentes: las filas que coinciden con registros o contienen claves ambiguas se reportan para revisión.
 
+El comando anterior `importar_datos` está retirado de forma permanente. Al
+invocarlo termina sin escribir en la base y dirige a este procedimiento. Ya no
+existe una variable de entorno que permita reactivar la carga heredada.
+
 ## Reglas acordadas
 
 - `Departamento/Área` se carga como Departamento. La Subárea queda vacía para completarla en el portal.

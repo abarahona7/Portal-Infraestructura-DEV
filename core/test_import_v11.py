@@ -16,6 +16,10 @@ from core.services.importacion_v11 import file_digest
 
 @override_settings(FIELD_ENCRYPTION_KEY=Fernet.generate_key().decode())
 class ImportV11Tests(TestCase):
+    def test_legacy_importer_is_permanently_retired(self):
+        with self.assertRaisesRegex(CommandError, 'fue retirado'):
+            call_command('importar_datos', stdout=io.StringIO())
+
     def make_workbooks(self, root):
         specs = [
             ('Usuarios Simi.xlsx', 3, {5: 'NOMBRE DE USUARIO'}, [

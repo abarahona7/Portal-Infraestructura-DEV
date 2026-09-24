@@ -306,5 +306,3 @@ LOGGING = {
         },
     },
 }
-
-ALLOW_LEGACY_IMPORT = env_bool('ALLOW_LEGACY_IMPORT', False)

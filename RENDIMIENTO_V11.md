@@ -125,7 +125,7 @@ caché sin invalidación inmediata podría mostrar disponibilidad incorrecta.
 
 ## Validaciones
 
-- 66 pruebas de Django ejecutadas: 65 aprobadas y 1 prueba de concurrencia
+- 67 pruebas de Django disponibles: 66 aprobadas y 1 prueba de concurrencia
   omitida en SQLite porque requiere los bloqueos reales de MySQL.
 - `python manage.py check` sin observaciones.
 - Lint del frontend sin errores.

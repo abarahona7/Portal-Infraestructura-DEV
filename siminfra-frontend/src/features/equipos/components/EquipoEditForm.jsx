@@ -75,6 +75,7 @@ export default function EquipoEditForm({
         </label>
 
         <select
+          aria-label="Tipo de equipo"
           value={tipoActual}
           onChange={(e) =>
             handleTipoChange(e.target.value)
@@ -145,6 +146,7 @@ export default function EquipoEditForm({
         </label>
 
         <input
+          aria-label="Marca"
           type="text"
           value={equipo.marca || ''}
           maxLength={50}
@@ -168,6 +170,7 @@ export default function EquipoEditForm({
         </label>
 
         <input
+          aria-label="Modelo"
           type="text"
           value={equipo.modelo || ''}
           maxLength={50}
@@ -191,6 +194,7 @@ export default function EquipoEditForm({
         </label>
 
         <input
+          aria-label="Número de serie"
           type="text"
           maxLength={20}
           value={
@@ -245,6 +249,7 @@ export default function EquipoEditForm({
             </label>
 
             <input
+              aria-label="Número de teléfono"
               type="text"
               inputMode="tel"
               maxLength={12}
@@ -290,6 +295,7 @@ export default function EquipoEditForm({
               </label>
 
               <input
+                aria-label="IMEI"
                 type="text"
                 value={equipo.imei || ''}
                 onChange={(e) =>
@@ -313,6 +319,7 @@ export default function EquipoEditForm({
               </label>
 
               <input
+                aria-label="PIN"
                 type="text"
                 value={equipo.pin || ''}
                 onChange={(e) =>
@@ -351,6 +358,7 @@ export default function EquipoEditForm({
           </label>
 
           <input
+            aria-label="Número de teléfono"
             type="text"
             value={
               equipo.numero_telefono || ''
@@ -405,6 +413,7 @@ export default function EquipoEditForm({
             </label>
 
             <input
+              aria-label="Cuenta iCloud"
               type="email"
               value={
                 equipo.icloud_cuenta || ''
@@ -430,6 +439,7 @@ export default function EquipoEditForm({
             </label>
 
             <input
+              aria-label="Contraseña iCloud"
               type="text"
               value={
                 equipo.icloud_password || ''
@@ -465,6 +475,7 @@ export default function EquipoEditForm({
           </label>
 
           <input
+            aria-label="Hostname"
             type="text"
             value={equipo.hostname || ''}
             onChange={(e) =>
@@ -490,6 +501,7 @@ export default function EquipoEditForm({
         </label>
 
         <input
+          aria-label="Activo fijo"
           type="text"
           maxLength={12}
           value={equipo.af || ''}
@@ -518,6 +530,7 @@ export default function EquipoEditForm({
         </label>
 
         <textarea
+          aria-label="Accesorios u observaciones"
           rows={3}
           maxLength={255}
           value={equipo.accesorios || ''}
@@ -551,6 +564,7 @@ export default function EquipoEditForm({
         </label>
 
         <select
+          aria-label="Usuario asignado"
           value={equipo.usuario || ''}
           onChange={(e) =>
             updateField(
@@ -587,6 +601,7 @@ export default function EquipoEditForm({
         </label>
 
         <input
+          aria-label="Fecha de asignación"
           type="date"
           value={
             equipo.fecha_asignacion || ''
@@ -611,6 +626,7 @@ export default function EquipoEditForm({
         </label>
 
         <select
+          aria-label="Estado del equipo"
           value={
             equipo.estado || 'ASIGNADO'
           }

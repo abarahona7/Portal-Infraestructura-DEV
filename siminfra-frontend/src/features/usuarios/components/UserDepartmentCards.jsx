@@ -73,6 +73,7 @@ export default function UserDepartmentCards({
             <button
               key={department.value}
               type="button"
+              aria-pressed={active}
               className={`user-department-card ${active ? 'is-active' : ''}`}
               onClick={() => onSelectDepartment(department.value)}
             >

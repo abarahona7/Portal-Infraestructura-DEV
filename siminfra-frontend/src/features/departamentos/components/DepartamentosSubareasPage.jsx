@@ -435,6 +435,7 @@ export default function DepartamentosSubareasPage({
             <button
               key={department.id}
               type="button"
+              aria-pressed={active}
               className={`department-chip ${active ? 'is-selected' : ''} ${
                 !department.activo ? 'is-disabled' : ''
               }`}

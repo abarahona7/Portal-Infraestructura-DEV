@@ -90,6 +90,7 @@ export default function UsuarioEditForm({
       <div>
         <label style={labelStyle}>Estado del Usuario</label>
         <select
+          aria-label="Estado del usuario"
           value={usuario.estado || 'ACTIVO'}
           onChange={(e) => handleStatusChange(e.target.value)}
           style={inputStyle}
@@ -103,6 +104,7 @@ export default function UsuarioEditForm({
       <div>
         <label style={labelStyle}>Nombre Completo</label>
         <input
+          aria-label="Nombre completo"
           type="text"
           value={usuario.nombre_completo || ''}
           maxLength={150}
@@ -114,6 +116,7 @@ export default function UsuarioEditForm({
       <div>
         <label style={labelStyle}>Departamento *</label>
         <select
+          aria-label="Departamento"
           required
           value={usuario.departamento ?? ''}
           onChange={(e) => handleDepartmentChange(e.target.value)}
@@ -131,6 +134,7 @@ export default function UsuarioEditForm({
       <div>
         <label style={labelStyle}>Subárea</label>
         <select
+          aria-label="Subárea"
           value={usuario.subarea ?? ''}
           onChange={(e) =>
             updateField('subarea', e.target.value ? Number(e.target.value) : null)
@@ -157,6 +161,7 @@ export default function UsuarioEditForm({
       <div>
         <label style={labelStyle}>Cargo</label>
         <input
+          aria-label="Cargo"
           type="text"
           value={usuario.cargo || ''}
           maxLength={100}
@@ -168,6 +173,7 @@ export default function UsuarioEditForm({
       <div>
         <label style={{ ...labelStyle, color: '#0284c7' }}>Hostname</label>
         <input
+          aria-label="Hostname"
           type="text"
           value={usuario.hostname || ''}
           maxLength={50}
@@ -179,6 +185,7 @@ export default function UsuarioEditForm({
       <div>
         <label style={labelStyle}>Usuario de Red</label>
         <input
+          aria-label="Usuario de red"
           type="text"
           value={usuario.usuario_red || ''}
           maxLength={50}
@@ -190,6 +197,7 @@ export default function UsuarioEditForm({
       <div>
         <label style={labelStyle}>Correo Corp.</label>
         <input
+          aria-label="Correo corporativo"
           type="email"
           value={usuario.correo_corp || ''}
           maxLength={254}
@@ -201,6 +209,7 @@ export default function UsuarioEditForm({
       <div>
         <label style={labelStyle}>Gmail</label>
         <input
+          aria-label="Cuenta Gmail"
           type="email"
           value={usuario.gmail || ''}
           maxLength={254}

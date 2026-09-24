@@ -56,6 +56,7 @@ export default function IpSegmentCards({
             <button
               key={segment.id}
               type="button"
+              aria-pressed={isSelected}
               className={`ip-segment-card ${
                 isSelected
                   ? 'ip-segment-card-selected'

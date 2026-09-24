@@ -2,6 +2,7 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
+import { useId } from 'react';
 
 export default function PasswordInput({
   label,
@@ -10,9 +11,12 @@ export default function PasswordInput({
   visible,
   onToggle,
 }) {
+  const inputId = useId();
+
   return (
     <div>
       <label
+        htmlFor={inputId}
         style={{
           fontSize: '0.8rem',
           color: '#64748b',
@@ -29,6 +33,7 @@ export default function PasswordInput({
         }}
       >
         <input
+          id={inputId}
           type={visible ? 'text' : 'password'}
           value={value || ''}
           onChange={(e) =>

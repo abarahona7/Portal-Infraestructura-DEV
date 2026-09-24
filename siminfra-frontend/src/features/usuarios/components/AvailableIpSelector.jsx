@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 
 import {
   filterIpsBySegment,
@@ -13,6 +13,8 @@ export default function AvailableIpSelector({
   disabled = false,
   onIpChange,
 }) {
+  const segmentId = useId();
+  const ipId = useId();
   const [selectedSegment, setSelectedSegment] = useState(
     () => getIpSegment(selectedIp || '')?.id || ''
   );
@@ -45,8 +47,9 @@ export default function AvailableIpSelector({
   return (
     <>
       <div>
-        <label style={labelStyle}>Segmento de red</label>
+        <label htmlFor={segmentId} style={labelStyle}>Segmento de red</label>
         <select
+          id={segmentId}
           value={selectedSegment}
           onChange={(event) => handleSegmentChange(event.target.value)}
           disabled={disabled}
@@ -73,8 +76,9 @@ export default function AvailableIpSelector({
       </div>
 
       <div>
-        <label style={labelStyle}>IP disponible</label>
+        <label htmlFor={ipId} style={labelStyle}>IP disponible</label>
         <select
+          id={ipId}
           value={selectedIp || ''}
           onChange={(event) => onIpChange(event.target.value || null)}
           disabled={disabled || !selectedSegment}
@@ -97,7 +101,7 @@ export default function AvailableIpSelector({
           ))}
         </select>
         {disabled && (
-          <div style={{ marginTop: '6px', fontSize: '0.75rem', color: '#64748b' }}>
+          <div role="status" style={{ marginTop: '6px', fontSize: '0.75rem', color: '#64748b' }}>
             Las IP solo se pueden asignar o cambiar cuando el usuario está Activo.
           </div>
         )}

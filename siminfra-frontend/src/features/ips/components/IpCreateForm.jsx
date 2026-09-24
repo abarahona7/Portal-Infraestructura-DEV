@@ -38,6 +38,7 @@ export default function IpCreateForm({
         </label>
 
         <input
+          aria-label="Dirección IP"
           type="text"
           required
           placeholder="Ej: 172.23.1.50"
@@ -82,6 +83,7 @@ export default function IpCreateForm({
         </label>
 
         <input
+          aria-label="Asignado a otro artefacto o servicio"
           type="text"
           maxLength={150}
           placeholder="Ej: Servidor DB / CCTV Piso 1 / Impresora Finanzas"
@@ -101,6 +103,7 @@ export default function IpCreateForm({
         </label>
 
         <input
+          aria-label="Observaciones"
           type="text"
           maxLength={255}
           placeholder="Ej: Punto de red sector recepción"

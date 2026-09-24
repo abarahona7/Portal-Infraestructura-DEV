@@ -61,6 +61,7 @@ export default function PerfilCreateForm({
       <div>
         <label style={labelStyle}>Nombre / Perfil *</label>
         <input
+          aria-label="Nombre o perfil"
           type="text"
           required
           value={perfil.nombre || ''}
@@ -73,6 +74,7 @@ export default function PerfilCreateForm({
       <div>
         <label style={labelStyle}>Usuario *</label>
         <input
+          aria-label="Usuario del perfil"
           type="text"
           required
           value={perfil.usuario || ''}
@@ -85,6 +87,7 @@ export default function PerfilCreateForm({
       <div>
         <label style={labelStyle}>Contraseña</label>
         <input
+          aria-label="Contraseña del perfil"
           type="password"
           value={perfil.password || ''}
           onChange={(e) => updateField('password', e.target.value)}
@@ -96,6 +99,7 @@ export default function PerfilCreateForm({
       <div>
         <label style={labelStyle}>Tipo Cuenta</label>
         <select
+          aria-label="Tipo de cuenta"
           value={perfil.tipo || 'On Premise'}
           onChange={(e) => updateField('tipo', e.target.value)}
           style={{
@@ -113,6 +117,7 @@ export default function PerfilCreateForm({
       <div>
         <label style={labelStyle}>Correo Asignado</label>
         <input
+          aria-label="Correo asignado"
           type="email"
           value={perfil.correo || ''}
           maxLength={254}
@@ -124,6 +129,7 @@ export default function PerfilCreateForm({
       <div>
         <label style={labelStyle}>Departamento *</label>
         <select
+          aria-label="Departamento"
           required
           value={perfil.departamento ?? ''}
           onChange={(e) => handleDepartmentChange(e.target.value)}
@@ -141,6 +147,7 @@ export default function PerfilCreateForm({
       <div>
         <label style={labelStyle}>Subárea</label>
         <select
+          aria-label="Subárea"
           value={perfil.subarea ?? ''}
           onChange={(e) =>
             updateField('subarea', e.target.value ? Number(e.target.value) : null)
@@ -167,6 +174,7 @@ export default function PerfilCreateForm({
       <div>
         <label style={labelStyle}>Observaciones</label>
         <textarea
+          aria-label="Observaciones"
           value={perfil.observaciones || ''}
           onChange={(e) => updateField('observaciones', e.target.value)}
           placeholder="Ej: Cuenta utilizada para soporte, sistema interno, acceso compartido, etc."

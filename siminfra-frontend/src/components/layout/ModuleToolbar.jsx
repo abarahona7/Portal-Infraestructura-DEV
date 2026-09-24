@@ -122,6 +122,7 @@ export default function ModuleToolbar({
             <Filter size={16} />
 
             <select
+              aria-label="Filtrar PCs genéricos por departamento"
               value={selectedDepartment}
               onChange={(e) =>
                 onDepartmentChange(
@@ -154,6 +155,7 @@ export default function ModuleToolbar({
             <Filter size={16} />
 
             <select
+              aria-label="Filtrar equipos por estado"
               value={selectedEquipmentStatus}
               onChange={(event) =>
                 onEquipmentStatusChange(event.target.value)
@@ -175,6 +177,7 @@ export default function ModuleToolbar({
             <Filter size={16} />
 
             <select
+              aria-label="Filtrar direcciones IP por estado"
               value={selectedIpStatus}
               onChange={(e) =>
                 onIpStatusChange(
@@ -205,6 +208,7 @@ export default function ModuleToolbar({
             <Filter size={16} />
 
             <select
+              aria-label="Filtrar anexos por estado"
               value={selectedAnexoStatus}
               onChange={(e) =>
                 onAnexoStatusChange(
@@ -232,6 +236,7 @@ export default function ModuleToolbar({
         <div className="module-toolbar-search">
           <input
             type="text"
+            aria-label={getSearchPlaceholder()}
             placeholder={
               getSearchPlaceholder()
             }

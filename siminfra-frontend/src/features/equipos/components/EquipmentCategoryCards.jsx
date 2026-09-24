@@ -114,6 +114,7 @@ export default function EquipmentCategoryCards({
             <button
               key={category.value}
               type="button"
+              aria-pressed={active}
               className={`equipment-category-card ${
                 active ? 'is-active' : ''
               }`}

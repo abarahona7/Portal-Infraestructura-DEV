@@ -75,6 +75,7 @@ export default function UsuarioCreateForm({
       <div>
         <label style={labelStyle}>Estado del Usuario</label>
         <select
+          aria-label="Estado del usuario"
           value={usuario.estado || 'ACTIVO'}
           onChange={(e) => handleStatusChange(e.target.value)}
           style={inputStyle}
@@ -88,6 +89,7 @@ export default function UsuarioCreateForm({
       <div>
         <label style={labelStyle}>Nombre Completo *</label>
         <input
+          aria-label="Nombre completo"
           type="text"
           required
           value={usuario.nombre_completo || ''}
@@ -100,6 +102,7 @@ export default function UsuarioCreateForm({
       <div>
         <label style={labelStyle}>Departamento *</label>
         <select
+          aria-label="Departamento"
           required
           value={usuario.departamento ?? ''}
           onChange={(e) => handleDepartmentChange(e.target.value)}
@@ -117,6 +120,7 @@ export default function UsuarioCreateForm({
       <div>
         <label style={labelStyle}>Subárea</label>
         <select
+          aria-label="Subárea"
           value={usuario.subarea ?? ''}
           onChange={(e) =>
             updateField('subarea', e.target.value ? Number(e.target.value) : null)
@@ -143,6 +147,7 @@ export default function UsuarioCreateForm({
       <div>
         <label style={labelStyle}>Cargo</label>
         <input
+          aria-label="Cargo"
           type="text"
           value={usuario.cargo || ''}
           maxLength={100}
@@ -154,6 +159,7 @@ export default function UsuarioCreateForm({
       <div>
         <label style={{ ...labelStyle, color: '#0284c7' }}>Hostname</label>
         <input
+          aria-label="Hostname"
           type="text"
           placeholder="Ej: LAPTOP-FIN-01"
           value={usuario.hostname || ''}
@@ -166,6 +172,7 @@ export default function UsuarioCreateForm({
       <div>
         <label style={labelStyle}>Usuario de Red *</label>
         <input
+          aria-label="Usuario de red"
           type="text"
           required
           value={usuario.usuario_red || ''}
@@ -178,6 +185,7 @@ export default function UsuarioCreateForm({
       <div>
         <label style={labelStyle}>Correo Corp. *</label>
         <input
+          aria-label="Correo corporativo"
           type="email"
           required
           value={usuario.correo_corp || ''}
@@ -190,6 +198,7 @@ export default function UsuarioCreateForm({
       <div>
         <label style={labelStyle}>Gmail</label>
         <input
+          aria-label="Cuenta Gmail"
           type="email"
           value={usuario.gmail || ''}
           maxLength={254}

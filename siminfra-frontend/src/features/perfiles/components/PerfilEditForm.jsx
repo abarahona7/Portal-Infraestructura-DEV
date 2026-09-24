@@ -64,6 +64,7 @@ export default function PerfilEditForm({
       <div>
         <label style={labelStyle}>Estado</label>
         <select
+          aria-label="Estado del perfil"
           value={perfil.estado || 'ACTIVO'}
           onChange={(e) => updateField('estado', e.target.value)}
           style={inputStyle}
@@ -76,6 +77,7 @@ export default function PerfilEditForm({
       <div>
         <label style={labelStyle}>Nombre / Perfil *</label>
         <input
+          aria-label="Nombre o perfil"
           type="text"
           required
           value={perfil.nombre || ''}
@@ -88,6 +90,7 @@ export default function PerfilEditForm({
       <div>
         <label style={labelStyle}>Usuario *</label>
         <input
+          aria-label="Usuario del perfil"
           type="text"
           required
           value={perfil.usuario || ''}
@@ -100,6 +103,7 @@ export default function PerfilEditForm({
       <div>
         <label style={labelStyle}>Nueva contraseña</label>
         <input
+          aria-label="Nueva contraseña"
           type="password"
           value={perfil.password || ''}
           onChange={(e) => updateField('password', e.target.value)}
@@ -112,6 +116,7 @@ export default function PerfilEditForm({
       <div>
         <label style={labelStyle}>Tipo Cuenta</label>
         <select
+          aria-label="Tipo de cuenta"
           value={perfil.tipo || 'On Premise'}
           onChange={(e) => updateField('tipo', e.target.value)}
           style={{
@@ -129,6 +134,7 @@ export default function PerfilEditForm({
       <div>
         <label style={labelStyle}>Correo Asignado</label>
         <input
+          aria-label="Correo asignado"
           type="email"
           value={perfil.correo || ''}
           maxLength={254}
@@ -140,6 +146,7 @@ export default function PerfilEditForm({
       <div>
         <label style={labelStyle}>Departamento *</label>
         <select
+          aria-label="Departamento"
           required
           value={perfil.departamento ?? ''}
           onChange={(e) => handleDepartmentChange(e.target.value)}
@@ -157,6 +164,7 @@ export default function PerfilEditForm({
       <div>
         <label style={labelStyle}>Subárea</label>
         <select
+          aria-label="Subárea"
           value={perfil.subarea ?? ''}
           onChange={(e) =>
             updateField('subarea', e.target.value ? Number(e.target.value) : null)
@@ -183,6 +191,7 @@ export default function PerfilEditForm({
       <div>
         <label style={labelStyle}>Observaciones</label>
         <textarea
+          aria-label="Observaciones"
           value={perfil.observaciones || ''}
           onChange={(e) => updateField('observaciones', e.target.value)}
           placeholder="Ej: Cuenta utilizada para soporte, sistema interno, acceso compartido, etc."

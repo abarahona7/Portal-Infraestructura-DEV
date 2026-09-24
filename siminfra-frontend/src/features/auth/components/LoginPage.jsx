@@ -22,8 +22,8 @@ export default function LoginPage({
 
   return (
     <div className="login-page">
-      <div className="login-background-decoration login-decoration-one" />
-      <div className="login-background-decoration login-decoration-two" />
+      <div className="login-background-decoration login-decoration-one" aria-hidden="true" />
+      <div className="login-background-decoration login-decoration-two" aria-hidden="true" />
 
       <form
         onSubmit={onSubmit}
@@ -67,7 +67,7 @@ export default function LoginPage({
 
         {/* ERROR */}
         {loginError && (
-          <div className="login-error">
+          <div className="login-error" role="alert" aria-live="assertive">
             {loginError}
           </div>
         )}

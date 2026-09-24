@@ -39,6 +39,7 @@ export default function PCGenericoEditForm({
         </label>
 
         <input
+          aria-label="Usuario local"
           type="text"
           required
           value={pc.usuario_local || ''}
@@ -78,6 +79,7 @@ export default function PCGenericoEditForm({
         </label>
 
         <input
+          aria-label="Hostname"
           type="text"
           required
           value={pc.hostname || ''}
@@ -99,6 +101,7 @@ export default function PCGenericoEditForm({
         </label>
 
         <select
+          aria-label="Departamento o área"
           value={pc.dpto_area || ''}
           onChange={(e) =>
             updateField(
@@ -131,6 +134,7 @@ export default function PCGenericoEditForm({
           </label>
 
           <input
+            aria-label="Marca"
             type="text"
             value={pc.marca || ''}
             maxLength={100}
@@ -150,6 +154,7 @@ export default function PCGenericoEditForm({
           </label>
 
           <input
+            aria-label="Modelo"
             type="text"
             value={pc.modelo || ''}
             maxLength={100}
@@ -172,6 +177,7 @@ export default function PCGenericoEditForm({
           </label>
 
           <input
+            aria-label="Número de serie"
             type="text"
             maxLength={20}
             value={pc.numero_serie || ''}
@@ -192,6 +198,7 @@ export default function PCGenericoEditForm({
           </label>
 
           <input
+            aria-label="Activo fijo"
             type="text"
             maxLength={12}
             value={pc.activo_fijo || ''}
@@ -215,6 +222,7 @@ export default function PCGenericoEditForm({
         </label>
 
         <input
+          aria-label="ID TeamViewer"
           type="text"
           maxLength={20}
           value={pc.teamviewer_id || ''}
@@ -236,6 +244,7 @@ export default function PCGenericoEditForm({
         </label>
 
         <textarea
+          aria-label="Observaciones"
           value={pc.observaciones || ''}
           onChange={(e) =>
             updateField(

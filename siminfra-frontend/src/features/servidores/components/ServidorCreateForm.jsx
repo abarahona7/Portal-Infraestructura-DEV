@@ -31,6 +31,7 @@ export default function ServidorCreateForm({
       <div style={fieldStyle}>
         <label style={labelStyle}>Dirección IP *</label>
         <select
+          aria-label="Dirección IP"
           required
           value={servidor.ip || ''}
           onChange={(event) => updateField('ip', event.target.value)}
@@ -51,6 +52,7 @@ export default function ServidorCreateForm({
       <div style={fieldStyle}>
         <label style={labelStyle}>Hostname *</label>
         <input
+          aria-label="Hostname"
           type="text"
           required
           maxLength={100}
@@ -64,6 +66,7 @@ export default function ServidorCreateForm({
       <div style={fieldStyle}>
         <label style={labelStyle}>Descripción</label>
         <textarea
+          aria-label="Descripción"
           value={servidor.descripcion || ''}
           onChange={(event) => updateField('descripcion', event.target.value)}
           placeholder="Ej: Servidor SQL de producción"

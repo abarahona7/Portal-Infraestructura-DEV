@@ -77,6 +77,7 @@ export default function PerfilDepartmentCards({
             <button
               key={department.id}
               type="button"
+              aria-pressed={active}
               className={`perfil-department-card ${active ? 'is-active' : ''}`}
               onClick={() => onSelectFilter(active && selectedFilter === value ? '' : value)}
             >
@@ -100,6 +101,7 @@ export default function PerfilDepartmentCards({
                 <button
                   key={subarea.id}
                   type="button"
+                  aria-pressed={active}
                   className={`perfil-subarea-chip ${active ? 'is-active' : ''}`}
                   onClick={() => onSelectFilter(active ? `dept:${selectedDepartment.id}` : value)}
                 >

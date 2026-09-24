@@ -44,6 +44,7 @@ export default function AnexoEditForm({
         </label>
 
         <input
+          aria-label="Número de anexo"
           type="text"
           required
           maxLength={10}
@@ -73,6 +74,7 @@ export default function AnexoEditForm({
         </label>
 
         <input
+          aria-label="Número exterior"
           type="text"
           inputMode="tel"
           maxLength={12}
@@ -119,6 +121,7 @@ export default function AnexoEditForm({
         </label>
 
         <select
+          aria-label="Usuario asignado"
           value={anexo.usuario || ''}
           onChange={(e) =>
             updateField(
@@ -152,6 +155,7 @@ export default function AnexoEditForm({
         </label>
 
         <input
+          aria-label="Estado"
           type="text"
           value={estadoAutomatico}
           readOnly
@@ -175,6 +179,7 @@ export default function AnexoEditForm({
         </label>
 
         <input
+          aria-label="Observaciones"
           type="text"
           value={anexo.observaciones || ''}
           onChange={(e) =>

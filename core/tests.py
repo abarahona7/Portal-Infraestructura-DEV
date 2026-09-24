@@ -509,10 +509,13 @@ class SecurityTests(TestCase):
         )
 
         self.assertEqual(by_department.status_code, 200)
-        self.assertEqual(len(by_department.json()), 2)
+        self.assertEqual(by_department.json()['count'], 2)
         self.assertEqual(by_subarea.status_code, 200)
-        self.assertEqual(len(by_subarea.json()), 1)
-        self.assertEqual(by_subarea.json()[0]['usuario'], 'perfil.infra.filter')
+        self.assertEqual(by_subarea.json()['count'], 1)
+        self.assertEqual(
+            by_subarea.json()['results'][0]['usuario'],
+            'perfil.infra.filter',
+        )
     def test_cannot_delete_department_or_subarea_used_by_perfil(self):
         self.auth(self.admin)
         departamento = Departamento.objects.create(nombre='Tecnología')
@@ -1061,12 +1064,71 @@ class PerformanceQueryTests(TestCase):
             extensions.content
 
         self.assertEqual(users.status_code, 200)
-        self.assertLessEqual(len(user_queries), 3)
-        self.assertLessEqual(len(equipment_queries), 2)
-        self.assertLessEqual(len(extension_queries), 2)
-        self.assertNotIn('historial', users.json()[0])
-        self.assertNotIn('historial', equipment.json()[0])
-        self.assertNotIn('historial', extensions.json()[0])
+        self.assertLessEqual(len(user_queries), 4)
+        self.assertLessEqual(len(equipment_queries), 3)
+        self.assertLessEqual(len(extension_queries), 3)
+        self.assertNotIn('historial', users.json()['results'][0])
+        self.assertNotIn('historial', equipment.json()['results'][0])
+        self.assertNotIn('historial', extensions.json()['results'][0])
+
+    def test_large_lists_return_page_metadata(self):
+        response = self.client.get('/api/usuarios/?page=2&page_size=2')
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['count'], 5)
+        self.assertEqual(payload['page'], 2)
+        self.assertEqual(payload['page_size'], 2)
+        self.assertEqual(payload['total_pages'], 3)
+        self.assertEqual(len(payload['results']), 2)
+
+    def test_ip_segment_stats_avoid_loading_full_ip_rows(self):
+        response = self.client.get('/api/reference-data/?include=ips_stats')
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(set(payload), {'ips_stats'})
+        self.assertEqual(payload['ips_stats']['172.23']['total'], 5)
+        self.assertEqual(payload['ips_stats']['172.23']['reservadas'], 5)
+
+    def test_ip_segment_filter_orders_hosts_numerically(self):
+        for host in (10, 2, 1):
+            IP.objects.create(direccion_ip=f'172.24.1.{host}')
+
+        response = self.client.get(
+            '/api/ips/',
+            {'segmento': '172.24', 'page_size': 200},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [item['direccion_ip'] for item in response.json()['results']],
+            ['172.24.1.1', '172.24.1.2', '172.24.1.10'],
+        )
+
+    def test_equipment_category_filter_is_applied_by_backend(self):
+        peripheral = Equipamiento.objects.create(
+            tipo='Monitor',
+            marca='Dell',
+            modelo='P2422H',
+            numero_serie='PERIPHERAL-1',
+        )
+        Equipamiento.objects.create(
+            tipo='Celular',
+            marca='Samsung',
+            modelo='A55',
+            numero_serie='PHONE-1',
+        )
+
+        response = self.client.get(
+            '/api/equipos/',
+            {'categoria': 'PERIFERICOS', 'page_size': 200},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        results = response.json()['results']
+        self.assertEqual([item['id'] for item in results], [peripheral.id])
+        self.assertEqual(results[0]['tipo'], 'Monitor')
 
     def test_history_is_loaded_only_on_detail(self):
         user = Usuario.objects.get(usuario_red='perf0')
@@ -1106,6 +1168,6 @@ class PerformanceQueryTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            [item['id'] for item in response.json()],
+            [item['id'] for item in response.json()['results']],
             [technology_user.id],
         )

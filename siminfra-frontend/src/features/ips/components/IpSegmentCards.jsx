@@ -13,6 +13,7 @@ import './IpSegmentCards.css';
 
 export default function IpSegmentCards({
   ips = [],
+  segmentStats = {},
   selectedSegment,
   onSelectSegment,
 }) {
@@ -44,11 +45,8 @@ export default function IpSegmentCards({
 
       <div className="ip-segments-grid">
         {IP_SEGMENTS.map((segment) => {
-          const stats =
-            getIpSegmentStats(
-              ips,
-              segment.id
-            );
+          const stats = segmentStats[segment.id]
+            || getIpSegmentStats(ips, segment.id);
 
           const isSelected =
             selectedSegment ===

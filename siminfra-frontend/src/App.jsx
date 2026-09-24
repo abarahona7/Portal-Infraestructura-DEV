@@ -7,6 +7,7 @@ import './App.css';
 import Toast from './components/common/Toast';
 import ConfirmModal from './components/common/ConfirmModal';
 import SecretRevealModal from './components/common/SecretRevealModal';
+import Pagination from './components/common/Pagination';
 
 
 import UserDepartmentCards
@@ -49,7 +50,6 @@ import { useModuleNavigation } from './hooks/useModuleNavigation';
 
 import {
   buildEquipmentStateFromHostname,
-  filterEquiposByCategory,
 } from './utils/equipmentHelpers';
 import {
   getEquipmentCategoryByTab,
@@ -62,7 +62,6 @@ import {
   sanitizeIpInput,
   getAvailableIpsForUser,
   getAvailableIpsForServer,
-  filterIpsBySegment,
   IP_SEGMENTS,
 } from './utils/ipHelpers';
 
@@ -259,6 +258,7 @@ export default function App() {
     ipsList,
     departamentosList,
     perfilesList,
+    ipSegmentStats,
     refreshReferenceData,
     ensureReferenceData,
   } = useReferenceData(token, authUser?.role, activeModuleTab);
@@ -273,18 +273,29 @@ export default function App() {
     }
   }, [hasOpenIpAssignmentForm, ensureReferenceData]);
 
+  const moduleDataEnabled = !(
+    (activeModuleTab === 'usuarios' && !selectedDpto)
+    || (activeModuleTab === 'ips' && !selectedIpSegment)
+  );
+
   const {
     data,
+    pagination,
+    setPage,
     refreshData,
+    getAllData,
   } = useModuleData({
     token,
     tab: activeModuleTab,
     search,
     selectedDpto,
+    equipmentCategory,
+    selectedIpSegment,
     selectedEstadoEquipo,
     selectedEstadoIP,
     selectedEstadoAnexo,
     onUnauthorized: logout,
+    enabled: moduleDataEnabled,
     autoRefreshMs:
       authUser?.role === 'Visualizador' && tab === 'anexos'
         ? 30000
@@ -322,7 +333,7 @@ export default function App() {
     const referenceSections = {
       usuarios: ['usuarios', 'ips'],
       equipos: ['usuarios'],
-      ips: ['ips'],
+      ips: ['ips', 'ips_stats'],
       servidores: ['ips'],
       perfiles: ['perfiles'],
       departamentos: ['departamentos', 'usuarios', 'perfiles'],
@@ -470,24 +481,25 @@ export default function App() {
     setNewItem(initialItem);
   };
 
-  const filteredData =
-    isEquipmentModule
-      ? filterEquiposByCategory(
-        data,
-        equipmentCategory,
-        formatEquipmentType
-      )
-      : tab === 'ips'
-        ? filterIpsBySegment(
-          data,
-          selectedIpSegment
-        )
-        : data;
+  const filteredData = data;
+
+  const totalManagedIps = Object.values(ipSegmentStats).reduce(
+    (total, segment) => total + (Number(segment?.total) || 0),
+    0
+  );
+  const sidebarActiveCount = tab === 'departamentos'
+    ? data.length
+    : tab === 'usuarios' && !selectedDpto
+      ? usuariosList.length
+      : tab === 'ips' && !selectedIpSegment
+        ? totalManagedIps
+        : pagination.count;
 
   const handleExportUsuarios = async () => {
     try {
+      const rows = await getAllData();
       await exportUsuariosExcel({
-        rows: filteredData,
+        rows,
         selectedDpto,
       });
 
@@ -508,8 +520,9 @@ export default function App() {
 
   const handleExportEquipos = async () => {
     try {
+      const rows = await getAllData();
       await exportEquiposExcel({
-        rows: filteredData,
+        rows,
         selectedCategoriaEquipo: equipmentCategory,
       });
 
@@ -530,8 +543,9 @@ export default function App() {
 
   const handleExportIps = async () => {
     try {
+      const rows = await getAllData();
       await exportIpsExcel({
-        rows: filteredData,
+        rows,
         selectedIpSegment,
       });
 
@@ -552,8 +566,9 @@ export default function App() {
 
   const handleExportServidores = async () => {
     try {
+      const rows = await getAllData();
       await exportServidoresExcel({
-        rows: filteredData,
+        rows,
       });
 
       showToast(
@@ -571,8 +586,9 @@ export default function App() {
 
   const handleExportPerfiles = async () => {
     try {
+      const rows = await getAllData();
       await exportPerfilesExcel({
-        rows: filteredData,
+        rows,
         selectedDpto: selectedProfileFilterLabel,
       });
 
@@ -593,8 +609,9 @@ export default function App() {
 
   const handleExportAnexos = async () => {
     try {
+      const rows = await getAllData();
       await exportAnexosExcel({
-        rows: filteredData,
+        rows,
       });
 
       showToast(
@@ -612,8 +629,9 @@ export default function App() {
 
   const handleExportPCsGenericos = async () => {
     try {
+      const rows = await getAllData();
       await exportPCsGenericosExcel({
-        rows: filteredData,
+        rows,
         selectedDpto,
       });
 
@@ -822,7 +840,7 @@ export default function App() {
         isOpen={sidebarOpen}
         collapsed={sidebarCollapsed}
         activeTab={tab}
-        activeCount={tab === 'departamentos' ? data.length : filteredData.length}
+        activeCount={sidebarActiveCount}
         onClose={closeSidebar}
         onToggleCollapse={toggleSidebarCollapsed}
         onSelectTab={handleSelectTab}
@@ -907,7 +925,7 @@ export default function App() {
         {/* SEGMENTOS DE IP */}
         {tab === 'ips' && (
           <IpSegmentCards
-            ips={data}
+            segmentStats={ipSegmentStats}
             selectedSegment={selectedIpSegment}
             onSelectSegment={setSelectedIpSegment}
           />
@@ -977,11 +995,11 @@ export default function App() {
 
                   <div className="equipment-results-count">
                     <strong>
-                      {filteredData.length}
+                      {pagination.count}
                     </strong>
 
                     <span>
-                      {filteredData.length === 1
+                      {pagination.count === 1
                         ? ' equipo'
                         : ' equipos'}
                     </span>
@@ -1007,11 +1025,11 @@ export default function App() {
 
                   <div className="equipment-results-count">
                     <strong>
-                      {filteredData.length}
+                      {pagination.count}
                     </strong>
 
                     <span>
-                      {filteredData.length === 1
+                      {pagination.count === 1
                         ? ' usuario'
                         : ' usuarios'}
                     </span>
@@ -1037,11 +1055,11 @@ export default function App() {
 
                   <div className="equipment-results-count">
                     <strong>
-                      {filteredData.length}
+                      {pagination.count}
                     </strong>
 
                     <span>
-                      {filteredData.length === 1
+                      {pagination.count === 1
                         ? ' IP'
                         : ' IPs'}
                     </span>
@@ -1146,6 +1164,14 @@ export default function App() {
                   onRevealSecret={setSecretRequest}
                 />
               </div>
+
+              <Pagination
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                count={pagination.count}
+                pageSize={pagination.pageSize}
+                onPageChange={setPage}
+              />
             </>
           )}
 

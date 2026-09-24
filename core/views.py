@@ -1,5 +1,6 @@
 from django.http import HttpResponse
 from django.db.models import Prefetch, Q
+from django.db.models.functions import Length
 from rest_framework.decorators import action
 
 from .services.acta_entrega_pdf import (
@@ -10,6 +11,8 @@ from rest_framework import viewsets, filters, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .permissions import PortalRolePermission
+from .pagination import PortalPageNumberPagination
+from .services.asignacion_ips import MANAGED_IP_SEGMENT_PREFIXES
 from django_filters.rest_framework import (
     DjangoFilterBackend
 )
@@ -149,6 +152,7 @@ class IPViewSet(viewsets.ModelViewSet):
     permission_classes = [PortalRolePermission]
     queryset = IP.objects.select_related('usuario').all()
     serializer_class = IPSerializer
+    pagination_class = PortalPageNumberPagination
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter
@@ -160,6 +164,19 @@ class IPViewSet(viewsets.ModelViewSet):
         'usuario__nombre_completo',
         'asignado_otro'
     ]
+
+    def get_queryset(self):
+        queryset = IP.objects.select_related('usuario')
+        segment_id = self.request.query_params.get('segmento', '').strip()
+        prefix = MANAGED_IP_SEGMENT_PREFIXES.get(segment_id)
+        if segment_id and not prefix:
+            return queryset.none()
+        if prefix:
+            queryset = queryset.filter(direccion_ip__startswith=prefix)
+            return queryset.annotate(
+                _address_length=Length('direccion_ip')
+            ).order_by('_address_length', 'direccion_ip')
+        return queryset.order_by('direccion_ip')
 
     def perform_destroy(self, instance):
         if instance.usuario_id or hasattr(instance, 'servidor'):
@@ -181,6 +198,7 @@ class ServidorViewSet(viewsets.ModelViewSet):
     permission_classes = [PortalRolePermission]
     queryset = Servidor.objects.select_related('ip').all()
     serializer_class = ServidorSerializer
+    pagination_class = PortalPageNumberPagination
 
     filter_backends = [
         filters.SearchFilter
@@ -203,6 +221,7 @@ class AnexoViewSet(
     queryset = Anexo.objects.select_related('usuario').all()
 
     serializer_class = AnexoSerializer
+    pagination_class = PortalPageNumberPagination
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -244,6 +263,7 @@ class UsuarioViewSet(
     permission_classes = [PortalRolePermission]
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
+    pagination_class = PortalPageNumberPagination
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -296,7 +316,7 @@ class UsuarioViewSet(
                     | Q(dpto_area__iexact=value)
                 )
 
-        return queryset
+        return queryset.order_by('nombre_completo', 'pk')
 
     filter_backends = [
         DjangoFilterBackend,
@@ -384,6 +404,7 @@ class EquipamientoViewSet(
     permission_classes = [PortalRolePermission]
     queryset = Equipamiento.objects.select_related('usuario', 'usuario__ip').all()
     serializer_class = EquipamientoSerializer
+    pagination_class = PortalPageNumberPagination
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -394,7 +415,20 @@ class EquipamientoViewSet(
         queryset = Equipamiento.objects.select_related('usuario', 'usuario__ip')
         if self.action == 'retrieve':
             queryset = queryset.prefetch_related('historial')
-        return queryset
+        category = self.request.query_params.get('categoria', '').strip()
+        if category == 'PERIFERICOS':
+            queryset = queryset.filter(tipo__in=[
+                'Monitor',
+                'Adaptador',
+                'Audífonos',
+                'Teclado',
+                'Mouse',
+                'Docking',
+                'Otro Periférico',
+            ])
+        elif category:
+            return queryset.none()
+        return queryset.order_by('tipo', 'marca', 'modelo', 'pk')
 
     filter_backends = [
         DjangoFilterBackend,
@@ -427,6 +461,7 @@ class PerfilGenericoViewSet(
         'subarea',
     ).all()
     serializer_class = PerfilGenericoSerializer
+    pagination_class = PortalPageNumberPagination
 
     filter_backends = [
         DjangoFilterBackend,
@@ -499,6 +534,7 @@ class PCGenericoViewSet(
     ).all()
 
     serializer_class = PCGenericoSerializer
+    pagination_class = PortalPageNumberPagination
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -542,7 +578,7 @@ class PCGenericoViewSet(
                 dpto_area__icontains=dpto.strip()
             )
 
-        return queryset
+        return queryset.order_by('dpto_area', 'usuario_local', 'pk')
 
 
 class ReferenceDataView(APIView):
@@ -598,5 +634,28 @@ class ReferenceDataView(APIView):
                 profiles,
                 many=True,
             ).data
+
+        if 'ips_stats' in sections:
+            stats = {
+                segment_id: {'total': 0, 'libres': 0, 'reservadas': 0}
+                for segment_id in MANAGED_IP_SEGMENT_PREFIXES
+            }
+            for address, state in IP.objects.values_list(
+                'direccion_ip',
+                'estado',
+            ).iterator():
+                segment_id = next((
+                    key
+                    for key, prefix in MANAGED_IP_SEGMENT_PREFIXES.items()
+                    if address.startswith(prefix)
+                ), None)
+                if not segment_id:
+                    continue
+                stats[segment_id]['total'] += 1
+                if state == 'LIBRE':
+                    stats[segment_id]['libres'] += 1
+                elif state == 'RESERVADA':
+                    stats[segment_id]['reservadas'] += 1
+            payload['ips_stats'] = stats
 
         return Response(payload)

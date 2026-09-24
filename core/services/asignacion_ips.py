@@ -20,6 +20,15 @@ IP_ALLOWED_NETWORKS = tuple(
     )
 )
 SERVER_IP_NETWORK = ip_network('172.23.1.0/24')
+MANAGED_IP_SEGMENT_PREFIXES = {
+    '172.23': '172.23.1.',
+    '172.24': '172.24.1.',
+    '172.25': '172.25.1.',
+    '192.168.10': '192.168.10.',
+    '192.168.20': '192.168.20.',
+    '192.168.30': '192.168.30.',
+    '192.168.90': '192.168.90.',
+}
 
 
 class IpAssignmentError(Exception):

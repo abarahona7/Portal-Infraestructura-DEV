@@ -1,0 +1,64 @@
+.portal-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 4px 4px;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.portal-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.portal-pagination-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #183153;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.portal-pagination-controls button:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #1d4ed8;
+}
+
+.portal-pagination-controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.portal-pagination-page {
+  min-width: 110px;
+  text-align: center;
+  color: #334155;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .portal-pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .portal-pagination-summary,
+  .portal-pagination-page {
+    text-align: center;
+  }
+
+  .portal-pagination-controls {
+    justify-content: space-between;
+  }
+}

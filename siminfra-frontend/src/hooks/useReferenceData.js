@@ -10,6 +10,7 @@ const REFERENCE_SECTIONS_BY_MODULE = {
   perfiles: ['perfiles', 'departamentos'],
   departamentos: ['departamentos', 'usuarios', 'perfiles'],
   'pcs-genericos': ['departamentos'],
+  ips: ['ips_stats'],
 };
 
 
@@ -18,6 +19,7 @@ export const useReferenceData = (token, role, activeModule) => {
   const [ipsList, setIpsList] = useState([]);
   const [departamentosList, setDepartamentosList] = useState([]);
   const [perfilesList, setPerfilesList] = useState([]);
+  const [ipSegmentStats, setIpSegmentStats] = useState({});
   const loadedSectionsRef = useRef(new Set());
 
   const clearReferenceData = useCallback(() => {
@@ -25,6 +27,7 @@ export const useReferenceData = (token, role, activeModule) => {
     setIpsList([]);
     setDepartamentosList([]);
     setPerfilesList([]);
+    setIpSegmentStats({});
     loadedSectionsRef.current.clear();
   }, []);
 
@@ -37,7 +40,7 @@ export const useReferenceData = (token, role, activeModule) => {
     const requestedSections = sections.length
       ? [...new Set(sections)]
       : force
-        ? ['usuarios', 'ips', 'departamentos', 'perfiles']
+        ? ['usuarios', 'ips', 'departamentos', 'perfiles', 'ips_stats']
         : [];
     const pendingSections = force
       ? requestedSections
@@ -63,6 +66,9 @@ export const useReferenceData = (token, role, activeModule) => {
       }
       if (Object.prototype.hasOwnProperty.call(result, 'perfiles')) {
         setPerfilesList(result.perfiles);
+      }
+      if (Object.prototype.hasOwnProperty.call(result, 'ips_stats')) {
+        setIpSegmentStats(result.ips_stats);
       }
 
       Object.keys(result).forEach((section) => {
@@ -112,6 +118,7 @@ export const useReferenceData = (token, role, activeModule) => {
     ipsList,
     departamentosList,
     perfilesList,
+    ipSegmentStats,
     refreshReferenceData,
     ensureReferenceData,
   };

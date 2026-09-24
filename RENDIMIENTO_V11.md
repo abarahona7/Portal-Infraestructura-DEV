@@ -35,6 +35,40 @@ Las variaciones menores a un milisegundo en endpoints pequeños corresponden al
 ruido normal de una ejecución local. No aumentó su cantidad de consultas ni el
 tamaño de respuesta.
 
+## Segunda fase: paginación y carga parcial
+
+Fecha de validación: 24-09-2026.
+
+Los listados operativos ahora entregan 50 registros por página y aceptan hasta
+200 registros por solicitud. La medición se repitió con la misma base local y
+tres muestras por endpoint:
+
+| Endpoint | Tiempo sin paginación | Tiempo paginado | Respuesta sin paginación | Respuesta paginada |
+| --- | ---: | ---: | ---: | ---: |
+| Usuarios | 59,33 ms | 10,62 ms | 293.571 B | 44.952 B |
+| Equipos | 13,79 ms | 4,33 ms | 147.628 B | 19.374 B |
+| IPs | 23,22 ms | 3,00 ms | 202.962 B | 5.763 B |
+| Anexos | 9,02 ms | 5,29 ms | 54.267 B | 17.019 B |
+| Perfiles genéricos | 3,80 ms | 4,29 ms | 16.767 B | 15.208 B |
+| PCs genéricos | 1,53 ms | 2,10 ms | 4.818 B | 4.909 B |
+| Servidores | 0,94 ms | 1,22 ms | 2 B | 92 B |
+
+En los listados grandes, Usuarios redujo su respuesta un 84,7 %, Equipos un
+86,9 %, IPs un 97,2 % y Anexos un 68,6 %. Cada listado paginado agrega una
+consulta `COUNT` constante para informar el total de resultados. En los
+listados pequeños, la envoltura de paginación puede agregar algunos bytes y una
+variación inferior a un milisegundo.
+
+La interfaz aplica los filtros, la búsqueda y el ordenamiento desde el backend.
+Usuarios se consulta después de seleccionar un departamento y las IP después de
+seleccionar un segmento. La búsqueda espera 300 ms desde la última pulsación y
+las exportaciones recorren todas las páginas para mantener el archivo completo.
+Los contadores de segmentos IP se obtienen mediante un resumen y ya no requieren
+descargar todos los registros para dibujar las tarjetas.
+
+Los límites se pueden configurar mediante `PORTAL_PAGE_SIZE` y
+`PORTAL_MAX_PAGE_SIZE`.
+
 Mejoras principales:
 
 - Usuarios: 89,0 % menos tiempo y 99,9 % menos consultas.
@@ -77,6 +111,10 @@ Mejoras principales:
 - La librería XLSX se carga únicamente al exportar un archivo. El JavaScript
   inicial de producción bajó de 709,92 kB a 430,29 kB y su tamaño gzip bajó de
   212,00 kB a 118,48 kB.
+- Los listados usan paginación del servidor; al cambiar página solo se solicita
+  el bloque visible y las exportaciones siguen incluyendo todos los registros.
+- Los filtros de equipos, estados y segmentos IP se resuelven en la API para
+  que los totales y las páginas sean coherentes con la selección activa.
 
 ### Estrategia de caché
 
@@ -87,7 +125,8 @@ caché sin invalidación inmediata podría mostrar disponibilidad incorrecta.
 
 ## Validaciones
 
-- 54 pruebas de Django aprobadas.
+- 66 pruebas de Django ejecutadas: 65 aprobadas y 1 prueba de concurrencia
+  omitida en SQLite porque requiere los bloqueos reales de MySQL.
 - `python manage.py check` sin observaciones.
 - Lint del frontend sin errores.
 - `npm run build` completado correctamente.

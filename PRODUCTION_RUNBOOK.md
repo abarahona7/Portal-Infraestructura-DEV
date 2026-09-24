@@ -39,6 +39,16 @@ Antes de continuar, validar la conexión:
 .\venv\Scripts\python.exe manage.py check --database default --settings=config.settings_production
 ```
 
+En una instancia MySQL aislada para pruebas, ejecutar también:
+
+```powershell
+.\venv\Scripts\python.exe manage.py test core.test_ip_assignment_service --settings=config.settings_production
+```
+
+Esta suite incluye rollback con fallos inyectados y dos asignaciones simultáneas
+sobre una misma IP. No debe ejecutarse contra la base productiva; Django crea y
+elimina una base de pruebas temporal.
+
 ## 3. Migrar desde SQLite
 
 Realizar esta operación durante una ventana sin modificaciones en el portal.

@@ -1,4 +1,4 @@
-from ipaddress import ip_address, ip_network
+from ipaddress import ip_address
 import re
 from rest_framework import serializers
 from django.db import transaction
@@ -20,6 +20,15 @@ from .models import (
     SubArea,
     _normalize_key,
     _normalize_spaces,
+)
+from .services.asignacion_ips import (
+    IP_ALLOWED_NETWORKS,
+    IpAssignmentError,
+    assign_ip_to_user,
+    create_server_with_ip,
+    update_server_with_ip,
+    validate_server_ip,
+    validate_user_ip,
 )
 
 
@@ -162,22 +171,6 @@ class DepartamentoSerializer(serializers.ModelSerializer):
 
 
 
-IP_ALLOWED_NETWORKS = tuple(
-    ip_network(network)
-    for network in (
-        '172.23.1.0/24',
-        '172.24.1.0/24',
-        '172.25.1.0/24',
-        '192.168.10.0/24',
-        '192.168.20.0/24',
-        '192.168.30.0/24',
-        '192.168.90.0/24',
-    )
-)
-
-SERVER_IP_NETWORK = ip_network('172.23.1.0/24')
-
-
 class IPSerializer(serializers.ModelSerializer):
     usuario = serializers.PrimaryKeyRelatedField(read_only=True)
     usuario_nombre = serializers.ReadOnlyField(
@@ -293,86 +286,38 @@ class ServidorSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def validate_ip(self, value):
-        parsed_ip = ip_address(value.direccion_ip)
-        if parsed_ip not in SERVER_IP_NETWORK or parsed_ip in (
-            SERVER_IP_NETWORK.network_address,
-            SERVER_IP_NETWORK.broadcast_address,
-        ):
-            raise serializers.ValidationError(
-                'Los servidores solo pueden usar IP del segmento 172.23.1.0/24.'
+        try:
+            validate_server_ip(
+                value,
+                server_id=getattr(getattr(self, 'instance', None), 'pk', None),
             )
-
-        self._validate_ip_available(value)
+        except IpAssignmentError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
         return value
 
-    def _validate_ip_available(self, ip):
-        instance = getattr(self, 'instance', None)
-        is_current = bool(instance and instance.ip_id == ip.pk)
-
-        used_by_other_server = Servidor.objects.filter(ip=ip).exclude(
-            pk=getattr(instance, 'pk', None)
-        ).exists()
-
-        if used_by_other_server:
-            raise serializers.ValidationError(
-                'Esta IP ya está asignada a otro servidor.'
-            )
-
-        if not is_current and (
-            ip.usuario_id
-            or ip.asignado_otro
-            or ip.estado != 'LIBRE'
-        ):
-            raise serializers.ValidationError(
-                'Solo se pueden asignar IP que estén disponibles.'
-            )
-
-    @staticmethod
-    def _reserve_ip(ip, hostname):
-        ip.usuario = None
-        ip.asignado_otro = f'Servidor: {hostname}'
-        ip.save(update_fields=['usuario', 'asignado_otro', 'estado'])
-
-    @staticmethod
-    def _release_ip(ip):
-        if not ip or ip.usuario_id:
-            return
-        ip.asignado_otro = None
-        ip.save(update_fields=['asignado_otro', 'estado'])
-
-    @transaction.atomic
     def create(self, validated_data):
         selected_ip = validated_data.pop('ip')
-        locked_ip = IP.objects.select_for_update().get(pk=selected_ip.pk)
-        self._validate_ip_available(locked_ip)
-        servidor = Servidor.objects.create(ip=locked_ip, **validated_data)
-        self._reserve_ip(locked_ip, servidor.hostname)
-        return servidor
+        try:
+            return create_server_with_ip(selected_ip.pk, validated_data)
+        except IpAssignmentError as exc:
+            raise serializers.ValidationError({'ip': str(exc)}) from exc
 
-    @transaction.atomic
     def update(self, instance, validated_data):
-        Servidor.objects.select_for_update().get(pk=instance.pk)
-        previous_ip = instance.ip
-        selected_ip = validated_data.pop('ip', previous_ip)
+        selected_ip = validated_data.pop('ip', instance.ip)
 
         if selected_ip is None:
             raise serializers.ValidationError({
                 'ip': 'Debe seleccionar una IP disponible.'
             })
 
-        locked_ip = IP.objects.select_for_update().get(pk=selected_ip.pk)
-        self._validate_ip_available(locked_ip)
-
-        servidor = super().update(
-            instance,
-            {**validated_data, 'ip': locked_ip},
-        )
-
-        if previous_ip and previous_ip.pk != locked_ip.pk:
-            self._release_ip(previous_ip)
-
-        self._reserve_ip(locked_ip, servidor.hostname)
-        return servidor
+        try:
+            return update_server_with_ip(
+                instance.pk,
+                selected_ip.pk,
+                validated_data,
+            )
+        except IpAssignmentError as exc:
+            raise serializers.ValidationError({'ip': str(exc)}) from exc
 
     def validate_hostname(self, value):
         value = _validate_hostname_format(value)
@@ -837,66 +782,15 @@ class UsuarioSerializer(serializers.ModelSerializer):
                 "La IP seleccionada no existe en Gestión de IPs."
             )
 
-        parsed_ip = ip_address(ip.direccion_ip)
-        if not any(parsed_ip in network for network in IP_ALLOWED_NETWORKS):
-            raise serializers.ValidationError(
-                "La IP no pertenece a un segmento administrado en Gestión IPs."
+        try:
+            validate_user_ip(
+                ip,
+                user_id=getattr(getattr(self, 'instance', None), 'pk', None),
             )
-
-        # Permitirla si ya pertenece al mismo usuario
-        if ip.usuario:
-            if not self.instance or ip.usuario_id != self.instance.id:
-                raise serializers.ValidationError(
-                    "Esta IP ya está asignada a otro usuario."
-                )
-
-        if ip.asignado_otro:
-            raise serializers.ValidationError(
-                "Esta IP está reservada para otro dispositivo o servicio."
-            )
-
-        already_current = bool(
-            self.instance and ip.usuario_id == self.instance.id
-        )
-        if ip.estado != 'LIBRE' and not already_current:
-            raise serializers.ValidationError(
-                "Solo se pueden asignar IPs que estén en estado Libre."
-            )
+        except IpAssignmentError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
 
         return value
-
-    def _asignar_ip(self, usuario, direccion_ip):
-        if direccion_ip is None:
-            IP.objects.filter(usuario=usuario).update(usuario=None, estado='LIBRE')
-            return
-
-        try:
-            ip = IP.objects.select_for_update().get(direccion_ip=direccion_ip)
-        except IP.DoesNotExist as exc:
-            raise serializers.ValidationError({
-                'ip_seleccionada': 'La IP seleccionada ya no existe.'
-            }) from exc
-        if ip.usuario_id not in (None, usuario.pk) or ip.asignado_otro or (
-            ip.estado != 'LIBRE' and ip.usuario_id != usuario.pk
-        ):
-            raise serializers.ValidationError({
-                'ip_seleccionada': 'Esta IP ya no está disponible.'
-            })
-
-        IP.objects.filter(
-        usuario=usuario
-    ).exclude(
-        direccion_ip=direccion_ip
-    ).update(
-        usuario=None,
-        estado='LIBRE'
-    )
-
-        IP.objects.filter(pk=ip.pk).update(
-            usuario=usuario,
-            estado='RESERVADA',
-            asignado_otro=None
-        )
 
     @transaction.atomic
     def create(self, validated_data):
@@ -908,17 +802,17 @@ class UsuarioSerializer(serializers.ModelSerializer):
         usuario = super().create(validated_data)
 
         if ip_seleccionada is not None:
-            self._asignar_ip(
-                usuario,
-                ip_seleccionada
-            )
+            try:
+                assign_ip_to_user(usuario.pk, ip_seleccionada)
+            except IpAssignmentError as exc:
+                raise serializers.ValidationError({
+                    'ip_seleccionada': str(exc),
+                }) from exc
 
         return usuario
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        # Serializa las modificaciones de un mismo usuario en MySQL.
-        Usuario.objects.select_for_update().get(pk=instance.pk)
         ip_enviada = 'ip_seleccionada' in validated_data
 
         ip_seleccionada = validated_data.pop(
@@ -933,13 +827,15 @@ class UsuarioSerializer(serializers.ModelSerializer):
         usuario = super().update(
         instance,
         validated_data
-    )
+        )
 
         if ip_enviada and usuario.estado != 'BAJA':
-            self._asignar_ip(
-            usuario,
-            ip_seleccionada
-        )
+            try:
+                assign_ip_to_user(usuario.pk, ip_seleccionada)
+            except IpAssignmentError as exc:
+                raise serializers.ValidationError({
+                    'ip_seleccionada': str(exc),
+                }) from exc
 
         return usuario
 

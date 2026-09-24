@@ -9,9 +9,17 @@ services:
       MYSQL_PASSWORD: ${DATABASE_PASSWORD:?required}
     expose:
       - "3306"
+    ports:
+      - "${DATABASE_BIND_HOST:-127.0.0.1}:${DATABASE_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
 volumes:
   mysql_data:

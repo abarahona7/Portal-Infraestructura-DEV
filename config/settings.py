@@ -4,6 +4,9 @@ import secrets
 from datetime import timedelta
 from pathlib import Path
 
+from cryptography.fernet import Fernet
+from django.core.exceptions import ImproperlyConfigured
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -49,12 +52,40 @@ def env_list(name, default=''):
     return [item.strip() for item in os.getenv(name, default).split(',') if item.strip()]
 
 
-DEBUG = env_bool('DJANGO_DEBUG', True)
+def require_env(name):
+    value = os.getenv(name, '').strip()
+    if not value:
+        raise ImproperlyConfigured(f'{name} es obligatorio en producción.')
+    return value
+
+
+DJANGO_ENV = os.getenv('DJANGO_ENV', 'development').strip().lower()
+if DJANGO_ENV not in {'development', 'test', 'production'}:
+    raise ImproperlyConfigured(
+        'DJANGO_ENV debe ser development, test o production.'
+    )
+
+IS_PRODUCTION = DJANGO_ENV == 'production'
+DEBUG = env_bool('DJANGO_DEBUG', not IS_PRODUCTION)
+if IS_PRODUCTION and DEBUG:
+    raise ImproperlyConfigured('DJANGO_DEBUG debe ser False en producción.')
+
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY') or (secrets.token_urlsafe(50) if DEBUG else '')
 if not SECRET_KEY:
     raise RuntimeError('DJANGO_SECRET_KEY es obligatorio cuando DJANGO_DEBUG=False')
+if IS_PRODUCTION and (
+    len(SECRET_KEY) < 50
+    or len(set(SECRET_KEY)) < 5
+    or SECRET_KEY.startswith('django-insecure-')
+    or SECRET_KEY.startswith('replace-with-')
+):
+    raise ImproperlyConfigured(
+        'DJANGO_SECRET_KEY debe ser aleatoria, tener al menos 50 caracteres y no ser un placeholder.'
+    )
 
 ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost' if DEBUG else '')
+if IS_PRODUCTION and not ALLOWED_HOSTS:
+    raise ImproperlyConfigured('DJANGO_ALLOWED_HOSTS es obligatorio en producción.')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -94,16 +125,44 @@ TEMPLATES = [{
 }]
 WSGI_APPLICATION = 'config.wsgi.application'
 
-DB_ENGINE = os.getenv('DATABASE_ENGINE', 'sqlite').lower()
+DB_ENGINE = os.getenv('DATABASE_ENGINE', 'mysql' if IS_PRODUCTION else 'sqlite').lower()
+if IS_PRODUCTION and DB_ENGINE not in {'mysql', 'django.db.backends.mysql'}:
+    raise ImproperlyConfigured('Producción requiere DATABASE_ENGINE=mysql.')
+
 if DB_ENGINE in {'mysql', 'django.db.backends.mysql'}:
+    database_name = os.getenv('DATABASE_NAME', 'siminfra_db').strip()
+    database_user = os.getenv('DATABASE_USER', 'siminfra_user').strip()
+    database_password = os.getenv('DATABASE_PASSWORD', '')
+    database_host = os.getenv('DATABASE_HOST', 'db').strip()
+    if IS_PRODUCTION:
+        for variable, value in {
+            'DATABASE_NAME': database_name,
+            'DATABASE_USER': database_user,
+            'DATABASE_PASSWORD': database_password,
+            'DATABASE_HOST': database_host,
+        }.items():
+            if not value:
+                raise ImproperlyConfigured(f'{variable} es obligatorio en producción.')
+
+    mysql_options = {
+        'charset': 'utf8mb4',
+        'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        'isolation_level': 'read committed',
+    }
+    database_ssl_ca = os.getenv('DATABASE_SSL_CA', '').strip()
+    if database_ssl_ca:
+        mysql_options['ssl'] = {'ca': database_ssl_ca}
+
     DATABASES = {'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DATABASE_NAME', 'siminfra_db'),
-        'USER': os.getenv('DATABASE_USER', 'siminfra_user'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD', ''),
-        'HOST': os.getenv('DATABASE_HOST', 'db'),
+        'NAME': database_name,
+        'USER': database_user,
+        'PASSWORD': database_password,
+        'HOST': database_host,
         'PORT': os.getenv('DATABASE_PORT', '3306'),
-        'OPTIONS': {'charset': 'utf8mb4'},
+        'CONN_MAX_AGE': int(os.getenv('DATABASE_CONN_MAX_AGE', '60')),
+        'CONN_HEALTH_CHECKS': True,
+        'OPTIONS': mysql_options,
     }}
 else:
     DATABASES = {'default': {
@@ -123,6 +182,7 @@ TIME_ZONE = os.getenv('DJANGO_TIME_ZONE', 'America/Santiago')
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 CORS_ALLOWED_ORIGINS = env_list(
     'CORS_ALLOWED_ORIGINS',
@@ -159,9 +219,21 @@ PORTAL_IDLE_TIMEOUT_SECONDS = int(os.getenv('PORTAL_IDLE_TIMEOUT_SECONDS', '300'
 
 FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY', '')
 LEGACY_DJANGO_SECRET_KEY = os.getenv('LEGACY_DJANGO_SECRET_KEY', '')
+if IS_PRODUCTION:
+    require_env('FIELD_ENCRYPTION_KEY')
+    try:
+        Fernet(FIELD_ENCRYPTION_KEY.encode())
+    except (TypeError, ValueError) as exc:
+        raise ImproperlyConfigured(
+            'FIELD_ENCRYPTION_KEY debe ser una clave Fernet válida.'
+        ) from exc
 
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if env_bool('USE_X_FORWARDED_PROTO', False) else None
-SECURE_SSL_REDIRECT = env_bool('SECURE_SSL_REDIRECT', False)
+SECURE_PROXY_SSL_HEADER = (
+    ('HTTP_X_FORWARDED_PROTO', 'https')
+    if env_bool('USE_X_FORWARDED_PROTO', IS_PRODUCTION)
+    else None
+)
+SECURE_SSL_REDIRECT = env_bool('SECURE_SSL_REDIRECT', IS_PRODUCTION)
 SESSION_COOKIE_SECURE = env_bool('SESSION_COOKIE_SECURE', not DEBUG)
 CSRF_COOKIE_SECURE = env_bool('CSRF_COOKIE_SECURE', not DEBUG)
 SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '0' if DEBUG else '31536000'))
@@ -170,6 +242,24 @@ SECURE_HSTS_PRELOAD = env_bool('SECURE_HSTS_PRELOAD', False)
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'same-origin'
 X_FRAME_OPTIONS = 'DENY'
+
+if IS_PRODUCTION:
+    insecure_settings = [
+        name
+        for name, value in {
+            'SECURE_SSL_REDIRECT': SECURE_SSL_REDIRECT,
+            'SESSION_COOKIE_SECURE': SESSION_COOKIE_SECURE,
+            'CSRF_COOKIE_SECURE': CSRF_COOKIE_SECURE,
+            'JWT_COOKIE_SECURE': JWT_COOKIE_SECURE,
+        }.items()
+        if not value
+    ]
+    if insecure_settings:
+        raise ImproperlyConfigured(
+            f'Configuración insegura en producción: {", ".join(insecure_settings)}.'
+        )
+    if SECURE_HSTS_SECONDS <= 0:
+        raise ImproperlyConfigured('SECURE_HSTS_SECONDS debe ser mayor que cero en producción.')
 
 LOGGING = {
     'version': 1,

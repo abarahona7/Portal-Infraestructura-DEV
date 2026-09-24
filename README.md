@@ -1,4 +1,4 @@
-# Portal Infra v1.0.0
+# Portal Infraestructura TI
 
 Versión funcional definitiva del Portal Infraestructura TI.
 
@@ -28,22 +28,13 @@ Versión funcional definitiva del Portal Infraestructura TI.
 - `Administrador`: acceso completo y revelado de secretos tras reautenticación.
 - Superuser: tratado como Administrador.
 
-## Estado funcional congelado
-
-La versión `v1.0.0` congela el alcance funcional. A partir de esta versión se recomienda aceptar solo:
-
-- corrección de errores;
-- mejoras de seguridad;
-- ajustes visuales/responsive que no cambien el comportamiento;
-- mantenimiento de dependencias y compatibilidad de infraestructura.
-
 ## Desarrollo local
 
 1. Crear y activar un entorno virtual Python.
 2. Instalar `requirements.txt`.
-3. Crear `.env` desde `.env.example` y configurar las variables locales,
-   especialmente una `FIELD_ENCRYPTION_KEY` estable. Django carga este archivo
-   automáticamente y las variables definidas por el sistema tienen prioridad.
+3. Crear `.env` desde `.env.example` y generar una `FIELD_ENCRYPTION_KEY`
+   estable. Django carga este archivo automáticamente y las variables definidas
+   por el sistema tienen prioridad.
 4. Ejecutar migraciones y `python manage.py runserver`.
 5. En `siminfra-frontend`, instalar dependencias con `npm ci` y crear `.env.local` con:
 
@@ -57,12 +48,12 @@ No reutilizar una `FIELD_ENCRYPTION_KEY` distinta sobre una base que ya contenga
 
 ## Producción
 
-Revisar antes de desplegar:
+El perfil productivo es `config.settings_production`. Exige MySQL, desactiva
+`DEBUG`, valida los secretos y rechaza cookies o HTTPS inseguros antes de
+iniciar el portal.
 
-- `PRODUCTION_CHECKLIST.md`
-- `SECURITY_CHANGES.md`
-- `MIGRATION_SECURITY.md`
-- `TEST_RESULTS.md`
-- `RELEASE_NOTES_v1.0.0.md`
+Seguir [PRODUCTION_RUNBOOK.md](PRODUCTION_RUNBOOK.md) para preparar MySQL,
+migrar los datos, compilar el frontend, validar el despliegue y configurar los
+respaldos.
 
 La entrega no incluye bases de datos, `.env` reales, claves, `node_modules`, `venv`, caches, backups ni `.git`.

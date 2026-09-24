@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
 dev-env.ps1
 
 # Databases / backups
@@ -10,12 +11,14 @@ dev-env.ps1
 db.sqlite3*
 *.bak
 *.bak.*
+portal-pre-mysql.json
 
 # Python
 __pycache__/
 *.py[cod]
 .venv/
 venv/
+staticfiles/
 
 # Frontend
 node_modules/

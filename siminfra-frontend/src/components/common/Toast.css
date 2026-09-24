@@ -1,15 +1,16 @@
 .toast {
   position: fixed;
-  top: 24px;
-  right: 24px;
+  top: max(24px, env(safe-area-inset-top));
+  right: max(24px, env(safe-area-inset-right));
   z-index: 99999;
 
   display: flex;
   align-items: center;
   gap: 10px;
 
-  min-width: 300px;
-  max-width: 430px;
+  width: min(430px, calc(100vw - 48px));
+  min-width: 0;
+  max-width: 100%;
 
   padding: 14px 16px;
 
@@ -76,7 +77,10 @@
   align-items: center;
   justify-content: center;
 
-  padding: 4px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  padding: 0;
 
   border: none;
   background: transparent;
@@ -103,13 +107,13 @@
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 639px) {
   .toast {
-    top: 16px;
-    left: 16px;
-    right: 16px;
+    top: max(16px, env(safe-area-inset-top));
+    left: max(16px, env(safe-area-inset-left));
+    right: max(16px, env(safe-area-inset-right));
 
-    min-width: 0;
+    width: auto;
     max-width: none;
   }
 }

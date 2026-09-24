@@ -19,7 +19,7 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  min-height: 38px;
+  min-height: 44px;
   padding: 8px 13px;
   border: 1px solid #cbd5e1;
   border-radius: 9px;
@@ -47,7 +47,7 @@
   font-weight: 700;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .portal-pagination {
     flex-direction: column;
     align-items: stretch;

@@ -1,0 +1,97 @@
+/*
+ * Breakpoints de viewport del portal:
+ * 320 base | 480 teléfono | 640 teléfono grande | 768 tablet |
+ * 1024 escritorio compacto | 1280 escritorio | 1536 escritorio amplio.
+ * Las container queries de tablas se mantienen según el ancho de su contenido.
+ */
+
+.responsive-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.responsive-form-grid > * {
+  min-width: 0;
+}
+
+:where(
+  .anexo-action,
+  .equipo-action,
+  .ip-action,
+  .pc-action,
+  .perfil-action,
+  .servidor-action,
+  .usuario-action,
+  .perfil-password-action,
+  .pc-password-button,
+  .equipo-secret-reveal,
+  .user-detail-password-actions button,
+  .subarea-chip-actions button
+) {
+  touch-action: manipulation;
+}
+
+@media (max-width: 767px), (pointer: coarse) {
+  :where(
+    .anexo-action,
+    .equipo-action,
+    .ip-action,
+    .pc-action,
+    .perfil-action,
+    .servidor-action,
+    .usuario-action,
+    .perfil-password-action,
+    .pc-password-button,
+    .equipo-secret-reveal,
+    .user-detail-password-actions button,
+    .subarea-chip-actions button
+  ) {
+    width: var(--portal-touch-target);
+    height: var(--portal-touch-target);
+    min-width: var(--portal-touch-target);
+    min-height: var(--portal-touch-target);
+  }
+
+  :where(
+    .user-department-clear,
+    .user-department-card,
+    .perfil-department-clear,
+    .perfil-department-card,
+    .perfil-subarea-chip,
+    .ip-segments-clear,
+    .equipment-category-show-all,
+    .department-chip,
+    .departments-primary-action,
+    .department-secondary-action,
+    .department-add-subarea
+  ) {
+    min-height: var(--portal-touch-target);
+  }
+
+  .audit-history-toggle {
+    min-height: var(--portal-touch-target);
+  }
+}
+
+@media (max-width: 639px) {
+  .responsive-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portal-pagination-controls {
+    width: 100%;
+  }
+
+  .portal-pagination-controls button {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button:hover {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

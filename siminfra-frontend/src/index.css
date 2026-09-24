@@ -7,6 +7,8 @@
 
   --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: ui-monospace, Consolas, monospace;
+  --portal-content-max: 120rem;
+  --portal-touch-target: 2.75rem;
 
   font-family: var(--sans);
   color-scheme: light;
@@ -29,9 +31,9 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
-  min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--bg);
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body,
@@ -52,7 +54,7 @@ textarea {
 /* Permitir que la app ocupe el 100% real del monitor */
 #root {
   width: 100%;
-  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   padding: 0;
   text-align: left;
@@ -85,4 +87,40 @@ textarea {
 
 svg {
   flex-shrink: 0;
+}
+
+img,
+video,
+iframe {
+  display: block;
+  max-width: 100%;
+}
+
+img,
+video {
+  height: auto;
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.45);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 1rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

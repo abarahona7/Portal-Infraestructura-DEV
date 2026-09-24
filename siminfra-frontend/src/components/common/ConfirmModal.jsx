@@ -20,8 +20,22 @@ export default function ConfirmModal({
   }
 
   return (
-    <div className="confirm-overlay">
-      <div className="confirm-modal">
+    <div
+      className="confirm-overlay"
+      role="presentation"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          onCancel?.();
+        }
+      }}
+    >
+      <section
+        className="confirm-modal"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirm-modal-title"
+        aria-describedby="confirm-modal-message"
+      >
         <button
           type="button"
           className="confirm-close"
@@ -41,11 +55,11 @@ export default function ConfirmModal({
           <CircleAlert size={28} />
         </div>
 
-        <h3 className="confirm-title">
+        <h3 id="confirm-modal-title" className="confirm-title">
           {title}
         </h3>
 
-        <p className="confirm-message">
+        <p id="confirm-modal-message" className="confirm-message">
           {message}
         </p>
 
@@ -70,7 +84,7 @@ export default function ConfirmModal({
             {confirmText}
           </button>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

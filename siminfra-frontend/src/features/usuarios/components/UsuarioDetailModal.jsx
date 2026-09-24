@@ -228,8 +228,21 @@ export default function UsuarioDetailModal({
 
 
   return (
-    <div className="user-detail-overlay">
-      <div className="user-detail-modal">
+    <div
+      className="user-detail-overlay"
+      role="presentation"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          onClose?.();
+        }
+      }}
+    >
+      <section
+        className="user-detail-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="user-detail-title"
+      >
 
         {/* HEADER */}
 
@@ -243,7 +256,7 @@ export default function UsuarioDetailModal({
             <div className="user-detail-header-info">
 
               <div className="user-detail-header-top">
-                <h2>
+                <h2 id="user-detail-title">
                   {usuario.nombre_completo ||
                     'Usuario'}
                 </h2>
@@ -284,6 +297,7 @@ export default function UsuarioDetailModal({
               onClick={handleGenerateActa}
               disabled={generatingActa}
               title="Crear Acta de Entrega"
+              aria-label="Crear Acta de Entrega"
             >
               <FileText size={17} />
 
@@ -299,6 +313,7 @@ export default function UsuarioDetailModal({
               className="user-detail-close"
               onClick={onClose}
               title="Cerrar"
+              aria-label="Cerrar ficha de usuario"
             >
               <X size={21} />
             </button>
@@ -616,7 +631,7 @@ export default function UsuarioDetailModal({
           </section>
 
         </div>
-      </div>
+      </section>
     </div>
   );
 }

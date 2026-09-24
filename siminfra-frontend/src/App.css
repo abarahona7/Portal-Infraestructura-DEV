@@ -4,7 +4,7 @@
 
 .app-shell {
   width: 100%;
-  min-height: 100vh;
+  min-height: 100dvh;
 
   background-color: #f8fafc;
 
@@ -17,7 +17,9 @@
 
 .app-main {
   min-width: 0;
-  min-height: 100vh;
+  width: calc(100% - 260px);
+  max-width: var(--portal-content-max);
+  min-height: 100dvh;
 
   margin-left: 260px;
 
@@ -33,6 +35,7 @@
 /* Sidebar contraído */
 .app-main-sidebar-collapsed {
   margin-left: 76px;
+  width: calc(100% - 76px);
 }
 
 /* =========================
@@ -66,6 +69,7 @@
 @media (max-width: 1023px) {
   .app-main,
   .app-main-sidebar-collapsed {
+    width: 100%;
     margin-left: 0;
     padding: 1.25rem;
   }
@@ -162,7 +166,7 @@
   font-weight: 600;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 639px) {
   .equipment-results-header {
     align-items: flex-start;
     flex-direction: column;
@@ -179,7 +183,7 @@
 
 @media (max-width: 767px) {
   .app-table-container {
-    overflow-x: hidden;
+    overflow-x: auto;
   }
 
   .equipment-results-header {

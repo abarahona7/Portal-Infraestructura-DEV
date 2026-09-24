@@ -59,6 +59,7 @@ export default function Header({
           onClick={onOpenSidebar}
           className="header-menu-button"
           title="Abrir menú de módulos"
+          aria-label="Abrir menú de módulos"
         >
           <Menu size={21} />
         </button>
@@ -85,6 +86,7 @@ export default function Header({
         onClick={onLogout}
         className="header-logout-button"
         title="Cerrar sesión"
+        aria-label="Cerrar sesión"
       >
         <LogOut size={17} />
 

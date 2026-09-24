@@ -19,7 +19,7 @@ export default function Pagination({
 
   return (
     <nav className="portal-pagination" aria-label="Paginación de resultados">
-      <span className="portal-pagination-summary">
+      <span className="portal-pagination-summary" aria-live="polite">
         Mostrando {firstItem}–{lastItem} de {count}
       </span>
 

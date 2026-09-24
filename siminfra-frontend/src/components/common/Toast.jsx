@@ -26,7 +26,11 @@ export default function Toast({
   const Icon = icons[type] || Info;
 
   return (
-    <div className={`toast toast-${type}`}>
+    <div
+      className={`toast toast-${type}`}
+      role={type === 'error' ? 'alert' : 'status'}
+      aria-live={type === 'error' ? 'assertive' : 'polite'}
+    >
       <div className="toast-icon">
         <Icon size={21} />
       </div>

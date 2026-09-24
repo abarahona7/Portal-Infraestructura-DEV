@@ -14,16 +14,27 @@ export default function CreateModal({
   return (
     <div
       className="create-modal-overlay"
+      role="presentation"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          onClose?.();
+        }
+      }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
         }
       }}
     >
-      <div className="create-modal">
+      <section
+        className="create-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-modal-title"
+      >
         {/* ENCABEZADO */}
         <div className="create-modal-header">
-          <h3>{title}</h3>
+          <h3 id="create-modal-title">{title}</h3>
 
           <button
             type="button"
@@ -59,7 +70,7 @@ export default function CreateModal({
             </button>
           </div>
         </form>
-      </div>
+      </section>
     </div>
   );
 }

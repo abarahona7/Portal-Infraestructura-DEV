@@ -126,13 +126,7 @@ export default function PCGenericoCreateForm({
       </div>
 
       {/* Marca + Modelo */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '0.5rem'
-        }}
-      >
+      <div className="responsive-form-grid">
         <div>
           <label style={labelStyle}>
             Marca
@@ -175,13 +169,7 @@ export default function PCGenericoCreateForm({
       </div>
 
       {/* Serie + Activo Fijo */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '0.5rem'
-        }}
-      >
+      <div className="responsive-form-grid">
         <div>
           <label style={labelStyle}>
             N.º de Serie

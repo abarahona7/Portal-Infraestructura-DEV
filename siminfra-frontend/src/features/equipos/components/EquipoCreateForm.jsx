@@ -284,14 +284,7 @@ export default function EquipoCreateForm({
 
           {/* IMEI / PIN */}
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns:
-                '1fr 1fr',
-              gap: '0.5rem',
-            }}
-          >
+          <div className="responsive-form-grid">
             <div>
               <label
                 style={{

@@ -109,6 +109,18 @@ export default function UsuariosTable({
               <tr
                 key={usuario.id}
                 onClick={() => onSelectUser(usuario)}
+                onKeyDown={(event) => {
+                  if (
+                    event.target === event.currentTarget
+                    && (event.key === 'Enter' || event.key === ' ')
+                  ) {
+                    event.preventDefault();
+                    onSelectUser(usuario);
+                  }
+                }}
+                tabIndex={0}
+                role="button"
+                aria-label={`Abrir ficha de ${usuario.nombre_completo || 'usuario'}`}
               >
                 <td className="usuario-name">
                   {usuario.nombre_completo || 'N/I'}
@@ -151,6 +163,18 @@ export default function UsuariosTable({
             key={usuario.id}
             className="usuario-card"
             onClick={() => onSelectUser(usuario)}
+            onKeyDown={(event) => {
+              if (
+                event.target === event.currentTarget
+                && (event.key === 'Enter' || event.key === ' ')
+              ) {
+                event.preventDefault();
+                onSelectUser(usuario);
+              }
+            }}
+            tabIndex={0}
+            role="button"
+            aria-label={`Abrir ficha de ${usuario.nombre_completo || 'usuario'}`}
           >
             <div className="usuario-card-header">
               <div className="usuario-card-title">

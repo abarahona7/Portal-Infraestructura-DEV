@@ -444,7 +444,7 @@
    MÓVIL PEQUEÑO
 ========================= */
 
-@media (max-width: 420px) {
+@media (max-width: 479px) {
   .perfiles-table th {
     font-size: 0.64rem;
   }

@@ -52,18 +52,27 @@ export default function PasswordInput({
               ? 'Ocultar contraseña'
               : 'Mostrar contraseña'
           }
+          aria-label={
+            visible
+              ? `Ocultar ${label}`
+              : `Mostrar ${label}`
+          }
           style={{
             position: 'absolute',
-            right: '0.65rem',
+            right: '0.2rem',
             top: '50%',
             transform: 'translateY(-50%)',
             border: 'none',
             background: 'transparent',
             cursor: 'pointer',
             color: '#64748b',
+            width: '44px',
+            height: '44px',
             padding: 0,
             display: 'flex',
-            alignItems: 'center'
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '0.4rem'
           }}
         >
           {visible ? (

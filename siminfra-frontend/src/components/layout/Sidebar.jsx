@@ -252,6 +252,7 @@ export default function Sidebar({
             className="sidebar-collapse-button"
             onClick={onToggleCollapse}
             title={collapsed ? 'Expandir menú' : 'Contraer menú'}
+            aria-label={collapsed ? 'Expandir menú' : 'Contraer menú'}
           >
             {collapsed ? (
               <ChevronRight size={18} />
@@ -265,6 +266,7 @@ export default function Sidebar({
             className="sidebar-mobile-close"
             onClick={onClose}
             title="Cerrar menú"
+            aria-label="Cerrar menú"
           >
             <X size={20} />
           </button>

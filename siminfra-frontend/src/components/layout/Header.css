@@ -36,7 +36,7 @@
 
   color: #0f172a;
 
-  font-size: 1.65rem;
+  font-size: clamp(1.2rem, 1.6vw, 1.65rem);
   font-weight: 700;
 
   line-height: 1.15;
@@ -66,8 +66,8 @@
 .header-menu-button {
   display: none;
 
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
 
   flex-shrink: 0;
 
@@ -173,8 +173,8 @@
   }
 
   .header-logout-button {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
 
     padding: 0;
   }
@@ -200,8 +200,8 @@
 
   .header-menu-button,
   .header-logout-button {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
   }
 
   .main-header-titles {
@@ -223,15 +223,5 @@
   .main-header-module {
     margin-top: 3px;
     font-size: 0.85rem;
-  }
-}
-
-@media (max-width: 420px) {
-  .main-header-titles h1 {
-    font-size: 0.95rem;
-  }
-
-  .main-header-module {
-    font-size: 0.8rem;
   }
 }

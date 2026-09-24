@@ -21,7 +21,7 @@
 /* AGREGAR */
 
 .module-toolbar-create {
-  min-height: 42px;
+  min-height: 44px;
 
   display: flex;
   align-items: center;
@@ -60,7 +60,7 @@
 /* EXPORTAR EXCEL */
 
 .module-toolbar-export {
-  min-height: 42px;
+  min-height: 44px;
 
   display: flex;
   align-items: center;
@@ -98,7 +98,7 @@
 /* FILTROS */
 
 .module-toolbar-filter {
-  min-height: 42px;
+  min-height: 44px;
 
   display: flex;
   align-items: center;
@@ -140,7 +140,7 @@
 
 .module-toolbar-search input {
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
 
   padding: 0.7rem 1rem;
 

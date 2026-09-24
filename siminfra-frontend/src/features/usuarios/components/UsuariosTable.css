@@ -389,6 +389,12 @@
   cursor: pointer;
 }
 
+.usuarios-table tbody tr:focus-visible,
+.usuario-card:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.45);
+  outline-offset: -3px;
+}
+
 .usuario-card-header,
 .usuario-card-footer {
   display: flex;

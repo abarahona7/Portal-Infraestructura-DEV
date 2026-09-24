@@ -1,7 +1,7 @@
-import {
-  X,
-  Save
-} from 'lucide-react';
+import { Save, X } from 'lucide-react';
+
+import './EditModal.css';
+
 
 export default function EditModal({
   title = 'Editar Registro',
@@ -11,130 +11,52 @@ export default function EditModal({
 }) {
   return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.55)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem',
-        zIndex: 1000,
-        boxSizing: 'border-box'
+      className="edit-modal-overlay"
+      role="presentation"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          onClose?.();
+        }
+      }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose?.();
+        }
       }}
     >
-      <div
-        style={{
-          backgroundColor: '#fff',
-          borderRadius: '16px',
-          width: '100%',
-          maxWidth: '560px',
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.18)'
-        }}
+      <section
+        className="edit-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-modal-title"
       >
-        {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '1.25rem 1.25rem 1rem 1.25rem',
-            borderBottom: '1px solid #e2e8f0',
-            backgroundColor: '#fff',
-            flexShrink: 0
-          }}
-        >
-          <h3
-            style={{
-              margin: 0,
-              color: '#0f172a',
-              fontSize: '1.35rem',
-              fontWeight: '800'
-            }}
-          >
-            {title}
-          </h3>
+        <header className="edit-modal-header">
+          <h3 id="edit-modal-title">{title}</h3>
 
           <button
             type="button"
+            className="edit-modal-close"
             onClick={onClose}
-            style={{
-              border: 'none',
-              background: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#334155',
-              padding: '0.25rem'
-            }}
             title="Cerrar"
+            aria-label="Cerrar"
           >
-            <X size={22} />
+            <X size={22} aria-hidden="true" />
           </button>
-        </div>
+        </header>
 
-        <form
-          onSubmit={onSubmit}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: 0,
-            flex: 1
-          }}
-        >
-          {/* Contenido con scroll */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-              padding: '1.25rem',
-              overflowY: 'auto',
-              flex: 1,
-              minHeight: 0
-            }}
-          >
+        <form onSubmit={onSubmit} className="edit-modal-form">
+          <div className="edit-modal-content">
             {children}
           </div>
 
-          {/* Footer fijo */}
-          <div
-            style={{
-              padding: '1rem 1.25rem 1.25rem 1.25rem',
-              borderTop: '1px solid #e2e8f0',
-              backgroundColor: '#fff',
-              flexShrink: 0
-            }}
-          >
-            <button
-              type="submit"
-              style={{
-                width: '100%',
-                backgroundColor: '#2563eb',
-                color: '#fff',
-                border: 'none',
-                padding: '0.85rem 1rem',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                fontWeight: '700',
-                fontSize: '0.95rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem'
-              }}
-            >
-              <Save size={16} />
+          <footer className="edit-modal-footer">
+            <button type="submit" className="edit-modal-save">
+              <Save size={16} aria-hidden="true" />
               Guardar Cambios
             </button>
-          </div>
+          </footer>
         </form>
-      </div>
+      </section>
     </div>
   );
 }

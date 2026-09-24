@@ -9,7 +9,8 @@ import {
   Printer,
   Wifi,
   Keyboard,
-  Package
+  Package,
+  Eye,
 } from 'lucide-react';
 
 import {
@@ -64,6 +65,8 @@ export default function EquiposTable({
   onShowHistory,
   onEdit,
   onDelete,
+  role,
+  onRevealSecret,
 }) {
   const showAssignedIp = equipos.length > 0 && equipos.every(
     (equipo) => formatEquipmentType(equipo.tipo) === 'Notebook'
@@ -247,7 +250,7 @@ export default function EquiposTable({
 
           <span>
             <strong>PIN:</strong>{' '}
-            {equipo.pin_configured ? '••••••••' : 'N/I'}
+            {renderPin(equipo)}
           </span>
 
           {accesorios && (
@@ -281,6 +284,33 @@ export default function EquiposTable({
     return (
       <span className="equipo-unassigned">
         N/A
+      </span>
+    );
+  };
+
+  const renderPin = (equipo) => {
+    if (!equipo.pin_configured) {
+      return 'N/I';
+    }
+
+    return (
+      <span className="equipo-secret-value">
+        <span aria-label="PIN configurado">••••</span>
+        {role === 'Administrador' && (
+          <button
+            type="button"
+            className="equipo-secret-reveal"
+            onClick={() => onRevealSecret?.({
+              module: 'equipamiento',
+              object_id: equipo.id,
+              secret_type: 'pin',
+            })}
+            aria-label={`Revelar PIN de ${equipo.marca || ''} ${equipo.modelo || ''}`.trim()}
+            title="Revelar PIN"
+          >
+            <Eye size={16} aria-hidden="true" />
+          </button>
+        )}
       </span>
     );
   };
@@ -559,7 +589,7 @@ export default function EquiposTable({
 
                     <MobileField
                       label="PIN"
-                      value={equipo.pin_configured ? '••••••••' : 'N/I'}
+                      value={renderPin(equipo)}
                       monospace
                     />
                   </>

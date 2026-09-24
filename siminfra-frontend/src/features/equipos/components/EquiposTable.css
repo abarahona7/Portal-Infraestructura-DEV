@@ -186,6 +186,38 @@
   font-weight: 600;
 }
 
+.equipo-secret-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.equipo-secret-reveal {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.equipo-secret-reveal:hover {
+  background: #e2e8f0;
+  color: #1d4ed8;
+}
+
+.equipo-secret-reveal:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
 
 /* =========================
    FECHA

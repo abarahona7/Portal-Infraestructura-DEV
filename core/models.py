@@ -249,7 +249,8 @@ class Usuario(models.Model):
         if self.password_vpn and not is_encrypted(self.password_vpn):
             self.password_vpn = encrypt_val(self.password_vpn)
 
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.nombre_completo} ({self.usuario_red})"
@@ -304,7 +305,8 @@ class Anexo(models.Model):
         self.numero_anexo = _normalize_spaces(self.numero_anexo) or ''
         self.clean()
 
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['numero_anexo']
@@ -709,7 +711,8 @@ class Equipamiento(models.Model):
         if self.icloud_password and not is_encrypted(self.icloud_password):
             self.icloud_password = encrypt_val(self.icloud_password)
 
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            super().save(*args, **kwargs)
     
     def __str__(self):
         return f"{self.tipo} - {self.marca} {self.modelo} ({self.numero_serie})"
@@ -987,7 +990,8 @@ class PCGenerico(models.Model):
         if self.password and not is_encrypted(self.password):
             self.password = encrypt_val(self.password)
 
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            super().save(*args, **kwargs)
 
     def clean(self):
         if not self.departamento_id:
@@ -1726,6 +1730,26 @@ def track_historial_usuario(sender, instance, **kwargs):
                     observacion="||".join(cambios)
                 )
 
+def liberar_equipos_usuario(usuario):
+    """Libera y audita cada equipo asociado dentro de una transacciÃ³n."""
+    with transaction.atomic():
+        equipos = Equipamiento.objects.select_for_update().filter(
+            usuario=usuario
+        )
+
+        for equipo in equipos:
+            equipo.usuario = None
+            equipo.estado = 'STOCK'
+            equipo.fecha_asignacion = None
+            equipo.save(
+                update_fields=[
+                    'usuario',
+                    'estado',
+                    'fecha_asignacion',
+                ]
+            )
+
+
 @receiver(post_save, sender=Usuario)
 def auto_sync_usuario(sender, instance, created, **kwargs):
 
@@ -1735,13 +1759,7 @@ def auto_sync_usuario(sender, instance, created, **kwargs):
     if instance.estado == 'BAJA':
 
         # Liberar todos sus equipos
-        Equipamiento.objects.filter(
-            usuario=instance
-        ).update(
-            usuario=None,
-            estado='STOCK',
-            fecha_asignacion=None
-        )
+        liberar_equipos_usuario(instance)
 
         # Liberar su IP y cerrar la asignación activa.
         from .services.asignacion_ips import assign_ip_to_user
@@ -1798,17 +1816,25 @@ def auto_sync_usuario(sender, instance, created, **kwargs):
     # POR HOSTNAME
     # =====================================
     if nuevo_hostname:
-        Equipamiento.objects.filter(
-            usuario__isnull=True,
-            tipo__in=[
-                'Notebook',
-                'Mac'
-            ],
-            hostname__iexact=nuevo_hostname
-        ).update(
-            usuario=instance,
-            estado='ASIGNADO'
-        )
+        with transaction.atomic():
+            equipos_disponibles = Equipamiento.objects.select_for_update().filter(
+                usuario__isnull=True,
+                tipo__in=[
+                    'Notebook',
+                    'Mac'
+                ],
+                hostname__iexact=nuevo_hostname
+            )
+
+            for equipo in equipos_disponibles:
+                equipo.usuario = instance
+                equipo.estado = 'ASIGNADO'
+                equipo.save(
+                    update_fields=[
+                        'usuario',
+                        'estado',
+                    ]
+                )
 
 
 # =========================================
@@ -1823,13 +1849,7 @@ def liberar_recursos_al_eliminar_usuario(
 ):
 
     # Liberar equipos
-    Equipamiento.objects.filter(
-        usuario=instance
-    ).update(
-        usuario=None,
-        estado='STOCK',
-        fecha_asignacion=None
-    )
+    liberar_equipos_usuario(instance)
 
     # Liberar IP y cerrar la asignación activa.
     from .services.asignacion_ips import assign_ip_to_user

@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.db import transaction
 from django.db.models import Prefetch, Q
 from django.db.models.functions import Length
 from rest_framework.decorators import action
@@ -61,7 +62,8 @@ class AuditUserMixin:
         )
 
         try:
-            serializer.save()
+            with transaction.atomic():
+                serializer.save()
         finally:
             reset_current_audit_user(token)
 
@@ -71,7 +73,8 @@ class AuditUserMixin:
         )
 
         try:
-            serializer.save()
+            with transaction.atomic():
+                serializer.save()
         finally:
             reset_current_audit_user(token)
 
@@ -81,7 +84,8 @@ class AuditUserMixin:
         )
 
         try:
-            instance.delete()
+            with transaction.atomic():
+                instance.delete()
         finally:
             reset_current_audit_user(token)
 

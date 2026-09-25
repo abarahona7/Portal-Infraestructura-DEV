@@ -65,6 +65,18 @@ def _normalize_key(value):
     return value.casefold()
 
 
+def _normalize_optional_key(value):
+    normalized = _normalize_key(value)
+    return normalized or None
+
+
+def _include_derived_update_fields(kwargs, *field_names):
+    """Keep internal normalized columns in sync during partial saves."""
+    update_fields = kwargs.get('update_fields')
+    if update_fields is not None:
+        kwargs['update_fields'] = set(update_fields).union(field_names)
+
+
 class Departamento(models.Model):
     nombre = models.CharField(max_length=100)
     nombre_normalizado = models.CharField(
@@ -137,8 +149,22 @@ class SubArea(models.Model):
 
 class Usuario(models.Model):
     nombre_completo = models.CharField(max_length=150)
+    nombre_completo_normalizado = models.CharField(
+        max_length=150,
+        unique=True,
+        editable=False,
+    )
     usuario_red = models.CharField(max_length=50, unique=True)
+    usuario_red_normalizado = models.CharField(
+        max_length=50,
+        unique=True,
+        editable=False,
+    )
     correo_corp = models.EmailField(unique=True)
+    correo_corp_normalizado = models.EmailField(
+        unique=True,
+        editable=False,
+    )
     dpto_area = models.CharField(max_length=100, blank=True, default='')
     departamento = models.ForeignKey(
         Departamento,
@@ -198,6 +224,16 @@ class Usuario(models.Model):
         self.celular = _normalize_spaces(self.celular) if self.celular else self.celular
         self.telefono = _normalize_spaces(self.telefono) if self.telefono else self.telefono
         self.anexo = _normalize_spaces(self.anexo) if self.anexo else self.anexo
+        self.nombre_completo_normalizado = _normalize_key(self.nombre_completo)
+        self.usuario_red_normalizado = _normalize_key(self.usuario_red)
+        self.correo_corp_normalizado = _normalize_key(self.correo_corp)
+
+        _include_derived_update_fields(
+            kwargs,
+            'nombre_completo_normalizado',
+            'usuario_red_normalizado',
+            'correo_corp_normalizado',
+        )
 
         if self.departamento_id:
             self.dpto_area = self.departamento.nombre
@@ -255,6 +291,7 @@ class Anexo(models.Model):
     )
 
     def save(self, *args, **kwargs):
+        self.numero_anexo = _normalize_spaces(self.numero_anexo) or ''
         self.estado = (
             'ASIGNADO'
             if self.usuario_id
@@ -373,6 +410,11 @@ class Servidor(models.Model):
         max_length=100,
         unique=True
     )
+    hostname_normalizado = models.CharField(
+        max_length=100,
+        unique=True,
+        editable=False,
+    )
 
     descripcion = models.TextField(
         null=True,
@@ -383,6 +425,12 @@ class Servidor(models.Model):
         ordering = ['hostname']
         verbose_name = 'Servidor'
         verbose_name_plural = 'Servidores'
+
+    def save(self, *args, **kwargs):
+        self.hostname = _normalize_spaces(self.hostname) or ''
+        self.hostname_normalizado = _normalize_key(self.hostname)
+        _include_derived_update_fields(kwargs, 'hostname_normalizado')
+        super().save(*args, **kwargs)
 
     def __str__(self):
         direccion_ip = self.ip.direccion_ip if self.ip_id else 'Sin IP'
@@ -423,11 +471,25 @@ class Equipamiento(models.Model):
     null=True,
     blank=True
 )
+    numero_serie_normalizado = models.CharField(
+        max_length=20,
+        unique=True,
+        null=True,
+        blank=True,
+        editable=False,
+    )
 
     hostname = models.CharField(
         max_length=50,
         null=True,
         blank=True
+    )
+    hostname_computador_normalizado = models.CharField(
+        max_length=50,
+        unique=True,
+        null=True,
+        blank=True,
+        editable=False,
     )
 
 
@@ -435,6 +497,13 @@ class Equipamiento(models.Model):
         max_length=12,
         null=True,
         blank=True
+    )
+    af_normalizado = models.CharField(
+        max_length=12,
+        unique=True,
+        null=True,
+        blank=True,
+        editable=False,
     )
 
     accesorios = models.CharField(
@@ -497,6 +566,10 @@ class Equipamiento(models.Model):
 
     def save(self, *args, **kwargs):
 
+        self.numero_serie = _normalize_spaces(self.numero_serie) or None
+        self.hostname = _normalize_spaces(self.hostname) or None
+        self.af = _normalize_spaces(self.af) or None
+
         # =====================================
         # COHERENCIA DE ASIGNACIÓN
         # =====================================
@@ -525,6 +598,22 @@ class Equipamiento(models.Model):
                 if self.usuario.hostname
                 else None
             )
+
+        self.numero_serie_normalizado = _normalize_optional_key(
+            self.numero_serie
+        )
+        self.af_normalizado = _normalize_optional_key(self.af)
+        self.hostname_computador_normalizado = (
+            _normalize_optional_key(self.hostname)
+            if self.tipo in ['Notebook', 'Mac']
+            else None
+        )
+        _include_derived_update_fields(
+            kwargs,
+            'numero_serie_normalizado',
+            'af_normalizado',
+            'hostname_computador_normalizado',
+        )
 
 
         # =====================================
@@ -584,6 +673,11 @@ class HistorialEquipo(models.Model):
 class PerfilGenerico(models.Model):
     nombre = models.CharField(max_length=150, null=True, blank=True)
     usuario = models.CharField(max_length=100, unique=True)
+    usuario_normalizado = models.CharField(
+        max_length=100,
+        unique=True,
+        editable=False,
+    )
     password = models.CharField(max_length=255, null=True, blank=True)
     correo = models.EmailField(null=True, blank=True)
     # Campo legado conservado temporalmente para compatibilidad con datos
@@ -641,6 +735,8 @@ class PerfilGenerico(models.Model):
         self.nombre = _normalize_spaces(self.nombre) if self.nombre else self.nombre
         self.usuario = _normalize_spaces(self.usuario) or ''
         self.correo = (_normalize_spaces(self.correo) or '').lower() or None
+        self.usuario_normalizado = _normalize_key(self.usuario)
+        _include_derived_update_fields(kwargs, 'usuario_normalizado')
         self.observaciones = (
             _normalize_spaces(self.observaciones)
             if self.observaciones
@@ -685,6 +781,11 @@ class PCGenerico(models.Model):
         max_length=100,
         unique=True
     )
+    hostname_normalizado = models.CharField(
+        max_length=100,
+        unique=True,
+        editable=False,
+    )
 
     dpto_area = models.CharField(
         max_length=150,
@@ -724,11 +825,25 @@ class PCGenerico(models.Model):
         null=True,
         blank=True
     )
+    numero_serie_normalizado = models.CharField(
+        max_length=20,
+        unique=True,
+        null=True,
+        blank=True,
+        editable=False,
+    )
 
     activo_fijo = models.CharField(
         max_length=12,
         null=True,
         blank=True
+    )
+    activo_fijo_normalizado = models.CharField(
+        max_length=12,
+        unique=True,
+        null=True,
+        blank=True,
+        editable=False,
     )
 
     teamviewer_id = models.CharField(
@@ -753,6 +868,21 @@ class PCGenerico(models.Model):
     def save(self, *args, **kwargs):
         self.usuario_local = _normalize_spaces(self.usuario_local) or ''
         self.hostname = _normalize_spaces(self.hostname) or ''
+        self.numero_serie = _normalize_spaces(self.numero_serie) or None
+        self.activo_fijo = _normalize_spaces(self.activo_fijo) or None
+        self.hostname_normalizado = _normalize_key(self.hostname)
+        self.numero_serie_normalizado = _normalize_optional_key(
+            self.numero_serie
+        )
+        self.activo_fijo_normalizado = _normalize_optional_key(
+            self.activo_fijo
+        )
+        _include_derived_update_fields(
+            kwargs,
+            'hostname_normalizado',
+            'numero_serie_normalizado',
+            'activo_fijo_normalizado',
+        )
 
         if not self.departamento_id and self.dpto_area:
             normalized_area = _normalize_key(self.dpto_area)

@@ -81,6 +81,18 @@ def _validate_no_whitespace(value, field_label):
     return value
 
 
+class InternalModelFieldsMixin:
+    """Exclude database-only normalization fields from public API schemas."""
+
+    internal_model_fields = ()
+
+    def get_fields(self):
+        fields = super().get_fields()
+        for field_name in self.internal_model_fields:
+            fields.pop(field_name, None)
+        return fields
+
+
 class SubAreaSerializer(serializers.ModelSerializer):
     departamento_nombre = serializers.ReadOnlyField(
         source='departamento.nombre'
@@ -315,7 +327,8 @@ class HistorialAsignacionIPSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
-class ServidorSerializer(serializers.ModelSerializer):
+class ServidorSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
+    internal_model_fields = ('hostname_normalizado',)
     ip = serializers.SlugRelatedField(
         slug_field='direccion_ip',
         queryset=IP.objects.all(),
@@ -501,7 +514,12 @@ class HistorialEquipoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class EquipamientoSerializer(serializers.ModelSerializer):
+class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
+    internal_model_fields = (
+        'numero_serie_normalizado',
+        'hostname_computador_normalizado',
+        'af_normalizado',
+    )
     usuario_red = serializers.ReadOnlyField(
         source='usuario.usuario_red'
     )
@@ -578,7 +596,11 @@ class EquipamientoSerializer(serializers.ModelSerializer):
 
         for field in ('marca', 'modelo', 'numero_serie', 'hostname', 'af', 'accesorios', 'imei', 'icloud_cuenta'):
             if field in attrs and isinstance(attrs[field], str):
-                cleaned = attrs[field].strip()
+                cleaned = (
+                    _normalize_spaces(attrs[field])
+                    if field in ('numero_serie', 'af')
+                    else attrs[field].strip()
+                )
                 attrs[field] = cleaned or None
 
         if attrs.get('icloud_cuenta'):
@@ -659,11 +681,12 @@ class EquipamientoSerializer(serializers.ModelSerializer):
 
         if (
             serie and
-            Equipamiento.objects.filter(
-                numero_serie__iexact=serie.strip()
-            ).exclude(
-                pk=getattr(instance, 'pk', None)
-            ).exists()
+            _has_normalized_duplicate(
+                Equipamiento.objects.all(),
+                'numero_serie',
+                serie,
+                getattr(instance, 'pk', None),
+            )
         ):
             raise serializers.ValidationError({
                 "numero_serie":
@@ -677,11 +700,12 @@ class EquipamientoSerializer(serializers.ModelSerializer):
 
         if (
             af and
-            Equipamiento.objects.filter(
-                af__iexact=af.strip()
-            ).exclude(
-                pk=getattr(instance, 'pk', None)
-            ).exists()
+            _has_normalized_duplicate(
+                Equipamiento.objects.all(),
+                'af',
+                af,
+                getattr(instance, 'pk', None),
+            )
         ):
             raise serializers.ValidationError({
                 "af":
@@ -738,7 +762,12 @@ class EquipamientoSerializer(serializers.ModelSerializer):
         return attrs
 
 
-class UsuarioSerializer(serializers.ModelSerializer):
+class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
+    internal_model_fields = (
+        'nombre_completo_normalizado',
+        'usuario_red_normalizado',
+        'correo_corp_normalizado',
+    )
     equipos = EquipamientoSerializer(many=True, read_only=True)
     historial = HistorialUsuarioSerializer(many=True, read_only=True)
     departamento_nombre = serializers.ReadOnlyField(
@@ -1045,7 +1074,8 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
         return attrs
 
-class PerfilGenericoSerializer(serializers.ModelSerializer):
+class PerfilGenericoSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
+    internal_model_fields = ('usuario_normalizado',)
     password = serializers.CharField(
         write_only=True,
         required=False,
@@ -1232,7 +1262,7 @@ class PCGenericoSerializer(serializers.ModelSerializer):
     def validate_numero_serie(self, value):
         if not value:
             return None
-        value = value.strip()
+        value = _normalize_spaces(value)
         if not value:
             return None
         if len(value) > 20:
@@ -1240,9 +1270,12 @@ class PCGenericoSerializer(serializers.ModelSerializer):
                 'El N° de Serie permite un máximo de 20 caracteres.'
             )
         instance = getattr(self, 'instance', None)
-        if PCGenerico.objects.filter(numero_serie__iexact=value).exclude(
-            pk=getattr(instance, 'pk', None)
-        ).exists():
+        if _has_normalized_duplicate(
+            PCGenerico.objects.all(),
+            'numero_serie',
+            value,
+            getattr(instance, 'pk', None),
+        ):
             raise serializers.ValidationError(
                 'Ya existe un PC Genérico con este N° de Serie.'
             )

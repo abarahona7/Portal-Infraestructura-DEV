@@ -290,13 +290,16 @@ class Anexo(models.Model):
         auto_now_add=True
     )
 
-    def save(self, *args, **kwargs):
-        self.numero_anexo = _normalize_spaces(self.numero_anexo) or ''
+    def clean(self):
         self.estado = (
             'ASIGNADO'
             if self.usuario_id
             else 'DISPONIBLE'
         )
+
+    def save(self, *args, **kwargs):
+        self.numero_anexo = _normalize_spaces(self.numero_anexo) or ''
+        self.clean()
 
         super().save(*args, **kwargs)
 
@@ -306,6 +309,21 @@ class Anexo(models.Model):
             models.Index(
                 fields=['estado', 'numero_anexo'],
                 name='idx_anexo_estado_num',
+            ),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        usuario__isnull=True,
+                        estado='DISPONIBLE',
+                    )
+                    | models.Q(
+                        usuario__isnull=False,
+                        estado='ASIGNADO',
+                    )
+                ),
+                name='ck_anexo_asignacion_valida',
             ),
         ]
 
@@ -383,11 +401,57 @@ class IP(models.Model):
                 name='idx_ip_estado_dir',
             ),
         ]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    (
+                        models.Q(
+                            estado='LIBRE',
+                            usuario__isnull=True,
+                        )
+                        & (
+                            models.Q(asignado_otro__isnull=True)
+                            | models.Q(asignado_otro='')
+                        )
+                    )
+                    | (
+                        models.Q(
+                            estado='RESERVADA',
+                            usuario__isnull=False,
+                        )
+                        & (
+                            models.Q(asignado_otro__isnull=True)
+                            | models.Q(asignado_otro='')
+                        )
+                    )
+                    | (
+                        models.Q(
+                            estado='RESERVADA',
+                            usuario__isnull=True,
+                            asignado_otro__isnull=False,
+                        )
+                        & ~models.Q(asignado_otro='')
+                    )
+                ),
+                name='ck_ip_estado_propietario',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.direccion_ip} - {self.estado}"
 
+    def clean(self):
+        self.asignado_otro = _normalize_spaces(self.asignado_otro) or None
+        if self.usuario_id:
+            self.asignado_otro = None
+            self.estado = 'RESERVADA'
+        elif self.asignado_otro:
+            self.estado = 'RESERVADA'
+        else:
+            self.estado = 'LIBRE'
+
     def save(self, *args, **kwargs):
+        self.clean()
         with transaction.atomic():
             super().save(*args, **kwargs)
             from .services.asignacion_ips import sync_ip_assignment_from_legacy
@@ -563,6 +627,30 @@ class Equipamiento(models.Model):
                 name='idx_equipo_usr_tipo',
             ),
         ]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        usuario__isnull=True,
+                        fecha_asignacion__isnull=True,
+                        estado__in=['STOCK', 'MANTENCION', 'BAJA'],
+                    )
+                    | models.Q(
+                        usuario__isnull=False,
+                        estado__in=['ASIGNADO', 'MANTENCION', 'BAJA'],
+                    )
+                ),
+                name='ck_equipo_asignacion_valida',
+            ),
+        ]
+
+    def clean(self):
+        if not self.usuario_id:
+            if self.estado == 'ASIGNADO':
+                self.estado = 'STOCK'
+            self.fecha_asignacion = None
+        elif self.estado == 'STOCK':
+            self.estado = 'ASIGNADO'
 
     def save(self, *args, **kwargs):
 
@@ -574,14 +662,7 @@ class Equipamiento(models.Model):
         # COHERENCIA DE ASIGNACIÓN
         # =====================================
 
-        if not self.usuario_id:
-            if self.estado == 'ASIGNADO':
-                self.estado = 'STOCK'
-
-            self.fecha_asignacion = None
-
-        elif self.estado == 'STOCK':
-            self.estado = 'ASIGNADO'
+        self.clean()
 
 
         # =====================================

@@ -42,7 +42,12 @@ class ImportV11Tests(TestCase):
                      6: 'TI'}),
             ]),
             ('PCs Genericos.xlsx', 4, {5: 'HOSTNAME'}, [
-                (5, {3: 'prueba_local', 4: 'SECRETO_LOCAL', 5: 'pc_prueba'}),
+                (5, {
+                    3: 'prueba_local',
+                    4: 'SECRETO_LOCAL',
+                    5: 'pc_prueba',
+                    6: 'TI',
+                }),
             ]),
         ]
         for filename, header_row, headers, data_rows in specs:

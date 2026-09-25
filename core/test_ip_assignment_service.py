@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.db import close_old_connections, connection
 from django.test import TestCase, TransactionTestCase
 
-from core.models import IP, Servidor, Usuario
+from core.models import Departamento, IP, Servidor, Usuario
 from core.services.asignacion_ips import (
     IpAssignmentError,
     assign_ip_to_user,
@@ -16,10 +16,12 @@ from core.services.asignacion_ips import (
 
 class IpAssignmentRollbackTests(TestCase):
     def setUp(self):
+        self.department = Departamento.objects.create(nombre='Rollback IP')
         self.user = Usuario.objects.create(
             nombre_completo='Usuario Rollback',
             usuario_red='rollback.ip',
             correo_corp='rollback.ip@example.com',
+            departamento=self.department,
         )
         self.first_ip = IP.objects.create(direccion_ip='172.23.1.210')
         self.second_ip = IP.objects.create(direccion_ip='172.23.1.211')
@@ -90,11 +92,13 @@ class IpAssignmentConcurrencyTests(TransactionTestCase):
     reset_sequences = True
 
     def setUp(self):
+        self.department = Departamento.objects.create(nombre='Concurrencia IP')
         self.users = [
             Usuario.objects.create(
                 nombre_completo=f'Usuario Concurrente {index}',
                 usuario_red=f'concurrente{index}',
                 correo_corp=f'concurrente{index}@example.com',
+                departamento=self.department,
             )
             for index in (1, 2)
         ]

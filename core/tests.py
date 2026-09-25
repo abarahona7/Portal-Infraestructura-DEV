@@ -16,12 +16,13 @@ from core.models import Usuario, PerfilGenerico, IP, Equipamiento, Anexo, Securi
 class SecurityTests(TestCase):
     def setUp(self):
         self.client=APIClient()
+        self.department = Departamento.objects.create(nombre='Pruebas Generales')
         for name in ['Visualizador','Operador Infraestructura','Administrador']:
             Group.objects.get_or_create(name=name)
         self.viewer=User.objects.create_user('viewer',password='StrongPass!123'); self.viewer.groups.add(Group.objects.get(name='Visualizador'))
         self.operator=User.objects.create_user('operator',password='StrongPass!123'); self.operator.groups.add(Group.objects.get(name='Operador Infraestructura'))
         self.admin=User.objects.create_user('adminx',password='StrongPass!123'); self.admin.groups.add(Group.objects.get(name='Administrador'))
-        self.portal_user=Usuario.objects.create(nombre_completo='Persona Uno',usuario_red='puno',correo_corp='puno@example.com',dpto_area='TI',password_gmail='Secret123')
+        self.portal_user=Usuario.objects.create(nombre_completo='Persona Uno',usuario_red='puno',correo_corp='puno@example.com',departamento=self.department,password_gmail='Secret123')
 
     def auth(self,user): self.client.force_authenticate(user=user)
 
@@ -105,7 +106,7 @@ class SecurityTests(TestCase):
                 'nombre_completo': 'Persona Dos',
                 'usuario_red': '  PUNO  ',
                 'correo_corp': 'persona.dos@example.com',
-                'dpto_area': 'TI',
+                'departamento': self.department.pk,
             },
             format='json',
         )
@@ -115,6 +116,7 @@ class SecurityTests(TestCase):
 
     def test_departamento_duplicate_is_case_and_space_insensitive(self):
         self.auth(self.admin)
+        initial_count = Departamento.objects.count()
         first = self.client.post(
             '/api/departamentos/',
             {'nombre': 'Gerencia'},
@@ -128,7 +130,7 @@ class SecurityTests(TestCase):
 
         self.assertEqual(first.status_code, 201)
         self.assertEqual(duplicate.status_code, 400)
-        self.assertEqual(Departamento.objects.count(), 1)
+        self.assertEqual(Departamento.objects.count(), initial_count + 1)
 
     def test_subarea_unique_inside_department(self):
         self.auth(self.admin)
@@ -443,6 +445,7 @@ class SecurityTests(TestCase):
             nombre='Perfil Histórico',
             usuario='perfil.historico',
             estado='ACTIVO',
+            departamento=self.department,
         )
 
         response = self.client.delete(
@@ -458,6 +461,7 @@ class SecurityTests(TestCase):
             nombre='Perfil Operador',
             usuario='perfil.operador',
             estado='ACTIVO',
+            departamento=self.department,
         )
 
         response = self.client.patch(
@@ -768,6 +772,7 @@ class ServerIpIntegrationTests(TestCase):
         )
         self.admin.groups.add(admin_group)
         self.client.force_authenticate(user=self.admin)
+        self.department = Departamento.objects.create(nombre='Servidores')
 
         self.first_ip = IP.objects.create(direccion_ip='172.23.1.100')
         self.second_ip = IP.objects.create(direccion_ip='172.23.1.101')
@@ -841,6 +846,7 @@ class ServerIpIntegrationTests(TestCase):
             nombre_completo='Usuario Notebook',
             usuario_red='unotebook',
             correo_corp='unotebook@example.com',
+            departamento=self.department,
         )
         self.first_ip.usuario = user
         self.first_ip.save()
@@ -967,6 +973,7 @@ class PCGenericoIpIntegrationTests(TestCase):
             nombre_completo='Usuario con IP',
             usuario_red='usuario.ip.pc',
             correo_corp='usuario.ip.pc@example.com',
+            departamento=self.department,
         )
         user_ip = IP.objects.create(
             direccion_ip='192.168.20.120',

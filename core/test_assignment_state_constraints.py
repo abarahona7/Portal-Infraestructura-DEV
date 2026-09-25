@@ -3,15 +3,17 @@ from datetime import date
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 
-from core.models import Anexo, Equipamiento, IP, Usuario
+from core.models import Anexo, Departamento, Equipamiento, IP, Usuario
 
 
 class AssignmentStateConstraintTests(TestCase):
     def setUp(self):
+        self.department = Departamento.objects.create(nombre='Restricciones')
         self.user = Usuario.objects.create(
             nombre_completo='Persona Restricciones',
             usuario_red='restricciones',
             correo_corp='restricciones@example.com',
+            departamento=self.department,
         )
 
     def assert_update_rejected(self, update):
@@ -98,4 +100,3 @@ class AssignmentStateConstraintTests(TestCase):
         self.assert_update_rejected(lambda: IP.objects.filter(
             pk=other_ip.pk,
         ).update(usuario=self.user))
-

@@ -34,6 +34,7 @@ src_BACKUP/
 limpieza_pre_import_v11.json
 equipos_pendientes_asignacion_v11.txt
 equipos_sin_usuario_v11.csv
+hostnames_usuarios_duplicados_v11.txt
 
 # Repository / OS / logs
 .git/

@@ -127,7 +127,10 @@ class Command(BaseCommand):
             current_module = 'pcs'
             for item in plan.pcs:
                 current_row = item['row']
-                pc = PCGenerico(**item['data'])
+                pc = PCGenerico(
+                    departamento=departments[item['department']],
+                    **item['data'],
+                )
                 pc.full_clean()
                 pc.save()
         except Exception as exc:

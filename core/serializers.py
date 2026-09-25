@@ -987,7 +987,7 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
             getattr(instance, 'subarea', None),
         )
 
-        if instance is None and not departamento:
+        if not departamento:
             raise serializers.ValidationError({
                 'departamento': 'Debe seleccionar un Departamento.'
             })
@@ -1154,7 +1154,7 @@ class PerfilGenericoSerializer(InternalModelFieldsMixin, serializers.ModelSerial
             getattr(instance, 'subarea', None),
         )
 
-        if instance is None and not departamento:
+        if not departamento:
             raise serializers.ValidationError({
                 'departamento': 'Debe seleccionar un Departamento.'
             })
@@ -1361,7 +1361,7 @@ class PCGenericoSerializer(serializers.ModelSerializer):
             getattr(instance, 'subarea', None),
         )
 
-        if instance is None and not departamento:
+        if not departamento:
             raise serializers.ValidationError({
                 'departamento': 'Debe seleccionar un Departamento.'
             })

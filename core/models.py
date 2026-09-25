@@ -169,8 +169,6 @@ class Usuario(models.Model):
     departamento = models.ForeignKey(
         Departamento,
         on_delete=models.PROTECT,
-        null=True,
-        blank=True,
         related_name='usuarios',
     )
     subarea = models.ForeignKey(
@@ -202,6 +200,11 @@ class Usuario(models.Model):
         ]
 
     def clean(self):
+        if not self.departamento_id:
+            raise ValidationError({
+                'departamento': 'Debe indicar el departamento del usuario.'
+            })
+
         if self.subarea_id and not self.departamento_id:
             raise ValidationError({
                 'departamento': 'Debe indicar el departamento de la subárea seleccionada.'
@@ -767,8 +770,6 @@ class PerfilGenerico(models.Model):
     departamento = models.ForeignKey(
         Departamento,
         on_delete=models.PROTECT,
-        null=True,
-        blank=True,
         related_name='perfiles_genericos',
     )
     subarea = models.ForeignKey(
@@ -801,6 +802,11 @@ class PerfilGenerico(models.Model):
         ]
 
     def clean(self):
+        if not self.departamento_id:
+            raise ValidationError({
+                'departamento': 'Debe indicar el departamento del perfil.'
+            })
+
         if self.subarea_id and not self.departamento_id:
             raise ValidationError({
                 'departamento': 'Debe indicar el departamento de la subárea seleccionada.'
@@ -876,8 +882,6 @@ class PCGenerico(models.Model):
     departamento = models.ForeignKey(
         Departamento,
         on_delete=models.PROTECT,
-        null=True,
-        blank=True,
         related_name='pcs_genericos',
     )
     subarea = models.ForeignKey(
@@ -986,6 +990,11 @@ class PCGenerico(models.Model):
         super().save(*args, **kwargs)
 
     def clean(self):
+        if not self.departamento_id:
+            raise ValidationError({
+                'departamento': 'Debe indicar el departamento del PC genérico.'
+            })
+
         if self.subarea_id and not self.departamento_id:
             raise ValidationError({
                 'departamento': 'Debe indicar el departamento de la subárea seleccionada.'

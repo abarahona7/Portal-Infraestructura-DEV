@@ -395,8 +395,12 @@ class ImportPlan:
         existing_afs = {normalized(x) for x in PCGenerico.objects.exclude(activo_fijo__isnull=True).values_list('activo_fijo', flat=True)}
         for number, row in source:
             username, hostname, serial = (cell(row, c) for c in (3, 5, 9))
+            department = cell(row, 6)
             if not username or len(username) > 150 or not hostname or len(hostname) > 100 or not HOSTNAME.fullmatch(hostname):
                 self.issue('pcs', sheet.title, number, 'PC_IDENTIFICADOR_INVALIDO')
+                continue
+            if not department:
+                self.issue('pcs', sheet.title, number, 'PC_DEPARTAMENTO_REQUERIDO')
                 continue
             if hostnames[normalized(hostname)] > 1 or normalized(hostname) in existing_hosts:
                 self.issue('pcs', sheet.title, number, 'PC_HOSTNAME_DUPLICADO_O_EXISTENTE')
@@ -412,11 +416,19 @@ class ImportPlan:
             if password and not secret_fits(password):
                 self.issue('pcs', sheet.title, number, 'PC_PASSWORD_LARGO_OMITIDO')
                 password = ''
+            department_key = self.department(
+                department,
+                'pcs',
+                sheet.title,
+                number,
+            )
             self.pcs.append({
-                'row': number, 'data': {
+                'row': number,
+                'department': department_key,
+                'data': {
                     'usuario_local': username, 'hostname': hostname,
                     'password': password or None,
-                    'dpto_area': cell(row, 6) or None,
+                    'dpto_area': department,
                     'marca': cell(row, 7) or None, 'modelo': cell(row, 8) or None,
                     'numero_serie': serial or None, 'activo_fijo': af or None,
                     'observaciones': cell(row, 11) or None,

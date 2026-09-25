@@ -3,6 +3,7 @@ from django.test import TestCase
 
 from core.models import (
     AsignacionIP,
+    Departamento,
     HistorialAsignacionIP,
     IP,
     TipoAsignacionIP,
@@ -14,10 +15,12 @@ from core.services.asignacion_ips import assign_ip_to_user
 
 class IpCentralRegistryTests(TestCase):
     def setUp(self):
+        self.department = Departamento.objects.create(nombre='Registro IP')
         self.user = Usuario.objects.create(
             nombre_completo='Usuario Registro IP',
             usuario_red='registro.ip',
             correo_corp='registro.ip@example.com',
+            departamento=self.department,
         )
         self.first_ip = IP.objects.create(direccion_ip='172.24.1.220')
         self.second_ip = IP.objects.create(direccion_ip='172.24.1.221')

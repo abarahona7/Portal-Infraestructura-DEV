@@ -2,6 +2,7 @@ from django.db import IntegrityError, transaction
 from django.test import TestCase
 
 from core.models import (
+    Departamento,
     Equipamiento,
     PCGenerico,
     PerfilGenerico,
@@ -17,6 +18,9 @@ from core.serializers import (
 
 
 class NormalizedUniquenessTests(TestCase):
+    def setUp(self):
+        self.department = Departamento.objects.create(nombre='Unicidad')
+
     def assert_database_rejects(self, create_record):
         with self.assertRaises(IntegrityError), transaction.atomic():
             create_record()
@@ -26,6 +30,7 @@ class NormalizedUniquenessTests(TestCase):
             nombre_completo='  Ana   Perez  ',
             usuario_red=' APEREZ ',
             correo_corp=' APEREZ@EXAMPLE.COM ',
+            departamento=self.department,
         )
 
         self.assertEqual(user.nombre_completo, 'Ana Perez')
@@ -37,6 +42,7 @@ class NormalizedUniquenessTests(TestCase):
             nombre_completo='ana perez',
             usuario_red='otra-cuenta',
             correo_corp='otra-cuenta@example.com',
+            departamento=self.department,
         ))
 
     def test_server_hostname_is_unique_without_changing_visible_case(self):
@@ -100,12 +106,14 @@ class NormalizedUniquenessTests(TestCase):
         profile = PerfilGenerico.objects.create(
             nombre='Correo soporte',
             usuario=' Soporte.Simi ',
+            departamento=self.department,
         )
         pc = PCGenerico.objects.create(
             usuario_local='soporte.local',
             hostname=' PC-SOPORTE-01 ',
             numero_serie=' PC-SER-01 ',
             activo_fijo=' PC100 ',
+            departamento=self.department,
         )
 
         self.assertEqual(profile.usuario, 'Soporte.Simi')
@@ -117,10 +125,12 @@ class NormalizedUniquenessTests(TestCase):
         self.assert_database_rejects(lambda: PerfilGenerico.objects.create(
             nombre='Otro perfil',
             usuario='soporte.simi',
+            departamento=self.department,
         ))
         self.assert_database_rejects(lambda: PCGenerico.objects.create(
             usuario_local='otra.local',
             hostname='pc-soporte-01',
+            departamento=self.department,
         ))
 
     def test_internal_normalized_fields_are_not_exposed_by_api_serializers(self):
@@ -128,6 +138,7 @@ class NormalizedUniquenessTests(TestCase):
             nombre_completo='Persona API',
             usuario_red='persona.api',
             correo_corp='persona.api@example.com',
+            departamento=self.department,
         )
         server = Servidor.objects.create(hostname='SRV-API')
         equipment = Equipamiento.objects.create(
@@ -139,6 +150,7 @@ class NormalizedUniquenessTests(TestCase):
         profile = PerfilGenerico.objects.create(
             nombre='Perfil API',
             usuario='perfil.api',
+            departamento=self.department,
         )
 
         payloads = (
@@ -149,4 +161,3 @@ class NormalizedUniquenessTests(TestCase):
         )
         for payload in payloads:
             self.assertFalse(any(key.endswith('normalizado') for key in payload))
-

@@ -7,18 +7,20 @@ from django.core.management import call_command
 from django.test import TestCase
 from openpyxl import Workbook
 
-from core.models import Equipamiento, HistorialEquipo, Usuario
+from core.models import Departamento, Equipamiento, HistorialEquipo, Usuario
 from core.services.asignacion_equipos import source_digest
 
 
 class AssignEquipmentUsersCommandTests(TestCase):
     def setUp(self):
+        self.department = Departamento.objects.create(nombre='Asignación Equipos')
         self.active_user = Usuario.objects.create(
             nombre_completo='Usuario Activo',
             usuario_red='usuario.activo',
             correo_corp='activo@example.com',
             hostname='cl_activo',
             estado='ACTIVO',
+            departamento=self.department,
         )
         self.inactive_user = Usuario.objects.create(
             nombre_completo='Usuario Baja',
@@ -26,6 +28,7 @@ class AssignEquipmentUsersCommandTests(TestCase):
             correo_corp='baja@example.com',
             hostname='cl_baja',
             estado='BAJA',
+            departamento=self.department,
         )
         self.assignable = Equipamiento.objects.create(
             tipo='Notebook',

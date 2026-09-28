@@ -117,89 +117,143 @@ def _arrow_head(start: tuple[int, int], end: tuple[int, int], length=18, width=1
     ]
 
 
-def render_png(diagram: Diagram):
-    image = Image.new("RGB", (diagram.width, diagram.height), COLORS["canvas"])
+def render_png(
+    diagram: Diagram,
+    *,
+    output_filename: str | None = None,
+    scale: int = 1,
+):
+    """Renderiza un PNG nativo al tamaño solicitado, sin reescalado posterior."""
+    if scale < 1:
+        raise ValueError("La escala del PNG debe ser igual o mayor que 1.")
+
+    def scaled(value: int) -> int:
+        return value * scale
+
+    def point(value: tuple[int, int]) -> tuple[int, int]:
+        return scaled(value[0]), scaled(value[1])
+
+    image = Image.new(
+        "RGB",
+        (scaled(diagram.width), scaled(diagram.height)),
+        COLORS["canvas"],
+    )
     draw = ImageDraw.Draw(image)
 
-    draw.text((70, 42), diagram.title, fill=COLORS["ink"], font=_font(46, True))
-    draw.text((72, 105), diagram.subtitle, fill=COLORS["muted"], font=_font(25))
+    draw.text(
+        point((70, 42)),
+        diagram.title,
+        fill=COLORS["ink"],
+        font=_font(scaled(46), True),
+    )
+    draw.text(
+        point((72, 105)),
+        diagram.subtitle,
+        fill=COLORS["muted"],
+        font=_font(scaled(25)),
+    )
 
     for group in diagram.groups:
         draw.rounded_rectangle(
-            (group.x, group.y, group.x + group.w, group.y + group.h),
-            radius=24,
+            (
+                scaled(group.x),
+                scaled(group.y),
+                scaled(group.x + group.w),
+                scaled(group.y + group.h),
+            ),
+            radius=scaled(24),
             fill=group.fill,
             outline="#D5E0EE",
-            width=3,
+            width=scaled(3),
         )
         draw.text(
-            (group.x + 24, group.y + 16),
+            point((group.x + 24, group.y + 16)),
             group.title.upper(),
             fill=COLORS["muted"],
-            font=_font(21, True),
+            font=_font(scaled(21), True),
         )
 
     for edge in diagram.edges:
         color = COLORS.get(edge.tone, edge.tone)
+        edge_points = [point(item) for item in edge.points]
         if edge.dashed:
-            for a, b in zip(edge.points, edge.points[1:]):
+            for a, b in zip(edge_points, edge_points[1:]):
                 distance = max(abs(b[0] - a[0]), abs(b[1] - a[1]))
-                steps = max(1, distance // 18)
+                steps = max(1, distance // scaled(18))
                 for index in range(0, steps, 2):
                     t1 = index / steps
                     t2 = min((index + 1) / steps, 1)
                     p1 = (int(a[0] + (b[0] - a[0]) * t1), int(a[1] + (b[1] - a[1]) * t1))
                     p2 = (int(a[0] + (b[0] - a[0]) * t2), int(a[1] + (b[1] - a[1]) * t2))
-                    draw.line([p1, p2], fill=color, width=5)
+                    draw.line([p1, p2], fill=color, width=scaled(5))
         else:
-            draw.line(edge.points, fill=color, width=5, joint="curve")
-        draw.polygon(_arrow_head(edge.points[-2], edge.points[-1]), fill=color)
+            draw.line(edge_points, fill=color, width=scaled(5), joint="curve")
+        draw.polygon(
+            _arrow_head(
+                edge_points[-2],
+                edge_points[-1],
+                length=scaled(18),
+                width=scaled(10),
+            ),
+            fill=color,
+        )
         if edge.label and edge.label_at:
-            bbox = draw.textbbox((0, 0), edge.label, font=_font(19, True))
-            x, y = edge.label_at
-            pad = 9
+            label_font = _font(scaled(19), True)
+            bbox = draw.textbbox((0, 0), edge.label, font=label_font)
+            x, y = point(edge.label_at)
+            pad = scaled(9)
             draw.rounded_rectangle(
                 (x - pad, y - pad, x + bbox[2] + pad, y + bbox[3] + pad),
-                radius=8,
+                radius=scaled(8),
                 fill=COLORS["white"],
                 outline="#D6E0EC",
             )
-            draw.text((x, y), edge.label, fill=color, font=_font(19, True))
+            draw.text((x, y), edge.label, fill=color, font=label_font)
 
     for node in diagram.nodes:
         fill, outline = _tone(node.tone)
         draw.rounded_rectangle(
-            (node.x, node.y, node.x + node.w, node.y + node.h),
-            radius=20,
+            (
+                scaled(node.x),
+                scaled(node.y),
+                scaled(node.x + node.w),
+                scaled(node.y + node.h),
+            ),
+            radius=scaled(20),
             fill=fill,
             outline=outline,
-            width=4,
+            width=scaled(4),
         )
-        title_size = 23 if node.small else 27
-        body_size = 18 if node.small else 21
+        title_size = scaled(23 if node.small else 27)
+        body_size = scaled(18 if node.small else 21)
         draw.text(
-            (node.x + 22, node.y + 19),
+            point((node.x + 22, node.y + 19)),
             node.title,
             fill=COLORS["ink"],
             font=_font(title_size, True),
         )
-        line_y = node.y + (64 if node.small else 70)
+        line_y = scaled(node.y + (64 if node.small else 70))
         for line in node.lines:
             draw.text(
-                (node.x + 22, line_y),
+                (scaled(node.x + 22), line_y),
                 line,
                 fill=COLORS["muted"],
                 font=_font(body_size),
             )
-            line_y += body_size + 12
+            line_y += body_size + scaled(12)
 
     draw.text(
-        (70, diagram.height - 50),
+        point((70, diagram.height - 50)),
         diagram.footer,
         fill=COLORS["muted"],
-        font=_font(18),
+        font=_font(scaled(18)),
     )
-    image.save(ROOT / f"{diagram.filename}.png", optimize=True)
+    filename = output_filename or diagram.filename
+    image.save(
+        ROOT / f"{filename}.png",
+        optimize=True,
+        dpi=(300, 300),
+    )
 
 
 def _svg_text(x, y, value, size, color, bold=False):
@@ -769,10 +823,18 @@ def current_actions():
 
 def main():
     ROOT.mkdir(parents=True, exist_ok=True)
-    for diagram in (general_flow(), user_state_flow(), data_model(), current_actions()):
+    diagrams = (general_flow(), user_state_flow(), data_model(), current_actions())
+    for diagram in diagrams:
         render_png(diagram)
         render_svg(diagram)
         print(f"Generados: {diagram.filename}.png y {diagram.filename}.svg")
+
+    render_png(
+        diagrams[-1],
+        output_filename="mapa_acciones_actuales_alta_resolucion",
+        scale=2,
+    )
+    print("Generado: mapa_acciones_actuales_alta_resolucion.png (7200 x 5100)")
 
 
 if __name__ == "__main__":

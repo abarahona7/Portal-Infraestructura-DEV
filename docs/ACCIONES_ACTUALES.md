@@ -7,6 +7,7 @@ del portal; no incluye funcionalidades futuras.
 ## Diagrama
 
 [Abrir imagen PNG](diagramas/mapa_acciones_actuales.png) ·
+[Abrir PNG de alta resolución](diagramas/mapa_acciones_actuales_alta_resolucion.png) ·
 [Abrir imagen SVG](diagramas/mapa_acciones_actuales.svg) ·
 [Editar fuente Mermaid](diagramas/fuentes/mapa_acciones_actuales.mmd)
 

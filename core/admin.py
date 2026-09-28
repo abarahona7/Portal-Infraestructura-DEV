@@ -5,6 +5,7 @@ from .models import (
     Departamento,
     HistorialAsignacionIP,
     HistorialServidor,
+    HistorialPerfilGenerico,
     SubArea,
 )
 
@@ -90,6 +91,42 @@ class HistorialServidorAdmin(admin.ModelAdmin):
     readonly_fields = (
         'servidor',
         'servidor_hostname',
+        'accion',
+        'modificado_por',
+        'observacion',
+        'fecha_movimiento',
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(HistorialPerfilGenerico)
+class HistorialPerfilGenericoAdmin(admin.ModelAdmin):
+    list_display = (
+        'perfil_nombre',
+        'perfil_usuario',
+        'accion',
+        'modificado_por',
+        'fecha_movimiento',
+    )
+    list_filter = ('accion',)
+    search_fields = (
+        'perfil_nombre',
+        'perfil_usuario',
+        'modificado_por',
+        'observacion',
+    )
+    readonly_fields = (
+        'perfil',
+        'perfil_nombre',
+        'perfil_usuario',
         'accion',
         'modificado_por',
         'observacion',

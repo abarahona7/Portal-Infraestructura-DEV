@@ -66,6 +66,7 @@ export const getItemsByTab = (tab, params = {}) => {
 const detailPaths = {
   usuarios: 'usuarios',
   equipos: 'equipos',
+  perfiles: 'perfiles-genericos',
   anexos: 'anexos',
   'pcs-genericos': 'pcs-genericos',
   servidores: 'servidores',

@@ -12,6 +12,7 @@ export const useModuleModals = () => {
   const [historyPCGenerico, setHistoryPCGenerico] = useState(null);
   const [historyServidor, setHistoryServidor] = useState(null);
   const [historyIp, setHistoryIp] = useState(null);
+  const [historyPerfil, setHistoryPerfil] = useState(null);
 
   return {
     editingItem,
@@ -40,5 +41,8 @@ export const useModuleModals = () => {
 
     historyIp,
     setHistoryIp,
+
+    historyPerfil,
+    setHistoryPerfil,
   };
 };

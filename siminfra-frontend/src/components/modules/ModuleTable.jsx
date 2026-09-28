@@ -17,6 +17,7 @@ export default function ModuleTable({
   onShowUserHistory,
   onShowEquipmentHistory,
   onShowIpHistory,
+  onShowProfileHistory,
   onEdit,
   onDelete,
   onToggleProfileStatus,
@@ -61,6 +62,7 @@ export default function ModuleTable({
       <PerfilesTable
         perfiles={data}
         renderAccountTypeBadge={renderAccountTypeBadge}
+        onShowHistory={onShowProfileHistory}
         onEdit={onEdit}
         onDelete={onDelete}
         onToggleStatus={onToggleProfileStatus}

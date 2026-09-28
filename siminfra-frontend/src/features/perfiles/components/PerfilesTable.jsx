@@ -1,6 +1,7 @@
 import {
   Eye,
   Edit,
+  History,
   Power,
   PowerOff,
   Trash2,
@@ -14,6 +15,7 @@ const MASKED_PASSWORD = '••••';
 export default function PerfilesTable({
   perfiles,
   renderAccountTypeBadge,
+  onShowHistory,
   onEdit,
   onDelete,
   onToggleStatus,
@@ -67,6 +69,16 @@ export default function PerfilesTable({
 
     return (
       <div className="perfiles-actions">
+        <button
+          type="button"
+          className="perfil-action perfil-action-history"
+          onClick={() => onShowHistory(perfil)}
+          title="Ver historial"
+          aria-label={`Ver historial de ${perfil.nombre || perfil.usuario || 'perfil'}`}
+        >
+          <History size={17} />
+        </button>
+
         <button
           type="button"
           className="perfil-action perfil-action-edit"

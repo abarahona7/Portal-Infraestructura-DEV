@@ -240,8 +240,8 @@
 
 .perfiles-actions-header,
 .perfiles-actions-cell {
-  width: 112px;
-  min-width: 112px;
+  width: 144px;
+  min-width: 144px;
 
   text-align: center;
 
@@ -290,6 +290,10 @@
 
 .perfil-action-edit {
   color: #2563eb;
+}
+
+.perfil-action-history {
+  color: #d97706;
 }
 
 .perfil-action-delete {

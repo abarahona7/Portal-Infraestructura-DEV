@@ -257,6 +257,9 @@ export default function App() {
 
     historyIp,
     setHistoryIp,
+
+    historyPerfil,
+    setHistoryPerfil,
   } = useModuleModals();
 
   const {
@@ -1167,6 +1170,10 @@ export default function App() {
 
                   onShowIpHistory={openIpHistory}
 
+                  onShowProfileHistory={
+                    (item) => openDetailedItem('perfiles', item, setHistoryPerfil)
+                  }
+
                   onShowAnexoHistory={
                     (item) => openDetailedItem('anexos', item, setHistoryAnexo)
                   }
@@ -1232,6 +1239,10 @@ export default function App() {
             historyIp
           }
 
+          historyPerfil={
+            historyPerfil
+          }
+
           onCloseUser={() =>
             setSelectedUser(null)
           }
@@ -1258,6 +1269,10 @@ export default function App() {
 
           onCloseIpHistory={() =>
             setHistoryIp(null)
+          }
+
+          onCloseProfileHistory={() =>
+            setHistoryPerfil(null)
           }
 
           renderUsuarioStatusBadge={

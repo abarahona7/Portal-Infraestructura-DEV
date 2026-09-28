@@ -11,16 +11,20 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
 
 from core.models import (
-    Anexo, Departamento, Equipamiento, HistorialAnexo, HistorialEquipo,
-    HistorialPCGenerico, HistorialUsuario, IP, PCGenerico, PerfilGenerico,
-    SecurityAuditLog, Servidor, SubArea, Usuario,
+    Anexo, AsignacionIP, Departamento, Equipamiento, HistorialAnexo,
+    HistorialAsignacionIP, HistorialEquipo, HistorialPCGenerico,
+    HistorialPerfilGenerico, HistorialServidor, HistorialUsuario, IP,
+    PCGenerico, PerfilGenerico, PortalSession, SecurityAuditLog, Servidor,
+    SubArea, Usuario,
 )
 
 
 DELETE_ORDER = (
-    HistorialAnexo, HistorialEquipo, HistorialPCGenerico, HistorialUsuario,
-    SecurityAuditLog, Anexo, IP, Equipamiento, Servidor, PerfilGenerico,
-    PCGenerico, Usuario, SubArea, Departamento,
+    PortalSession, AsignacionIP, Anexo, Equipamiento, Servidor,
+    PerfilGenerico, PCGenerico, Usuario, IP, HistorialAnexo,
+    HistorialAsignacionIP, HistorialEquipo, HistorialPCGenerico,
+    HistorialPerfilGenerico, HistorialServidor, HistorialUsuario,
+    SecurityAuditLog, SubArea, Departamento,
 )
 
 

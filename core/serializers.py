@@ -18,6 +18,7 @@ from .models import (
     HistorialAsignacionIP,
     Servidor,
     HistorialServidor,
+    HistorialPerfilGenerico,
     TipoAsignacionIP,
     Departamento,
     SubArea,
@@ -1082,8 +1083,15 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
 
         return attrs
 
+class HistorialPerfilGenericoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HistorialPerfilGenerico
+        fields = '__all__'
+
+
 class PerfilGenericoSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
     internal_model_fields = ('usuario_normalizado',)
+    historial = HistorialPerfilGenericoSerializer(many=True, read_only=True)
     password = serializers.CharField(
         write_only=True,
         required=False,
@@ -1566,6 +1574,23 @@ class ServidorListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Servidor
         fields = ['id', 'ip', 'hostname', 'descripcion']
+
+
+class PerfilGenericoListSerializer(serializers.ModelSerializer):
+    password_configured = serializers.SerializerMethodField()
+    departamento_nombre = serializers.ReadOnlyField(source='departamento.nombre')
+    subarea_nombre = serializers.ReadOnlyField(source='subarea.nombre')
+
+    class Meta:
+        model = PerfilGenerico
+        fields = [
+            'id', 'nombre', 'usuario', 'password_configured', 'correo',
+            'dpto_area', 'departamento', 'departamento_nombre', 'subarea',
+            'subarea_nombre', 'tipo', 'estado', 'observaciones',
+        ]
+
+    def get_password_configured(self, obj):
+        return bool(obj.password)
 
 
 class UsuarioReferenceSerializer(serializers.ModelSerializer):

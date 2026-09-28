@@ -47,6 +47,7 @@ from .serializers import (
     PCGenericoListSerializer,
     ServidorListSerializer,
     PerfilGenericoReferenceSerializer,
+    PerfilGenericoListSerializer,
     UsuarioListSerializer,
     UsuarioReferenceSerializer,
 )
@@ -518,6 +519,11 @@ class PerfilGenericoViewSet(
     serializer_class = PerfilGenericoSerializer
     pagination_class = PortalPageNumberPagination
 
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return PerfilGenericoListSerializer
+        return PerfilGenericoSerializer
+
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter
@@ -545,6 +551,9 @@ class PerfilGenericoViewSet(
             'departamento',
             'subarea',
         ).all()
+
+        if self.action == 'retrieve':
+            queryset = queryset.prefetch_related('historial')
 
         legacy_filter = self.request.query_params.get('dpto_area')
         if legacy_filter and legacy_filter.strip():

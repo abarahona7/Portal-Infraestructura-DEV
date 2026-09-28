@@ -870,7 +870,33 @@ class PerfilGenerico(models.Model):
         if self.password and not is_encrypted(self.password):
             self.password = encrypt_val(self.password)
 
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+
+
+class HistorialPerfilGenerico(models.Model):
+    perfil = models.ForeignKey(
+        PerfilGenerico,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='historial',
+    )
+    perfil_nombre = models.CharField(max_length=150)
+    perfil_usuario = models.CharField(max_length=100)
+    fecha_movimiento = models.DateTimeField(auto_now_add=True)
+    accion = models.CharField(max_length=50, default='MODIFICACION')
+    modificado_por = models.CharField(max_length=150, null=True, blank=True)
+    observacion = models.TextField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-fecha_movimiento', '-pk']
+        indexes = [
+            models.Index(
+                fields=['perfil', '-fecha_movimiento'],
+                name='idx_hist_perfil_fecha',
+            ),
+        ]
 
 
 class PCGenerico(models.Model):
@@ -1263,6 +1289,99 @@ class PortalSession(models.Model):
     @property
     def is_revoked(self):
         return self.revoked_at is not None
+
+# --- HISTORIAL DE PERFILES GENERICOS ---
+
+@receiver(pre_save, sender=PerfilGenerico)
+def track_historial_perfil_generico(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+
+    try:
+        perfil_previo = PerfilGenerico.objects.select_related(
+            'departamento',
+            'subarea',
+        ).get(pk=instance.pk)
+    except PerfilGenerico.DoesNotExist:
+        return
+
+    cambios = []
+
+    def add_cambio(campo, anterior, actual):
+        if str(anterior) != str(actual):
+            cambios.append(
+                f"{campo}:::{anterior or 'N/I'}:::{actual or 'N/I'}"
+            )
+
+    add_cambio('Nombre / Perfil', perfil_previo.nombre, instance.nombre)
+    add_cambio('Usuario', perfil_previo.usuario, instance.usuario)
+    add_cambio('Tipo de cuenta', perfil_previo.tipo, instance.tipo)
+    add_cambio('Correo', perfil_previo.correo, instance.correo)
+    add_cambio(
+        'Departamento',
+        perfil_previo.departamento.nombre,
+        instance.departamento.nombre,
+    )
+    add_cambio(
+        'SubÃ¡rea',
+        perfil_previo.subarea.nombre if perfil_previo.subarea_id else None,
+        instance.subarea.nombre if instance.subarea_id else None,
+    )
+    add_cambio('Estado', perfil_previo.estado, instance.estado)
+    add_cambio(
+        'Observaciones',
+        perfil_previo.observaciones,
+        instance.observaciones,
+    )
+
+    if perfil_previo.password != instance.password:
+        cambios.append(
+            'ContraseÃ±a:::â€¢â€¢â€¢â€¢:::â€¢â€¢â€¢â€¢'
+        )
+
+    if cambios:
+        HistorialPerfilGenerico.objects.create(
+            perfil=instance,
+            perfil_nombre=instance.nombre or instance.usuario,
+            perfil_usuario=instance.usuario,
+            accion='MODIFICACION',
+            modificado_por=get_current_audit_username(),
+            observacion='||'.join(cambios),
+        )
+
+
+@receiver(post_save, sender=PerfilGenerico)
+def registrar_creacion_perfil_generico(sender, instance, created, **kwargs):
+    if not created:
+        return
+
+    HistorialPerfilGenerico.objects.create(
+        perfil=instance,
+        perfil_nombre=instance.nombre or instance.usuario,
+        perfil_usuario=instance.usuario,
+        accion='CREACION',
+        modificado_por=get_current_audit_username(),
+        observacion=(
+            f'Perfil genÃ©rico creado - Usuario: {instance.usuario} - '
+            f'Estado: {instance.estado}'
+        ),
+    )
+
+
+@receiver(pre_delete, sender=PerfilGenerico)
+def registrar_eliminacion_perfil_generico(sender, instance, **kwargs):
+    HistorialPerfilGenerico.objects.create(
+        perfil=instance,
+        perfil_nombre=instance.nombre or instance.usuario,
+        perfil_usuario=instance.usuario,
+        accion='ELIMINACION',
+        modificado_por=get_current_audit_username(),
+        observacion=(
+            f'Perfil genÃ©rico eliminado - Usuario: {instance.usuario} - '
+            f'Estado final: {instance.estado}'
+        ),
+    )
+
 
 # --- HISTORIAL DE PCs GENERICOS ---
 

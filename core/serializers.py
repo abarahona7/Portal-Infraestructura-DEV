@@ -17,6 +17,7 @@ from .models import (
     HistorialPCGenerico,
     HistorialAsignacionIP,
     Servidor,
+    HistorialServidor,
     TipoAsignacionIP,
     Departamento,
     SubArea,
@@ -327,8 +328,15 @@ class HistorialAsignacionIPSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class HistorialServidorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HistorialServidor
+        fields = '__all__'
+
+
 class ServidorSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
     internal_model_fields = ('hostname_normalizado',)
+    historial = HistorialServidorSerializer(many=True, read_only=True)
     ip = serializers.SlugRelatedField(
         slug_field='direccion_ip',
         queryset=IP.objects.all(),
@@ -1547,6 +1555,17 @@ class PCGenericoListSerializer(serializers.ModelSerializer):
 
     def get_ip_actual(self, obj):
         return obj.ip.direccion_ip if obj.ip_id else None
+
+
+class ServidorListSerializer(serializers.ModelSerializer):
+    ip = serializers.SlugRelatedField(
+        slug_field='direccion_ip',
+        read_only=True,
+    )
+
+    class Meta:
+        model = Servidor
+        fields = ['id', 'ip', 'hostname', 'descripcion']
 
 
 class UsuarioReferenceSerializer(serializers.ModelSerializer):

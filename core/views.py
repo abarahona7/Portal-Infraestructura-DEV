@@ -45,6 +45,7 @@ from .serializers import (
     EquipamientoListSerializer,
     IPReferenceSerializer,
     PCGenericoListSerializer,
+    ServidorListSerializer,
     PerfilGenericoReferenceSerializer,
     UsuarioListSerializer,
     UsuarioReferenceSerializer,
@@ -231,11 +232,25 @@ class IPViewSet(viewsets.ModelViewSet):
 # SERVIDORES
 # =========================================
 
-class ServidorViewSet(viewsets.ModelViewSet):
+class ServidorViewSet(
+    AuditUserMixin,
+    viewsets.ModelViewSet
+):
     permission_classes = [PortalRolePermission]
     queryset = Servidor.objects.select_related('ip').all()
     serializer_class = ServidorSerializer
     pagination_class = PortalPageNumberPagination
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return ServidorListSerializer
+        return ServidorSerializer
+
+    def get_queryset(self):
+        queryset = Servidor.objects.select_related('ip')
+        if self.action == 'retrieve':
+            queryset = queryset.prefetch_related('historial')
+        return queryset
 
     filter_backends = [
         filters.SearchFilter

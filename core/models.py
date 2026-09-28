@@ -499,11 +499,36 @@ class Servidor(models.Model):
         self.hostname = _normalize_spaces(self.hostname) or ''
         self.hostname_normalizado = _normalize_key(self.hostname)
         _include_derived_update_fields(kwargs, 'hostname_normalizado')
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            super().save(*args, **kwargs)
 
     def __str__(self):
         direccion_ip = self.ip.direccion_ip if self.ip_id else 'Sin IP'
         return f"{self.hostname} - {direccion_ip}"
+
+
+class HistorialServidor(models.Model):
+    servidor = models.ForeignKey(
+        Servidor,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='historial',
+    )
+    servidor_hostname = models.CharField(max_length=100)
+    fecha_movimiento = models.DateTimeField(auto_now_add=True)
+    accion = models.CharField(max_length=50, default='MODIFICACION')
+    modificado_por = models.CharField(max_length=150, null=True, blank=True)
+    observacion = models.TextField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-fecha_movimiento', '-pk']
+        indexes = [
+            models.Index(
+                fields=['servidor', '-fecha_movimiento'],
+                name='idx_hist_srv_fecha',
+            ),
+        ]
 
 
 class HistorialUsuario(models.Model):
@@ -1623,6 +1648,81 @@ def sync_ip_con_usuario(sender, instance, **kwargs):
     else:
 
             instance.estado = 'LIBRE'
+
+
+@receiver(pre_save, sender=Servidor)
+def track_historial_servidor(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+
+    try:
+        servidor_previo = Servidor.objects.select_related('ip').get(
+            pk=instance.pk
+        )
+    except Servidor.DoesNotExist:
+        return
+
+    cambios = []
+
+    def add_cambio(campo, anterior, actual):
+        if str(anterior) != str(actual):
+            cambios.append(
+                f"{campo}:::{anterior or 'N/I'}:::{actual or 'N/I'}"
+            )
+
+    add_cambio('Hostname', servidor_previo.hostname, instance.hostname)
+    add_cambio(
+        'DirecciÃ³n IP',
+        servidor_previo.ip.direccion_ip if servidor_previo.ip_id else None,
+        instance.ip.direccion_ip if instance.ip_id else None,
+    )
+    add_cambio(
+        'DescripciÃ³n',
+        servidor_previo.descripcion,
+        instance.descripcion,
+    )
+
+    if cambios:
+        HistorialServidor.objects.create(
+            servidor=instance,
+            servidor_hostname=instance.hostname,
+            accion='MODIFICACION',
+            modificado_por=get_current_audit_username(),
+            observacion='||'.join(cambios),
+        )
+
+
+@receiver(post_save, sender=Servidor)
+def registrar_creacion_servidor(sender, instance, created, **kwargs):
+    if not created:
+        return
+
+    direccion_ip = instance.ip.direccion_ip if instance.ip_id else 'Sin IP'
+    HistorialServidor.objects.create(
+        servidor=instance,
+        servidor_hostname=instance.hostname,
+        accion='CREACION',
+        modificado_por=get_current_audit_username(),
+        observacion=(
+            f'Servidor creado - Hostname: {instance.hostname} - '
+            f'IP: {direccion_ip}'
+        ),
+    )
+
+
+@receiver(pre_delete, sender=Servidor)
+def registrar_eliminacion_servidor(sender, instance, **kwargs):
+    direccion_ip = instance.ip.direccion_ip if instance.ip_id else 'Sin IP'
+    HistorialServidor.objects.create(
+        servidor=instance,
+        servidor_hostname=instance.hostname,
+        accion='ELIMINACION',
+        modificado_por=get_current_audit_username(),
+        observacion=(
+            f'Servidor eliminado - Hostname: {instance.hostname} - '
+            f'IP liberada: {direccion_ip}'
+        ),
+    )
 
 
 @receiver(pre_delete, sender=Servidor)

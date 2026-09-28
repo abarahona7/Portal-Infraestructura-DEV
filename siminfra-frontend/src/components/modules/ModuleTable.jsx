@@ -22,6 +22,7 @@ export default function ModuleTable({
   renderAnexoStatusBadge,
   onShowAnexoHistory,
   onShowPCGenericoHistory,
+  onShowServidorHistory,
   role,
   onRevealSecret,
 }) {
@@ -109,6 +110,7 @@ export default function ModuleTable({
     return (
       <ServidoresTable
         servidores={data}
+        onShowHistory={onShowServidorHistory}
         onEdit={onEdit}
         onDelete={onDelete}
       />

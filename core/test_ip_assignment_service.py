@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.db import close_old_connections, connection
 from django.test import TestCase, TransactionTestCase
 
-from core.models import Departamento, IP, Servidor, Usuario
+from core.models import Departamento, HistorialServidor, IP, Servidor, Usuario
 from core.services.asignacion_ips import (
     IpAssignmentError,
     assign_ip_to_user,
@@ -54,6 +54,7 @@ class IpAssignmentRollbackTests(TestCase):
 
         self.first_ip.refresh_from_db()
         self.assertFalse(Servidor.objects.exists())
+        self.assertFalse(HistorialServidor.objects.exists())
         self.assertEqual(self.first_ip.estado, 'LIBRE')
         self.assertIsNone(self.first_ip.asignado_otro)
 
@@ -62,6 +63,9 @@ class IpAssignmentRollbackTests(TestCase):
             self.first_ip.pk,
             {'hostname': 'SRV-ROLLBACK-UPDATE'},
         )
+        history_count = HistorialServidor.objects.filter(
+            servidor=server
+        ).count()
 
         with patch(
             'core.services.asignacion_ips._reserve_server_ip',
@@ -78,6 +82,10 @@ class IpAssignmentRollbackTests(TestCase):
         self.second_ip.refresh_from_db()
         self.assertEqual(server.ip_id, self.first_ip.pk)
         self.assertIsNone(server.descripcion)
+        self.assertEqual(
+            HistorialServidor.objects.filter(servidor=server).count(),
+            history_count,
+        )
         self.assertEqual(self.first_ip.estado, 'RESERVADA')
         self.assertEqual(
             self.first_ip.asignado_otro,
@@ -139,3 +147,44 @@ class IpAssignmentConcurrencyTests(TransactionTestCase):
         winner = next(item[1] for item in results if item[0] == 'ok')
         self.assertEqual(self.ip.usuario_id, winner)
         self.assertEqual(self.ip.estado, 'RESERVADA')
+
+    def test_only_one_server_can_reserve_the_same_ip(self):
+        barrier = Barrier(2)
+        result_lock = Lock()
+        results = []
+
+        def create_server(hostname):
+            close_old_connections()
+            try:
+                barrier.wait(timeout=10)
+                server = create_server_with_ip(
+                    self.ip.pk,
+                    {'hostname': hostname},
+                )
+                result = ('ok', server.pk)
+            except IpAssignmentError:
+                result = ('conflict', hostname)
+            except Exception as exc:  # pragma: no cover - evidencia del motor real
+                result = ('unexpected', type(exc).__name__)
+            finally:
+                close_old_connections()
+            with result_lock:
+                results.append(result)
+
+        threads = [
+            Thread(target=create_server, args=(f'SRV-CONCURRENT-{index}',))
+            for index in (1, 2)
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=15)
+
+        self.assertFalse(any(thread.is_alive() for thread in threads))
+        self.assertEqual([item[0] for item in results].count('ok'), 1)
+        self.assertEqual([item[0] for item in results].count('conflict'), 1)
+        self.assertNotIn('unexpected', [item[0] for item in results])
+
+        self.ip.refresh_from_db()
+        self.assertEqual(self.ip.estado, 'RESERVADA')
+        self.assertEqual(Servidor.objects.count(), 1)

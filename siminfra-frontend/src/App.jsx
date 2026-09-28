@@ -250,6 +250,9 @@ export default function App() {
 
     historyPCGenerico,
     setHistoryPCGenerico,
+
+    historyServidor,
+    setHistoryServidor,
   } = useModuleModals();
 
   const {
@@ -1156,6 +1159,10 @@ export default function App() {
                     (item) => openDetailedItem('pcs-genericos', item, setHistoryPCGenerico)
                   }
 
+                  onShowServidorHistory={
+                    (item) => openDetailedItem('servidores', item, setHistoryServidor)
+                  }
+
                   onEdit={
                     setEditingItem
                   }
@@ -1201,6 +1208,10 @@ export default function App() {
             historyPCGenerico
           }
 
+          historyServidor={
+            historyServidor
+          }
+
           onCloseUser={() =>
             setSelectedUser(null)
           }
@@ -1219,6 +1230,10 @@ export default function App() {
 
           onClosePCGenericoHistory={() =>
             setHistoryPCGenerico(null)
+          }
+
+          onCloseServidorHistory={() =>
+            setHistoryServidor(null)
           }
 
           renderUsuarioStatusBadge={

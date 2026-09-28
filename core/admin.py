@@ -4,6 +4,7 @@ from .models import (
     AsignacionIP,
     Departamento,
     HistorialAsignacionIP,
+    HistorialServidor,
     SubArea,
 )
 
@@ -63,6 +64,35 @@ class HistorialAsignacionIPAdmin(admin.ModelAdmin):
         'propietario_id',
         'propietario_nombre',
         'realizado_por',
+        'fecha_movimiento',
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(HistorialServidor)
+class HistorialServidorAdmin(admin.ModelAdmin):
+    list_display = (
+        'servidor_hostname',
+        'accion',
+        'modificado_por',
+        'fecha_movimiento',
+    )
+    list_filter = ('accion',)
+    search_fields = ('servidor_hostname', 'modificado_por', 'observacion')
+    readonly_fields = (
+        'servidor',
+        'servidor_hostname',
+        'accion',
+        'modificado_por',
+        'observacion',
         'fecha_movimiento',
     )
 

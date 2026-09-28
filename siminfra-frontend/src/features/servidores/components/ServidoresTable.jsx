@@ -1,5 +1,6 @@
 import {
   Edit,
+  History,
   Trash2,
   Server
 } from 'lucide-react';
@@ -8,11 +9,22 @@ import './ServidoresTable.css';
 
 export default function ServidoresTable({
   servidores,
+  onShowHistory,
   onEdit,
   onDelete,
 }) {
   const Actions = ({ servidor }) => (
     <div className="servidores-actions">
+      <button
+        type="button"
+        className="servidor-action servidor-action-history"
+        onClick={() => onShowHistory(servidor)}
+        title="Ver historial"
+        aria-label={`Ver historial de ${servidor.hostname}`}
+      >
+        <History size={18} />
+      </button>
+
       <button
         type="button"
         className="servidor-action servidor-action-edit"

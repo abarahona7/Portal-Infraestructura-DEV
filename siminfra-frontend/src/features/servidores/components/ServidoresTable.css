@@ -124,9 +124,9 @@
 
 .servidores-actions-header,
 .servidores-actions-cell {
-  width: 100px;
+  width: 128px;
 
-  min-width: 100px;
+  min-width: 128px;
 
   text-align: center !important;
 }
@@ -167,6 +167,19 @@
 
 .servidor-action:hover {
   transform: translateY(-1px);
+}
+
+
+/* HISTORIAL */
+
+.servidor-action-history {
+  color: #d97706;
+
+  background-color: #fffbeb;
+}
+
+.servidor-action-history:hover {
+  background-color: #fef3c7;
 }
 
 

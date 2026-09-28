@@ -68,6 +68,7 @@ const detailPaths = {
   equipos: 'equipos',
   anexos: 'anexos',
   'pcs-genericos': 'pcs-genericos',
+  servidores: 'servidores',
 };
 
 export const getItemDetailsByTab = async (tab, id) => {

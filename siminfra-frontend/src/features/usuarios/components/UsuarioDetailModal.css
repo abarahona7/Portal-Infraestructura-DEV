@@ -722,6 +722,38 @@
     color: #2563eb;
 }
 
+.user-detail-equipment-secret {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.user-detail-equipment-secret button {
+    width: 2.75rem;
+    height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: #2563eb;
+    cursor: pointer;
+}
+
+.user-detail-equipment-secret button:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+@media (hover: hover) {
+    .user-detail-equipment-secret button:hover {
+        background: #eff6ff;
+    }
+}
+
 
 /* =========================
    SIN EQUIPOS

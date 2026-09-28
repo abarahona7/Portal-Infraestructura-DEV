@@ -548,10 +548,19 @@ export default function UsuarioDetailModal({
                                 <EquipmentField
                                   icon={KeyRound}
                                   label="PIN"
-                                  value={
-                                    equipo.pin ||
-                                    'N/I'
-                                  }
+                                  value={(
+                                    <EquipmentSecretValue
+                                      configured={equipo.pin_configured}
+                                      label={`PIN de ${equipo.marca || ''} ${equipo.modelo || ''}`.trim()}
+                                      onReveal={role === 'Administrador'
+                                        ? () => onRevealSecret?.({
+                                            module: 'equipamiento',
+                                            object_id: equipo.id,
+                                            secret_type: 'pin',
+                                          })
+                                        : undefined}
+                                    />
+                                  )}
                                 />
                               </>
                             )}
@@ -755,5 +764,32 @@ function EquipmentField({
       </div>
 
     </div>
+  );
+}
+
+
+function EquipmentSecretValue({
+  configured,
+  label,
+  onReveal,
+}) {
+  if (!configured) {
+    return 'N/I';
+  }
+
+  return (
+    <span className="user-detail-equipment-secret">
+      <span aria-label={`${label} configurado`}>••••</span>
+      {onReveal && (
+        <button
+          type="button"
+          onClick={onReveal}
+          aria-label={`Revelar ${label}`}
+          title={`Revelar ${label}`}
+        >
+          <Eye size={16} aria-hidden="true" />
+        </button>
+      )}
+    </span>
   );
 }

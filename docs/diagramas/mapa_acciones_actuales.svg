@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2550" viewBox="0 0 3600 2550">
+<defs>
+<filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+<feDropShadow dx="0" dy="5" stdDeviation="6" flood-opacity="0.10"/>
+</filter>
+</defs>
+<rect width="100%" height="100%" fill="#F8FAFD"/>
+<text x="70" y="78" font-family="Segoe UI,Arial,sans-serif" font-size="46" font-weight="700" fill="#10213D">Portal Infraestructura TI — Mapa de acciones actuales</text>
+<text x="72" y="126" font-family="Segoe UI,Arial,sans-serif" font-size="25" font-weight="400" fill="#52647F">Qué puede hacer cada rol, qué ofrece cada módulo y qué efectos produce una acción confirmada</text>
+<rect x="60" y="165" width="3480" height="350" rx="24" fill="#EFF5FF" stroke="#D5E0EE" stroke-width="3"/>
+<text x="84" y="207" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#52647F">ACCESO, SESIÓN Y AUTORIZACIÓN</text>
+<rect x="60" y="545" width="3480" height="360" rx="24" fill="#FFF8EC" stroke="#D5E0EE" stroke-width="3"/>
+<text x="84" y="587" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#52647F">ACCIONES HABILITADAS SEGÚN EL ROL</text>
+<rect x="60" y="935" width="3480" height="1080" rx="24" fill="#F4F8F6" stroke="#D5E0EE" stroke-width="3"/>
+<text x="84" y="977" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#52647F">ACCIONES DISPONIBLES POR MÓDULO</text>
+<rect x="60" y="2045" width="3480" height="430" rx="24" fill="#F8F5FF" stroke="#D5E0EE" stroke-width="3"/>
+<text x="84" y="2087" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#52647F">QUÉ OCURRE AL CONFIRMAR UNA ACCIÓN</text>
+<polyline points="820,340 930,340" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="930,340 912,330 912,350" fill="#7F93B2"/>
+<polyline points="1650,340 1760,340" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="1760,340 1742,330 1742,350" fill="#7F93B2"/>
+<polyline points="2480,340 2590,340" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="2590,340 2572,330 2572,350" fill="#7F93B2"/>
+<polyline points="2120,435 2120,525 600,525 600,625" fill="none" stroke="#2563EB" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="600,625 610,607 590,607" fill="#2563EB"/>
+<rect x="691" y="487" width="95" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="700" y="512" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#2563EB">lectura</text>
+<polyline points="2120,435 2120,565 1800,565 1800,625" fill="none" stroke="#138A50" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="1800,625 1810,607 1790,607" fill="#138A50"/>
+<rect x="1831" y="527" width="117" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="1840" y="552" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#138A50">operación</text>
+<polyline points="2120,435 2120,525 2980,525 2980,625" fill="none" stroke="#C9363E" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="2980,625 2990,607 2970,607" fill="#C9363E"/>
+<rect x="2651" y="487" width="161" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="2660" y="512" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#C9363E">control total</text>
+<polyline points="1800,2015 1800,2085 475,2085 475,2140" fill="none" stroke="#C46A08" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="475,2140 485,2122 465,2122" fill="#C46A08"/>
+<rect x="1011" y="2047" width="117" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="1020" y="2072" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#C46A08">confirmar</text>
+<polyline points="850,2255 960,2255" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="960,2255 942,2245 942,2265" fill="#7F93B2"/>
+<polyline points="1710,2255 1820,2255" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="1820,2255 1802,2245 1802,2265" fill="#7F93B2"/>
+<polyline points="2570,2255 2680,2255" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="2680,2255 2662,2245 2662,2265" fill="#7F93B2"/>
+<rect x="100" y="245" width="720" height="190" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="122" y="291" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">1. Iniciar sesión</text>
+<text x="122" y="333" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Credenciales y protección CSRF</text>
+<text x="122" y="363" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Se emiten JWT y un sid único</text>
+<text x="122" y="393" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">El refresh queda en cookie HttpOnly</text>
+<rect x="930" y="245" width="720" height="190" rx="20" fill="#F1ECFF" stroke="#6D45C7" stroke-width="4" filter="url(#shadow)"/>
+<text x="952" y="291" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">2. Mantener la sesión</text>
+<text x="952" y="333" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Actividad real renueva la vigencia</text>
+<text x="952" y="363" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">5 minutos de inactividad cierran sesión</text>
+<text x="952" y="393" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Recargar conserva una sesión válida</text>
+<rect x="1760" y="245" width="720" height="190" rx="20" fill="#FFF5DF" stroke="#C46A08" stroke-width="4" filter="url(#shadow)"/>
+<text x="1782" y="291" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">3. Resolver permisos</text>
+<text x="1782" y="333" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Visualizador</text>
+<text x="1782" y="363" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Operador Infraestructura</text>
+<text x="1782" y="393" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Administrador o superusuario</text>
+<rect x="2590" y="245" width="870" height="190" rx="20" fill="#FDECEE" stroke="#C9363E" stroke-width="4" filter="url(#shadow)"/>
+<text x="2612" y="291" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">4. Aplicar la regla en backend</text>
+<text x="2612" y="333" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Cada endpoint valida el rol</text>
+<text x="2612" y="363" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">La interfaz no reemplaza la autorización</text>
+<text x="2612" y="393" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Las acciones prohibidas responden 403</text>
+<rect x="100" y="625" width="1000" height="200" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="122" y="671" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Visualizador</text>
+<text x="122" y="713" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Solo accede a Anexos</text>
+<text x="122" y="743" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Lista, busca, filtra y pagina</text>
+<text x="122" y="773" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Puede consultar el historial</text>
+<text x="122" y="803" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">No crea, edita, elimina, exporta ni revela</text>
+<rect x="1300" y="625" width="1000" height="200" rx="20" fill="#E6F7EE" stroke="#138A50" stroke-width="4" filter="url(#shadow)"/>
+<text x="1322" y="671" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Operador Infraestructura</text>
+<text x="1322" y="713" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Consulta todos los módulos habilitados</text>
+<text x="1322" y="743" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Crea, edita, asigna, libera y exporta</text>
+<text x="1322" y="773" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Consulta fichas e historiales</text>
+<text x="1322" y="803" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">No elimina registros ni revela secretos</text>
+<rect x="2500" y="625" width="960" height="200" rx="20" fill="#FDECEE" stroke="#C9363E" stroke-width="4" filter="url(#shadow)"/>
+<text x="2522" y="671" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Administrador / superusuario</text>
+<text x="2522" y="713" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Incluye todas las acciones operativas</text>
+<text x="2522" y="743" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Puede eliminar según las reglas del módulo</text>
+<text x="2522" y="773" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Revela secretos después de reautenticarse</text>
+<text x="2522" y="803" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">El revelado queda auditado y vence</text>
+<rect x="100" y="1015" width="750" height="430" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="122" y="1061" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Usuarios</text>
+<text x="122" y="1103" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Seleccionar departamento o área</text>
+<text x="122" y="1133" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Buscar, filtrar, paginar y exportar</text>
+<text x="122" y="1163" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Agregar, editar y consultar ficha</text>
+<text x="122" y="1193" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Elegir segmento y una IP disponible</text>
+<text x="122" y="1223" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Asignar equipos y anexo</text>
+<text x="122" y="1253" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Ver historial propio y relacionado</text>
+<text x="122" y="1283" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Revelar claves Gmail/VPN (admin)</text>
+<text x="122" y="1313" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Emitir acta solo si posee equipos</text>
+<text x="122" y="1343" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Cambiar estado con advertencia previa</text>
+<rect x="970" y="1015" width="750" height="430" rx="20" fill="#E6F7EE" stroke="#138A50" stroke-width="4" filter="url(#shadow)"/>
+<text x="992" y="1061" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Equipos</text>
+<text x="992" y="1103" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Acceso directo por tipo de dispositivo</text>
+<text x="992" y="1133" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Notebook, celular, tablet y Mac</text>
+<text x="992" y="1163" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">BAM / Router y periféricos</text>
+<text x="992" y="1193" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Buscar, filtrar estado y paginar</text>
+<text x="992" y="1223" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Agregar, editar y exportar</text>
+<text x="992" y="1253" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Asignar o desasignar usuario</text>
+<text x="992" y="1283" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Ver historial de movimientos</text>
+<text x="992" y="1313" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Ver IP del usuario en Notebook</text>
+<text x="992" y="1343" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Revelar PIN o secreto (admin)</text>
+<rect x="1840" y="1015" width="750" height="430" rx="20" fill="#E6F7EE" stroke="#138A50" stroke-width="4" filter="url(#shadow)"/>
+<text x="1862" y="1061" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Gestión de IP</text>
+<text x="1862" y="1103" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Seleccionar segmento de red</text>
+<text x="1862" y="1133" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Ver libres y reservadas por segmento</text>
+<text x="1862" y="1163" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Ordenar por el último octeto numérico</text>
+<text x="1862" y="1193" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Buscar, filtrar, paginar y exportar</text>
+<text x="1862" y="1223" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Agregar, editar y consultar historial</text>
+<text x="1862" y="1253" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Asignar un único propietario</text>
+<text x="1862" y="1283" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Sincronizar usuario, servidor o PC</text>
+<text x="1862" y="1313" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Liberar desde el módulo propietario</text>
+<text x="1862" y="1343" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Eliminar solo una IP libre (admin)</text>
+<rect x="2710" y="1015" width="750" height="430" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="2732" y="1061" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Anexos</text>
+<text x="2732" y="1103" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Listar disponibles y asignados</text>
+<text x="2732" y="1133" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Buscar, filtrar y paginar</text>
+<text x="2732" y="1163" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Agregar, editar y exportar</text>
+<text x="2732" y="1193" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Asignar o liberar un usuario</text>
+<text x="2732" y="1223" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Consultar historial del anexo</text>
+<text x="2732" y="1253" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Mantener coherencia de estado y dueño</text>
+<text x="2732" y="1283" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Eliminar el anexo (admin)</text>
+<text x="2732" y="1313" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Único módulo visible al Visualizador</text>
+<rect x="100" y="1505" width="750" height="430" rx="20" fill="#F1ECFF" stroke="#6D45C7" stroke-width="4" filter="url(#shadow)"/>
+<text x="122" y="1551" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Perfiles genéricos</text>
+<text x="122" y="1593" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Filtrar por departamento o subárea</text>
+<text x="122" y="1623" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Buscar, paginar y exportar</text>
+<text x="122" y="1653" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Agregar y editar perfil</text>
+<text x="122" y="1683" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Activar o desactivar</text>
+<text x="122" y="1713" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Consultar historial</text>
+<text x="122" y="1743" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Revelar contraseña con reautenticación</text>
+<text x="122" y="1773" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Eliminar perfil (admin)</text>
+<text x="122" y="1803" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Guardar contraseñas cifradas</text>
+<rect x="970" y="1505" width="750" height="430" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="992" y="1551" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Departamentos y subáreas</text>
+<text x="992" y="1593" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Buscar y recorrer tarjetas ordenadas</text>
+<text x="992" y="1623" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Agregar y editar departamento</text>
+<text x="992" y="1653" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Activar o desactivar departamento</text>
+<text x="992" y="1683" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Agregar subárea si el departamento está activo</text>
+<text x="992" y="1713" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Editar, activar o desactivar subárea</text>
+<text x="992" y="1743" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Conservar relaciones al desactivar</text>
+<text x="992" y="1773" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Eliminar sin registros relacionados (admin)</text>
+<text x="992" y="1803" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Bloquear borrado con usuarios, perfiles o PCs</text>
+<rect x="1840" y="1505" width="750" height="430" rx="20" fill="#E6F7EE" stroke="#138A50" stroke-width="4" filter="url(#shadow)"/>
+<text x="1862" y="1551" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">PCs genéricos</text>
+<text x="1862" y="1593" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Buscar, filtrar por área y paginar</text>
+<text x="1862" y="1623" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Agregar, editar y exportar</text>
+<text x="1862" y="1653" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Relacionar departamento y subárea</text>
+<text x="1862" y="1683" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Elegir segmento y una IP disponible</text>
+<text x="1862" y="1713" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Cambiar o liberar la IP sincronizada</text>
+<text x="1862" y="1743" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Mostrar la IP en el listado</text>
+<text x="1862" y="1773" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Consultar historial</text>
+<text x="1862" y="1803" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Revelar contraseña y eliminar (admin)</text>
+<rect x="2710" y="1505" width="750" height="430" rx="20" fill="#E6F7EE" stroke="#138A50" stroke-width="4" filter="url(#shadow)"/>
+<text x="2732" y="1551" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Servidores</text>
+<text x="2732" y="1593" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Buscar, paginar y exportar</text>
+<text x="2732" y="1623" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Agregar y editar servidor</text>
+<text x="2732" y="1653" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Elegir solo una IP disponible</text>
+<text x="2732" y="1683" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Restringir IP al segmento 172.23.1.0/24</text>
+<text x="2732" y="1713" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Cambiar o liberar la IP</text>
+<text x="2732" y="1743" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Sincronizar estado en Gestión de IP</text>
+<text x="2732" y="1773" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Consultar historial</text>
+<text x="2732" y="1803" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Eliminar servidor (admin)</text>
+<rect x="100" y="2140" width="750" height="230" rx="20" fill="#FFF5DF" stroke="#C46A08" stroke-width="4" filter="url(#shadow)"/>
+<text x="122" y="2186" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">1. Validación</text>
+<text x="122" y="2228" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Campos, duplicados y relaciones</text>
+<text x="122" y="2258" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Rol y restricciones del módulo</text>
+<text x="122" y="2288" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Confirmación o advertencia cuando aplica</text>
+<rect x="960" y="2140" width="750" height="230" rx="20" fill="#E6F7EE" stroke="#138A50" stroke-width="4" filter="url(#shadow)"/>
+<text x="982" y="2186" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">2. Cambio atómico</text>
+<text x="982" y="2228" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">La operación se ejecuta completa</text>
+<text x="982" y="2258" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">IP, dueño y estado se sincronizan</text>
+<text x="982" y="2288" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Un fallo revierte todos los cambios</text>
+<rect x="1820" y="2140" width="750" height="230" rx="20" fill="#F1ECFF" stroke="#6D45C7" stroke-width="4" filter="url(#shadow)"/>
+<text x="1842" y="2186" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">3. Trazabilidad</text>
+<text x="1842" y="2228" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Se registra actor, fecha y acción</text>
+<text x="1842" y="2258" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Se enlazan los módulos relacionados</text>
+<text x="1842" y="2288" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Los eventos sensibles van a auditoría</text>
+<rect x="2680" y="2140" width="780" height="230" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="2702" y="2186" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">4. Resultado en pantalla</text>
+<text x="2702" y="2228" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Mensaje de éxito o error explicativo</text>
+<text x="2702" y="2258" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Se actualiza el registro afectado</text>
+<text x="2702" y="2288" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Las listas reflejan el nuevo estado</text>
+<text x="70" y="2525" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Rojo = acción administrativa o restricción · Verde = operación · Violeta = seguridad o historial · Actualizado: 28-09-2026</text>
+</svg>

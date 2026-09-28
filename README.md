@@ -58,6 +58,7 @@ respaldos.
 
 ## Documentación técnica
 
+- [Mapa de acciones actuales por rol y módulo](docs/ACCIONES_ACTUALES.md)
 - [Arquitectura y diagramas de flujo](docs/ARQUITECTURA_Y_FLUJOS.md)
 - [Modelo de datos y relaciones](docs/MODELO_DATOS.md)
 - [Migración verificada de SQLite a MySQL](docs/MIGRACION_MYSQL.md)

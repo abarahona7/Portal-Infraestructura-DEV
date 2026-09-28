@@ -4,6 +4,9 @@ Este documento describe el comportamiento implementado. Los diagramas se
 entregan en PNG para lectura directa, SVG para ampliar sin pérdida y Mermaid
 para modificarlos en el futuro.
 
+Para revisar qué puede hacer cada rol dentro de cada módulo, consultar el
+[mapa de acciones actuales](ACCIONES_ACTUALES.md).
+
 ## 1. Flujo general
 
 [Abrir imagen PNG](diagramas/flujo_sistema_general.png) ·

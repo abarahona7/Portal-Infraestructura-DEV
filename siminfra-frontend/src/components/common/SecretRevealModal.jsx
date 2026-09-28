@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Eye,
   EyeOff,
@@ -20,6 +20,14 @@ export default function SecretRevealModal({ request, username, onClose }) {
   const [loading, setLoading] = useState(false);
   const passwordRef = useRef(null);
 
+  const closeModal = useCallback(() => {
+    setSecret('');
+    setPassword('');
+    setError('');
+    setSeconds(30);
+    onClose?.();
+  }, [onClose]);
+
   useEffect(() => {
     passwordRef.current?.focus();
   }, []);
@@ -27,27 +35,18 @@ export default function SecretRevealModal({ request, username, onClose }) {
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
-        setSecret('');
-        setPassword('');
-        onClose?.();
+        closeModal();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
-  useEffect(() => () => {
-    setSecret('');
-    setPassword('');
-  }, []);
+  }, [closeModal]);
 
   useEffect(() => {
     if (!secret) {
       return undefined;
     }
-
-    setSeconds(30);
 
     const timer = window.setInterval(() => {
       setSeconds((current) => {
@@ -64,13 +63,6 @@ export default function SecretRevealModal({ request, username, onClose }) {
 
     return () => window.clearInterval(timer);
   }, [secret, onClose]);
-
-  const closeModal = () => {
-    setSecret('');
-    setPassword('');
-    setError('');
-    onClose?.();
-  };
 
   const reveal = async (event) => {
     event.preventDefault();
@@ -90,6 +82,7 @@ export default function SecretRevealModal({ request, username, onClose }) {
 
       setPassword('');
       setShowPassword(false);
+      setSeconds(30);
       setSecret(data.secret || '');
     } catch (err) {
       setSecret('');

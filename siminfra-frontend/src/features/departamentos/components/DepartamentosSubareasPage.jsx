@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Building2,
   CheckCircle2,
@@ -83,25 +83,16 @@ export default function DepartamentosSubareasPage({
     );
   }, [departamentos, search]);
 
-  useEffect(() => {
-    if (!departamentos.length) {
-      setSelectedDepartmentId(null);
-      return;
-    }
-
-    const selectionExists = departamentos.some(
+  const selectedDepartment = useMemo(() => (
+    departamentos.find(
       (department) => department.id === selectedDepartmentId
-    );
+    )
+    || departamentos.find((department) => department.activo)
+    || departamentos[0]
+    || null
+  ), [departamentos, selectedDepartmentId]);
 
-    if (!selectionExists) {
-      const firstActive = departamentos.find((department) => department.activo);
-      setSelectedDepartmentId((firstActive || departamentos[0]).id);
-    }
-  }, [departamentos, selectedDepartmentId]);
-
-  const selectedDepartment = departamentos.find(
-    (department) => department.id === selectedDepartmentId
-  );
+  const effectiveSelectedDepartmentId = selectedDepartment?.id ?? null;
 
   const activeDepartmentCount = departamentos.filter(
     (department) => department.activo
@@ -426,7 +417,7 @@ export default function DepartamentosSubareasPage({
 
       <div className="department-chip-list" aria-label="Departamentos">
         {filteredDepartments.map((department) => {
-          const active = selectedDepartmentId === department.id;
+          const active = effectiveSelectedDepartmentId === department.id;
           const activeSubareas = (department.subareas || []).filter(
             (subarea) => subarea.activo
           ).length;

@@ -1,4 +1,4 @@
-import { Circle } from 'lucide-react';
+import StatusDot from './StatusDot';
 
 const baseBadgeStyle = {
   padding: '0.3rem 0.75rem',
@@ -10,15 +10,6 @@ const baseBadgeStyle = {
   alignItems: 'center',
   gap: '0.4rem',
 };
-
-const StatusDot = () => (
-  <Circle
-    size={8}
-    strokeWidth={0}
-    fill="currentColor"
-    aria-hidden="true"
-  />
-);
 
 export const renderUsuarioStatusBadge = (estado) => {
   switch (estado) {

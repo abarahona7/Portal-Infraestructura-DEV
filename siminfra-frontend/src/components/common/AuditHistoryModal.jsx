@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   CalendarClock,
   ChevronDown,
@@ -40,22 +40,25 @@ export default function AuditHistoryModal({
   exportLabel = 'Exportar Excel',
 }) {
   const [expanded, setExpanded] = useState({});
+  const closeModal = useCallback(() => {
+    setExpanded({});
+    onClose?.();
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) {
-      setExpanded({});
       return undefined;
     }
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
-        onClose?.();
+        closeModal();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
+  }, [open, closeModal]);
 
   if (!open) {
     return null;
@@ -67,7 +70,7 @@ export default function AuditHistoryModal({
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
-          onClose?.();
+          closeModal();
         }
       }}
     >
@@ -104,7 +107,7 @@ export default function AuditHistoryModal({
             <button
               type="button"
               className="audit-history-close"
-              onClick={onClose}
+              onClick={closeModal}
               aria-label="Cerrar historial"
               title="Cerrar"
             >

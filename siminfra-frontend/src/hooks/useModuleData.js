@@ -130,11 +130,9 @@ export const useModuleData = ({
     setPageState({ key: filterKey, page: normalizedPage });
   }, [filterKey]);
 
-  const refreshData = useCallback(async () => {
+  const loadData = useCallback(async () => {
     if (!token || !enabled) {
-      setData([]);
-      setPagination(EMPTY_PAGINATION);
-      return;
+      return null;
     }
 
     try {
@@ -143,23 +141,18 @@ export const useModuleData = ({
         page,
         page_size: PAGE_SIZE,
       });
-      const normalized = normalizeResponse(result);
-      setData(normalized.items);
-      setPagination(normalized.pagination);
-
-      if (page > normalized.pagination.totalPages) {
-        setPage(normalized.pagination.totalPages);
-      }
+      return normalizeResponse(result);
     } catch (error) {
       if (error.response?.status === 401) {
         onUnauthorized?.();
-        return;
+        return null;
       }
 
       console.error(
         'Error cargando datos:',
         error.response?.data || error
       );
+      return null;
     }
   }, [
     token,
@@ -167,9 +160,26 @@ export const useModuleData = ({
     tab,
     baseParams,
     page,
-    setPage,
     onUnauthorized,
   ]);
+
+  const applyData = useCallback((normalized) => {
+    if (!normalized) {
+      return;
+    }
+
+    setData(normalized.items);
+    setPagination(normalized.pagination);
+
+    if (page > normalized.pagination.totalPages) {
+      setPage(normalized.pagination.totalPages);
+    }
+  }, [page, setPage]);
+
+  const refreshData = useCallback(async () => {
+    const normalized = await loadData();
+    applyData(normalized);
+  }, [loadData, applyData]);
 
   const getAllData = useCallback(async () => {
     if (!token) {
@@ -196,8 +206,21 @@ export const useModuleData = ({
   }, [token, tab, exportParams]);
 
   useEffect(() => {
-    refreshData();
-  }, [refreshData]);
+    if (!token || !enabled) {
+      return;
+    }
+
+    let cancelled = false;
+    loadData().then((normalized) => {
+      if (!cancelled) {
+        applyData(normalized);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, enabled, loadData, applyData]);
 
   useEffect(() => {
     if (!token || !enabled || !autoRefreshMs) {
@@ -215,8 +238,8 @@ export const useModuleData = ({
   }, [token, enabled, autoRefreshMs, refreshData]);
 
   return {
-    data,
-    pagination,
+    data: token && enabled ? data : [],
+    pagination: token && enabled ? pagination : EMPTY_PAGINATION,
     setPage,
     refreshData,
     getAllData,

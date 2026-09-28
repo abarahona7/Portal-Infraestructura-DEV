@@ -3,9 +3,6 @@ import { useState } from 'react';
 import {
   X,
   Eye,
-  EyeOff,
-  Copy,
-  Check,
   UserRound,
   AtSign,
   Monitor,
@@ -48,14 +45,6 @@ export default function UsuarioDetailModal({
   role,
   onRevealSecret,
 }) {
-  const [visiblePasswords, setVisiblePasswords] = useState({
-    gmail: false,
-    vpn: false,
-  });
-
-  const [copiedPassword, setCopiedPassword] =
-    useState(null);
-
   const [generatingActa, setGeneratingActa] =
     useState(false);
 
@@ -164,43 +153,6 @@ export default function UsuarioDetailModal({
     numerosCelular.length > 0
       ? numerosCelular.join(' / ')
       : null;
-
-
-  /* =========================
-     PASSWORDS
-  ========================= */
-
-  const togglePassword = (type) => {
-    setVisiblePasswords((current) => ({
-      ...current,
-      [type]: !current[type],
-    }));
-  };
-
-  const copyPassword = async (
-    password,
-    type
-  ) => {
-    if (!password) return;
-
-    try {
-      await navigator.clipboard.writeText(
-        password
-      );
-
-      setCopiedPassword(type);
-
-      setTimeout(() => {
-        setCopiedPassword(null);
-      }, 2000);
-
-    } catch (error) {
-      console.error(
-        'Error copiando al portapapeles:',
-        error
-      );
-    }
-  };
 
 
   /* =========================
@@ -452,27 +404,17 @@ export default function UsuarioDetailModal({
                   'Sin cuenta Gmail'
                 }
                 password={usuario.password_gmail_configured ? '••••••••' : ''}
-                visible={
-                  visiblePasswords.gmail
-                }
-                copied={
-                  copiedPassword === 'gmail'
-                }
-                onToggle={() => role === 'Administrador' && onRevealSecret?.({ module: 'usuario', object_id: usuario.id, secret_type: 'password_gmail' })}
-                onCopy={() => {}}
+                onToggle={role === 'Administrador'
+                  ? () => onRevealSecret?.({ module: 'usuario', object_id: usuario.id, secret_type: 'password_gmail' })
+                  : undefined}
               />
               <CredentialCard
                 icon={ShieldCheck}
                 title="VPN Cisco"
                 password={usuario.password_vpn_configured ? '••••••••' : ''}
-                visible={
-                  visiblePasswords.vpn
-                }
-                copied={
-                  copiedPassword === 'vpn'
-                }
-                onToggle={() => role === 'Administrador' && onRevealSecret?.({ module: 'usuario', object_id: usuario.id, secret_type: 'password_vpn' })}
-                onCopy={() => {}}
+                onToggle={role === 'Administrador'
+                  ? () => onRevealSecret?.({ module: 'usuario', object_id: usuario.id, secret_type: 'password_vpn' })
+                  : undefined}
               />
 
             </div>
@@ -731,10 +673,7 @@ function CredentialCard({
   title,
   account,
   password,
-  visible,
-  copied,
   onToggle,
-  onCopy,
 }) {
   return (
     <div className="user-detail-credential-card">
@@ -760,49 +699,19 @@ function CredentialCard({
       <div className="user-detail-password-row">
 
         <span className="user-detail-password-value">
-          {password
-            ? (
-              visible
-                ? password
-                : '••••••••'
-            )
-            : 'Sin contraseña'}
+          {password ? '••••' : 'Sin contraseña'}
         </span>
 
-        {password && (
+        {password && onToggle && (
           <div className="user-detail-password-actions">
 
             <button
               type="button"
               onClick={onToggle}
-              title={
-                visible
-                  ? 'Ocultar contraseña'
-                  : 'Mostrar contraseña'
-              }
+              title="Revelar contraseña"
+              aria-label={`Revelar contraseña de ${title}`}
             >
-              {visible ? (
-                <EyeOff size={16} />
-              ) : (
-                <Eye size={16} />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={onCopy}
-              className={
-                copied
-                  ? 'copied'
-                  : ''
-              }
-              title="Copiar contraseña"
-            >
-              {copied ? (
-                <Check size={16} />
-              ) : (
-                <Copy size={16} />
-              )}
+              <Eye size={16} />
             </button>
 
           </div>
@@ -824,7 +733,6 @@ function EquipmentField({
   label,
   value,
   accent = false,
-  compact = false,
 }) {
   return (
     <div className="user-detail-equipment-field">

@@ -21,19 +21,10 @@ export const useReferenceData = (token, role, activeModule) => {
   const [perfilesList, setPerfilesList] = useState([]);
   const [ipSegmentStats, setIpSegmentStats] = useState({});
   const loadedSectionsRef = useRef(new Set());
-
-  const clearReferenceData = useCallback(() => {
-    setUsuariosList([]);
-    setIpsList([]);
-    setDepartamentosList([]);
-    setPerfilesList([]);
-    setIpSegmentStats({});
-    loadedSectionsRef.current.clear();
-  }, []);
+  const canLoadReferenceData = Boolean(token && role !== 'Visualizador');
 
   const loadReferenceData = useCallback(async (sections = [], force = false) => {
     if (!token || role === 'Visualizador') {
-      clearReferenceData();
       return;
     }
 
@@ -80,7 +71,7 @@ export const useReferenceData = (token, role, activeModule) => {
         error.response?.data || error
       );
     }
-  }, [token, role, clearReferenceData]);
+  }, [token, role]);
 
   const refreshReferenceData = useCallback(
     (sections = []) => loadReferenceData(sections, true),
@@ -93,9 +84,14 @@ export const useReferenceData = (token, role, activeModule) => {
   );
 
   useEffect(() => {
+    if (!canLoadReferenceData) {
+      loadedSectionsRef.current.clear();
+      return;
+    }
+
     const sections = REFERENCE_SECTIONS_BY_MODULE[activeModule] || [];
     ensureReferenceData(sections);
-  }, [activeModule, ensureReferenceData]);
+  }, [activeModule, canLoadReferenceData, ensureReferenceData]);
 
   const dptosList = useMemo(() => Array.from(
     new Set(
@@ -113,12 +109,12 @@ export const useReferenceData = (token, role, activeModule) => {
   )), [departamentosList, usuariosList]);
 
   return {
-    dptosList,
-    usuariosList,
-    ipsList,
-    departamentosList,
-    perfilesList,
-    ipSegmentStats,
+    dptosList: canLoadReferenceData ? dptosList : [],
+    usuariosList: canLoadReferenceData ? usuariosList : [],
+    ipsList: canLoadReferenceData ? ipsList : [],
+    departamentosList: canLoadReferenceData ? departamentosList : [],
+    perfilesList: canLoadReferenceData ? perfilesList : [],
+    ipSegmentStats: canLoadReferenceData ? ipSegmentStats : {},
     refreshReferenceData,
     ensureReferenceData,
   };

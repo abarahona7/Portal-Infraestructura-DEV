@@ -63,12 +63,10 @@ export const useModuleNavigation = (resetFilters, role) => {
   // El Visualizador solo puede navegar por Anexos. Esto complementa,
   // pero no reemplaza, la restricción aplicada en el backend.
   useEffect(() => {
-    if (role === 'Visualizador' && tab !== 'anexos') {
-      setTab('anexos');
+    if (role === 'Visualizador') {
       saveTab('anexos');
-      resetFilters?.();
     }
-  }, [role, tab, resetFilters]);
+  }, [role]);
 
   const selectTab = (selectedTab) => {
     const nextTab = selectedTab === 'equipos'

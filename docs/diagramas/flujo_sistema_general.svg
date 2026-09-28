@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2800" height="1650" viewBox="0 0 2800 1650">
+<defs>
+<filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+<feDropShadow dx="0" dy="5" stdDeviation="6" flood-opacity="0.10"/>
+</filter>
+</defs>
+<rect width="100%" height="100%" fill="#F8FAFD"/>
+<text x="70" y="78" font-family="Segoe UI,Arial,sans-serif" font-size="46" font-weight="700" fill="#10213D">Portal Infraestructura TI — Flujo general</text>
+<text x="72" y="126" font-family="Segoe UI,Arial,sans-serif" font-size="25" font-weight="400" fill="#52647F">Recorrido de una acción desde la interfaz hasta la persistencia y su trazabilidad</text>
+<rect x="60" y="165" width="2680" height="360" rx="24" fill="#EFF5FF" stroke="#D5E0EE" stroke-width="3"/>
+<text x="84" y="207" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#52647F">CLIENTE, AUTENTICACIÓN Y SESIÓN</text>
+<rect x="60" y="555" width="2680" height="390" rx="24" fill="#F5F7FB" stroke="#D5E0EE" stroke-width="3"/>
+<text x="84" y="597" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#52647F">API Y REGLAS DE NEGOCIO</text>
+<rect x="60" y="975" width="2680" height="285" rx="24" fill="#F4F8F6" stroke="#D5E0EE" stroke-width="3"/>
+<text x="84" y="1017" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#52647F">MÓDULOS DEL PORTAL</text>
+<rect x="60" y="1290" width="2680" height="300" rx="24" fill="#F8F5FF" stroke="#D5E0EE" stroke-width="3"/>
+<text x="84" y="1332" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#52647F">PERSISTENCIA, TRAZABILIDAD Y OPERACIÓN</text>
+<polyline points="500,340 585,340" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="585,340 567,330 567,350" fill="#7F93B2"/>
+<polyline points="965,340 1050,340" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="1050,340 1032,330 1032,350" fill="#7F93B2"/>
+<polyline points="1440,340 1525,340" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="1525,340 1507,330 1507,350" fill="#7F93B2"/>
+<polyline points="1935,340 2020,340" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="2020,340 2002,330 2002,350" fill="#7F93B2"/>
+<polyline points="310,435 310,650" fill="none" stroke="#2563EB" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="310,650 320,632 300,632" fill="#2563EB"/>
+<rect x="316" y="525" width="73" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="325" y="550" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#2563EB">HTTPS</text>
+<polyline points="470,745 555,745" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="555,745 537,735 537,755" fill="#7F93B2"/>
+<polyline points="935,745 1020,745" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="1020,745 1002,735 1002,755" fill="#7F93B2"/>
+<polyline points="1410,745 1495,745" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="1495,745 1477,735 1477,755" fill="#7F93B2"/>
+<polyline points="1975,745 2060,745" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="2060,745 2042,735 2042,755" fill="#7F93B2"/>
+<polyline points="2365,840 2365,900 1375,900 1375,975" fill="none" stroke="#138A50" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="1375,975 1385,957 1365,957" fill="#138A50"/>
+<rect x="1751" y="865" width="194" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="1760" y="890" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#138A50">operación válida</text>
+<polyline points="1375,1260 1375,1335 455,1335 455,1380" fill="none" stroke="#138A50" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="455,1380 465,1362 445,1362" fill="#138A50"/>
+<rect x="871" y="1298" width="117" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="880" y="1323" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#138A50">persistir</text>
+<polyline points="1375,1260 1375,1380" fill="none" stroke="#6D45C7" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="1375,1380 1385,1362 1365,1362" fill="#6D45C7"/>
+<rect x="1381" y="1298" width="84" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="1390" y="1323" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#6D45C7">trazar</text>
+<polyline points="1735,1260 1735,1380" fill="none" stroke="#C9363E" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="14 12"/>
+<polygon points="1735,1380 1745,1362 1725,1362" fill="#C9363E"/>
+<rect x="1741" y="1298" width="95" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="1750" y="1323" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#C9363E">auditar</text>
+<polyline points="2160,1452 2310,1452" fill="none" stroke="#56657A" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="2310,1452 2292,1442 2292,1462" fill="#56657A"/>
+<rect x="2166" y="1413" width="95" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="2175" y="1438" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#56657A">eventos</text>
+<rect x="120" y="245" width="380" height="190" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="142" y="291" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">React + Vite</text>
+<text x="142" y="341" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Sidebar y vistas</text>
+<text x="142" y="374" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Formularios responsivos</text>
+<text x="142" y="407" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Axios centralizado</text>
+<rect x="585" y="245" width="380" height="190" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="607" y="291" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Inicio de sesión</text>
+<text x="607" y="341" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Credenciales + CSRF</text>
+<text x="607" y="374" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Limitación de intentos</text>
+<text x="607" y="407" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Respuesta sin secretos</text>
+<rect x="1050" y="245" width="390" height="190" rx="20" fill="#F1ECFF" stroke="#6D45C7" stroke-width="4" filter="url(#shadow)"/>
+<text x="1072" y="291" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">JWT</text>
+<text x="1072" y="341" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Access token en memoria</text>
+<text x="1072" y="374" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Refresh en cookie HttpOnly</text>
+<text x="1072" y="407" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Rotación y lista de bloqueo</text>
+<rect x="1525" y="245" width="410" height="190" rx="20" fill="#F1ECFF" stroke="#6D45C7" stroke-width="4" filter="url(#shadow)"/>
+<text x="1547" y="291" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">PortalSession</text>
+<text x="1547" y="341" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Identificador sid único</text>
+<text x="1547" y="374" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Actividad validada en servidor</text>
+<text x="1547" y="407" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Sesión revocable</text>
+<rect x="2020" y="245" width="650" height="190" rx="20" fill="#FFF5DF" stroke="#C46A08" stroke-width="4" filter="url(#shadow)"/>
+<text x="2042" y="291" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Inactividad efectiva</text>
+<text x="2042" y="341" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Eventos reales del navegador</text>
+<text x="2042" y="374" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Timeout predeterminado: 5 minutos</text>
+<text x="2042" y="407" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Recargar conserva una sesión vigente</text>
+<rect x="120" y="650" width="350" height="190" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="142" y="696" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">API REST</text>
+<text x="142" y="746" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Endpoints por módulo</text>
+<text x="142" y="779" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Paginación y filtros</text>
+<text x="142" y="812" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Respuestas JSON</text>
+<rect x="555" y="650" width="380" height="190" rx="20" fill="#F1ECFF" stroke="#6D45C7" stroke-width="4" filter="url(#shadow)"/>
+<text x="577" y="696" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Autenticación</text>
+<text x="577" y="746" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Valida JWT, sid y CSRF</text>
+<text x="577" y="779" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Rechaza sesión expirada</text>
+<text x="577" y="812" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Asocia usuario autenticado</text>
+<rect x="1020" y="650" width="390" height="190" rx="20" fill="#FFF5DF" stroke="#C46A08" stroke-width="4" filter="url(#shadow)"/>
+<text x="1042" y="696" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Permisos por rol</text>
+<text x="1042" y="746" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Visualizador</text>
+<text x="1042" y="779" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Operador Infraestructura</text>
+<text x="1042" y="812" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Administrador</text>
+<rect x="1495" y="650" width="480" height="190" rx="20" fill="#E6F7EE" stroke="#138A50" stroke-width="4" filter="url(#shadow)"/>
+<text x="1517" y="696" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Serializers + servicios</text>
+<text x="1517" y="746" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Validaciones de dominio</text>
+<text x="1517" y="779" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Asignaciones centralizadas</text>
+<text x="1517" y="812" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Cifrado y revelado controlado</text>
+<rect x="2060" y="650" width="610" height="190" rx="20" fill="#E6F7EE" stroke="#138A50" stroke-width="4" filter="url(#shadow)"/>
+<text x="2082" y="696" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Transacciones</text>
+<text x="2082" y="746" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">transaction.atomic()</text>
+<text x="2082" y="779" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Bloqueo select_for_update()</text>
+<text x="2082" y="812" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Rollback ante cualquier fallo</text>
+<rect x="105" y="1050" width="330" height="130" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="127" y="1096" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Usuarios</text>
+<text x="127" y="1138" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Ficha, estado y acta</text>
+<rect x="475" y="1050" width="330" height="130" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="497" y="1096" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Equipos</text>
+<text x="497" y="1138" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Notebook, celular y más</text>
+<rect x="845" y="1050" width="330" height="130" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="867" y="1096" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Gestión de IP</text>
+<text x="867" y="1138" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Segmentos y asignación</text>
+<rect x="1215" y="1050" width="330" height="130" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="1237" y="1096" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Anexos</text>
+<text x="1237" y="1138" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Disponibles o asignados</text>
+<rect x="1585" y="1050" width="330" height="130" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="1607" y="1096" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Servidores</text>
+<text x="1607" y="1138" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">IP del segmento permitido</text>
+<rect x="1955" y="1050" width="330" height="130" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="1977" y="1096" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Perfiles</text>
+<text x="1977" y="1138" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Credenciales cifradas</text>
+<rect x="2325" y="1050" width="330" height="130" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="2347" y="1096" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">PCs genéricos</text>
+<text x="2347" y="1138" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Organización e IP</text>
+<rect x="170" y="1380" width="570" height="145" rx="20" fill="#E6F7EE" stroke="#138A50" stroke-width="4" filter="url(#shadow)"/>
+<text x="192" y="1426" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">MySQL 8</text>
+<text x="192" y="1476" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">utf8mb4 · modo estricto</text>
+<text x="192" y="1509" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Índices, FK y restricciones</text>
+<rect x="890" y="1380" width="650" height="145" rx="20" fill="#F1ECFF" stroke="#6D45C7" stroke-width="4" filter="url(#shadow)"/>
+<text x="912" y="1426" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Historial funcional</text>
+<text x="912" y="1476" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Quién, cuándo, módulo y cambio</text>
+<text x="912" y="1509" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Usuario, equipos, IP, anexos y más</text>
+<rect x="1690" y="1380" width="470" height="145" rx="20" fill="#FDECEE" stroke="#C9363E" stroke-width="4" filter="url(#shadow)"/>
+<text x="1712" y="1426" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Auditoría de seguridad</text>
+<text x="1712" y="1476" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Revelado de secretos</text>
+<text x="1712" y="1509" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Request ID y eventos sensibles</text>
+<rect x="2310" y="1380" width="360" height="145" rx="20" fill="#F1F5F9" stroke="#56657A" stroke-width="4" filter="url(#shadow)"/>
+<text x="2332" y="1426" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Operación</text>
+<text x="2332" y="1476" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Logs JSON</text>
+<text x="2332" y="1509" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Backups y monitoreo</text>
+<text x="70" y="1625" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Fuente: implementación Django/DRF + React del repositorio · Actualizado: 28-09-2026</text>
+</svg>

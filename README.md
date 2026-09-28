@@ -56,4 +56,10 @@ Seguir [PRODUCTION_RUNBOOK.md](PRODUCTION_RUNBOOK.md) para preparar MySQL,
 migrar los datos, compilar el frontend, validar el despliegue y configurar los
 respaldos.
 
+## Documentación técnica
+
+- [Arquitectura y diagramas de flujo](docs/ARQUITECTURA_Y_FLUJOS.md)
+- [Modelo de datos y relaciones](docs/MODELO_DATOS.md)
+- [Migración verificada de SQLite a MySQL](docs/MIGRACION_MYSQL.md)
+
 La entrega no incluye bases de datos, `.env` reales, claves, `node_modules`, `venv`, caches, backups ni `.git`.

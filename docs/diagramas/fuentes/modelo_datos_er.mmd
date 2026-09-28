@@ -1,0 +1,104 @@
+erDiagram
+    DEPARTAMENTO ||--o{ SUBAREA : contiene
+    DEPARTAMENTO ||--o{ USUARIO : organiza
+    DEPARTAMENTO ||--o{ PERFIL_GENERICO : organiza
+    DEPARTAMENTO ||--o{ PC_GENERICO : organiza
+    SUBAREA o|--o{ USUARIO : clasifica
+    SUBAREA o|--o{ PERFIL_GENERICO : clasifica
+    SUBAREA o|--o{ PC_GENERICO : clasifica
+
+    USUARIO o|--o{ EQUIPAMIENTO : recibe
+    USUARIO o|--o| ANEXO : recibe
+    USUARIO o|--o| IP : proyecta
+
+    IP ||--o| ASIGNACION_IP : centraliza
+    USUARIO o|--o| ASIGNACION_IP : posee
+    SERVIDOR o|--o| ASIGNACION_IP : posee
+    PC_GENERICO o|--o| ASIGNACION_IP : posee
+    SERVIDOR o|--o| IP : usa
+    PC_GENERICO o|--o| IP : usa
+
+    USUARIO o|--o{ HISTORIAL_USUARIO : registra
+    EQUIPAMIENTO o|--o{ HISTORIAL_EQUIPO : registra
+    ANEXO o|--o{ HISTORIAL_ANEXO : registra
+    IP o|--o{ HISTORIAL_ASIGNACION_IP : registra
+    SERVIDOR o|--o{ HISTORIAL_SERVIDOR : registra
+    PC_GENERICO o|--o{ HISTORIAL_PC_GENERICO : registra
+    PERFIL_GENERICO o|--o{ HISTORIAL_PERFIL : registra
+
+    AUTH_USER ||--o{ PORTAL_SESSION : inicia
+    AUTH_USER }o--o{ AUTH_GROUP : pertenece
+
+    DEPARTAMENTO {
+        bigint id PK
+        varchar nombre
+        varchar nombre_normalizado UK
+        boolean activo
+    }
+    SUBAREA {
+        bigint id PK
+        bigint departamento_id FK
+        varchar nombre_normalizado
+        boolean activo
+    }
+    USUARIO {
+        bigint id PK
+        bigint departamento_id FK
+        bigint subarea_id FK
+        varchar usuario_red UK
+        varchar correo_corp UK
+        varchar estado
+    }
+    EQUIPAMIENTO {
+        bigint id PK
+        bigint usuario_id FK
+        varchar tipo
+        varchar numero_serie UK
+        varchar estado
+    }
+    ANEXO {
+        bigint id PK
+        bigint usuario_id FK
+        varchar numero_anexo UK
+        varchar estado
+    }
+    IP {
+        bigint id PK
+        bigint usuario_id FK
+        varchar direccion_ip UK
+        varchar estado
+    }
+    ASIGNACION_IP {
+        bigint id PK
+        bigint ip_id FK,UK
+        bigint usuario_id FK,UK
+        bigint servidor_id FK,UK
+        bigint pc_generico_id FK,UK
+        varchar asignado_otro
+    }
+    SERVIDOR {
+        bigint id PK
+        bigint ip_id FK,UK
+        varchar hostname UK
+    }
+    PC_GENERICO {
+        bigint id PK
+        bigint departamento_id FK
+        bigint subarea_id FK
+        bigint ip_id FK,UK
+        varchar hostname UK
+    }
+    PERFIL_GENERICO {
+        bigint id PK
+        bigint departamento_id FK
+        bigint subarea_id FK
+        varchar usuario UK
+        varchar password_encrypted
+    }
+    PORTAL_SESSION {
+        bigint id PK
+        bigint user_id FK
+        uuid sid UK
+        datetime last_activity
+        boolean revoked
+    }

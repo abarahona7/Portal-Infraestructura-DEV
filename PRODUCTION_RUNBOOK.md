@@ -52,14 +52,18 @@ elimina una base de pruebas temporal.
 ## 3. Migrar desde SQLite
 
 Realizar esta operación durante una ventana sin modificaciones en el portal.
+El procedimiento ampliado, su validación por huellas y la vuelta atrás están en
+[docs/MIGRACION_MYSQL.md](docs/MIGRACION_MYSQL.md).
 
 1. Detener el backend actual.
 2. Respaldar `db.sqlite3`, `.env` y `FIELD_ENCRYPTION_KEY` fuera del directorio
    de despliegue.
-3. Exportar los datos usando temporalmente el perfil de desarrollo:
+3. Auditar el origen y exportar los datos usando temporalmente el perfil de
+   desarrollo:
 
 ```powershell
-.\venv\Scripts\python.exe manage.py dumpdata --natural-foreign --natural-primary --exclude contenttypes --exclude auth.permission --exclude admin.logentry --indent 2 --output portal-pre-mysql.json
+.\venv\Scripts\python.exe manage.py auditar_migracion_db --salida auditoria-sqlite.json
+.\venv\Scripts\python.exe manage.py dumpdata --natural-foreign --natural-primary --exclude contenttypes --exclude auth.permission --exclude admin.logentry --exclude sessions.session --exclude token_blacklist --exclude core.portalsession --indent 2 --output portal-pre-mysql.json
 ```
 
 4. Activar el `.env` productivo y crear el esquema e importar:
@@ -67,11 +71,13 @@ Realizar esta operación durante una ventana sin modificaciones en el portal.
 ```powershell
 .\venv\Scripts\python.exe manage.py migrate --settings=config.settings_production
 .\venv\Scripts\python.exe manage.py loaddata portal-pre-mysql.json --settings=config.settings_production
+.\venv\Scripts\python.exe manage.py auditar_migracion_db --salida auditoria-mysql.json --comparar auditoria-sqlite.json --settings=config.settings_production
 .\venv\Scripts\python.exe manage.py verify_secrets --settings=config.settings_production
 ```
 
-5. Comparar los totales de usuarios, equipos, IP, anexos, perfiles, PC
-   genéricos y servidores antes de habilitar el acceso.
+5. No habilitar el acceso si la comparación de conteos, relaciones, huellas o
+   migraciones informa una diferencia. Las sesiones se excluyen deliberadamente
+   y todos los operadores deben autenticarse nuevamente.
 6. Eliminar del servidor el JSON de migración cuando el respaldo definitivo ya
    esté verificado, porque puede contener información operacional.
 

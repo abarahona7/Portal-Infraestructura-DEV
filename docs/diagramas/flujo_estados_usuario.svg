@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2600" height="1570" viewBox="0 0 2600 1570">
+<defs>
+<filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+<feDropShadow dx="0" dy="5" stdDeviation="6" flood-opacity="0.10"/>
+</filter>
+</defs>
+<rect width="100%" height="100%" fill="#F8FAFD"/>
+<text x="70" y="78" font-family="Segoe UI,Arial,sans-serif" font-size="46" font-weight="700" fill="#10213D">Usuarios — Estados, recursos y acta de entrega</text>
+<text x="72" y="126" font-family="Segoe UI,Arial,sans-serif" font-size="25" font-weight="400" fill="#52647F">Comportamiento confirmado para ACTIVO, LICENCIA MÉDICA y BAJA</text>
+<rect x="60" y="165" width="2480" height="330" rx="24" fill="#EFF5FF" stroke="#D5E0EE" stroke-width="3"/>
+<text x="84" y="207" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#52647F">EDICIÓN Y CONFIRMACIÓN</text>
+<rect x="60" y="525" width="2480" height="540" rx="24" fill="#F7F9FC" stroke="#D5E0EE" stroke-width="3"/>
+<text x="84" y="567" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#52647F">EFECTOS SEGÚN EL ESTADO DEL USUARIO</text>
+<rect x="60" y="1095" width="2480" height="410" rx="24" fill="#F4F8F6" stroke="#D5E0EE" stroke-width="3"/>
+<text x="84" y="1137" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="700" fill="#52647F">FICHA Y EMISIÓN DEL ACTA</text>
+<polyline points="540,327 720,327" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="720,327 702,317 702,337" fill="#7F93B2"/>
+<polyline points="1200,327 1380,327" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="1380,327 1362,317 1362,337" fill="#7F93B2"/>
+<polyline points="1840,327 2020,327" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="2020,327 2002,317 2002,337" fill="#7F93B2"/>
+<polyline points="1610,410 1610,490 440,490 440,615" fill="none" stroke="#138A50" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="440,615 450,597 430,597" fill="#138A50"/>
+<rect x="961" y="453" width="84" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="970" y="478" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#138A50">estado</text>
+<polyline points="1610,410 1610,535 1280,535 1280,615" fill="none" stroke="#C46A08" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="1280,615 1290,597 1270,597" fill="#C46A08"/>
+<rect x="1381" y="498" width="84" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="1390" y="523" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#C46A08">estado</text>
+<polyline points="1610,410 1610,490 2120,490 2120,615" fill="none" stroke="#C9363E" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="2120,615 2130,597 2110,597" fill="#C9363E"/>
+<rect x="1831" y="453" width="84" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="1840" y="478" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#C9363E">estado</text>
+<polyline points="440,945 440,997 820,997" fill="none" stroke="#6D45C7" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="820,997 802,987 802,1007" fill="#6D45C7"/>
+<rect x="581" y="960" width="117" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="590" y="985" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#6D45C7">historial</text>
+<polyline points="1280,945 1280,950" fill="none" stroke="#6D45C7" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="1280,950 1290,932 1270,932" fill="#6D45C7"/>
+<rect x="1286" y="897" width="117" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="1295" y="922" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#6D45C7">historial</text>
+<polyline points="2120,945 2120,997 1780,997" fill="none" stroke="#6D45C7" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="1780,997 1798,1007 1798,987" fill="#6D45C7"/>
+<rect x="1841" y="960" width="117" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="1850" y="985" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#6D45C7">historial</text>
+<polyline points="510,1272 680,1272" fill="none" stroke="#7F93B2" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="680,1272 662,1262 662,1282" fill="#7F93B2"/>
+<polyline points="1200,1272 1390,1272" fill="none" stroke="#C9363E" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="1390,1272 1372,1262 1372,1282" fill="#C9363E"/>
+<rect x="1251" y="1235" width="70" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="1260" y="1260" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#C9363E">NO</text>
+<polyline points="940,1360 940,1430 2255,1430 2255,1360" fill="none" stroke="#138A50" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="2255,1360 2245,1378 2265,1378" fill="#138A50"/>
+<rect x="1571" y="1393" width="70" height="35" rx="8" fill="#FFFFFF" stroke="#D6E0EC"/>
+<text x="1580" y="1418" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#138A50">SÍ</text>
+<rect x="120" y="245" width="420" height="165" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="142" y="291" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Editar usuario</text>
+<text x="142" y="341" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Cambiar datos, estado</text>
+<text x="142" y="374" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">o relaciones permitidas</text>
+<rect x="720" y="245" width="480" height="165" rx="20" fill="#FFF5DF" stroke="#C46A08" stroke-width="4" filter="url(#shadow)"/>
+<text x="742" y="291" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Advertencia previa</text>
+<text x="742" y="341" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Explica efectos del estado</text>
+<text x="742" y="374" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">y solicita confirmación</text>
+<rect x="1380" y="245" width="460" height="165" rx="20" fill="#E6F7EE" stroke="#138A50" stroke-width="4" filter="url(#shadow)"/>
+<text x="1402" y="291" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Guardar en transacción</text>
+<text x="1402" y="341" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Validar restricciones</text>
+<text x="1402" y="374" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Aplicar el cambio completo</text>
+<rect x="2020" y="245" width="440" height="165" rx="20" fill="#F1ECFF" stroke="#6D45C7" stroke-width="4" filter="url(#shadow)"/>
+<text x="2042" y="291" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Registrar historial</text>
+<text x="2042" y="341" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Actor, fecha y origen</text>
+<text x="2042" y="374" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Valores anterior y actual</text>
+<rect x="130" y="615" width="620" height="330" rx="20" fill="#E6F7EE" stroke="#138A50" stroke-width="4" filter="url(#shadow)"/>
+<text x="152" y="661" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">ACTIVO</text>
+<text x="152" y="711" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Puede mantener o recibir IP</text>
+<text x="152" y="744" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Puede mantener equipos</text>
+<text x="152" y="777" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Puede mantener anexo</text>
+<text x="152" y="810" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Las asignaciones se sincronizan</text>
+<rect x="970" y="615" width="620" height="330" rx="20" fill="#FFF5DF" stroke="#C46A08" stroke-width="4" filter="url(#shadow)"/>
+<text x="992" y="661" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">LICENCIA MÉDICA</text>
+<text x="992" y="711" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Libera solamente la IP</text>
+<text x="992" y="744" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Conserva equipos asignados</text>
+<text x="992" y="777" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Conserva anexo asignado</text>
+<text x="992" y="810" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Registra la liberación en historial</text>
+<rect x="1810" y="615" width="620" height="330" rx="20" fill="#FDECEE" stroke="#C9363E" stroke-width="4" filter="url(#shadow)"/>
+<text x="1832" y="661" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">BAJA</text>
+<text x="1832" y="711" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Libera la IP</text>
+<text x="1832" y="744" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Desasigna equipos</text>
+<text x="1832" y="777" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Libera el anexo</text>
+<text x="1832" y="810" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Solicita validar devolución física</text>
+<rect x="120" y="1185" width="390" height="175" rx="20" fill="#EAF2FF" stroke="#2563EB" stroke-width="4" filter="url(#shadow)"/>
+<text x="142" y="1231" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Abrir ficha</text>
+<text x="142" y="1281" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">El usuario solicita</text>
+<text x="142" y="1314" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">crear acta de entrega</text>
+<rect x="680" y="1185" width="520" height="175" rx="20" fill="#FFF5DF" stroke="#C46A08" stroke-width="4" filter="url(#shadow)"/>
+<text x="702" y="1231" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Validar equipos</text>
+<text x="702" y="1281" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">¿Existe al menos un equipo</text>
+<text x="702" y="1314" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">actualmente asignado?</text>
+<rect x="1390" y="1160" width="500" height="200" rx="20" fill="#FDECEE" stroke="#C9363E" stroke-width="4" filter="url(#shadow)"/>
+<text x="1412" y="1206" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">No se puede emitir</text>
+<text x="1412" y="1256" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Respuesta HTTP 409</text>
+<text x="1412" y="1289" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Mensaje explica que el usuario</text>
+<text x="1412" y="1322" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">no posee equipos asignados</text>
+<rect x="2050" y="1160" width="410" height="200" rx="20" fill="#E6F7EE" stroke="#138A50" stroke-width="4" filter="url(#shadow)"/>
+<text x="2072" y="1206" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" fill="#10213D">Generar PDF</text>
+<text x="2072" y="1256" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Incluye datos y equipos</text>
+<text x="2072" y="1289" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">Devuelve el acta</text>
+<text x="2072" y="1322" font-family="Segoe UI,Arial,sans-serif" font-size="21" font-weight="400" fill="#52647F">para revisión y entrega</text>
+<rect x="820" y="950" width="960" height="95" rx="20" fill="#F1ECFF" stroke="#6D45C7" stroke-width="4" filter="url(#shadow)"/>
+<text x="842" y="996" font-family="Segoe UI,Arial,sans-serif" font-size="23" font-weight="700" fill="#10213D">Historial relacionado</text>
+<text x="842" y="1038" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">Todos los efectos quedan vinculados a la ficha del usuario.</text>
+<text x="70" y="1545" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" fill="#52647F">La licencia médica libera solo la IP; la baja libera IP, equipos y anexo.</text>
+</svg>

@@ -1,0 +1,53 @@
+flowchart TB
+    subgraph CLIENTE[Cliente, autenticación y sesión]
+        UI[React + Vite\nSidebar, vistas y formularios]
+        LOGIN[Inicio de sesión\nCredenciales + CSRF]
+        JWT[JWT\nAccess en memoria\nRefresh HttpOnly]
+        SESSION[PortalSession\nsid, actividad y revocación]
+        IDLE[Inactividad efectiva\nTimeout: 5 minutos]
+        UI --> LOGIN --> JWT --> SESSION --> IDLE
+    end
+
+    subgraph API[API y reglas de negocio]
+        REST[API REST\nFiltros y paginación]
+        AUTH[Autenticación\nJWT + sid + CSRF]
+        ROLES[Permisos\nVisualizador / Operador / Administrador]
+        SERVICES[Serializers + servicios\nValidaciones y asignaciones]
+        TX[Transacciones\natomic + select_for_update]
+        REST --> AUTH --> ROLES --> SERVICES --> TX
+    end
+
+    subgraph MODULOS[Módulos del portal]
+        USERS[Usuarios]
+        ASSETS[Equipos]
+        IPS[Gestión de IP]
+        PHONE[Anexos]
+        SERVER[Servidores]
+        PROFILE[Perfiles genéricos]
+        PC[PCs genéricos]
+    end
+
+    subgraph DATA[Persistencia y trazabilidad]
+        MYSQL[(MySQL 8\nutf8mb4 + restricciones)]
+        HISTORY[(Historial funcional)]
+        AUDIT[(Auditoría de seguridad)]
+        OPS[Logs JSON, backups y monitoreo]
+    end
+
+    UI -->|HTTPS| REST
+    TX --> MODULOS
+    MODULOS --> MYSQL
+    MODULOS --> HISTORY
+    MODULOS -. eventos sensibles .-> AUDIT
+    AUDIT --> OPS
+
+    classDef blue fill:#EAF2FF,stroke:#2563EB,color:#10213D;
+    classDef green fill:#E6F7EE,stroke:#138A50,color:#10213D;
+    classDef violet fill:#F1ECFF,stroke:#6D45C7,color:#10213D;
+    classDef amber fill:#FFF5DF,stroke:#C46A08,color:#10213D;
+    classDef red fill:#FDECEE,stroke:#C9363E,color:#10213D;
+    class UI,LOGIN,REST,USERS,ASSETS,IPS,PHONE,SERVER,PROFILE,PC blue;
+    class SERVICES,TX,MYSQL green;
+    class JWT,SESSION,AUTH,HISTORY violet;
+    class IDLE,ROLES amber;
+    class AUDIT red;

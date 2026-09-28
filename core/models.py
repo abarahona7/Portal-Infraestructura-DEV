@@ -1328,6 +1328,9 @@ class PortalSession(models.Model):
 
 @receiver(pre_save, sender=PerfilGenerico)
 def track_historial_perfil_generico(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        return
+
     if not instance.pk:
         return
 
@@ -1386,6 +1389,9 @@ def track_historial_perfil_generico(sender, instance, **kwargs):
 
 @receiver(post_save, sender=PerfilGenerico)
 def registrar_creacion_perfil_generico(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        return
+
     if not created:
         return
 
@@ -1421,6 +1427,9 @@ def registrar_eliminacion_perfil_generico(sender, instance, **kwargs):
 
 @receiver(pre_save, sender=PCGenerico)
 def track_historial_pc_generico(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        return
+
     if not instance.pk:
         return
 
@@ -1533,6 +1542,9 @@ def registrar_creacion_pc_generico(
     created,
     **kwargs
 ):
+    if kwargs.get('raw'):
+        return
+
     if not created:
         return
 
@@ -1550,6 +1562,9 @@ def registrar_creacion_pc_generico(
 
 @receiver(pre_save, sender=Anexo)
 def track_historial_anexo(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        return
+
     if not instance.pk:
         return
 
@@ -1642,6 +1657,9 @@ def track_historial_anexo(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Anexo)
 def registrar_creacion_anexo(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        return
+
     if not created:
         return
 
@@ -1690,6 +1708,9 @@ def registrar_eliminacion_anexo_en_usuario(sender, instance, **kwargs):
 
 @receiver(pre_save, sender=Equipamiento)
 def track_historial_equipo(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        return
+
     if not instance.pk:
         return
 
@@ -1840,6 +1861,9 @@ def track_historial_equipo(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Equipamiento)
 def registrar_asignacion_inicial_equipo(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        return
+
     if not created:
         return
 
@@ -1885,6 +1909,8 @@ def registrar_eliminacion_equipo_en_usuario(sender, instance, **kwargs):
 
 @receiver(pre_save, sender=IP)
 def sync_ip_con_usuario(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        return
 
     # IP asignada directamente a un usuario
     if instance.usuario_id:
@@ -1920,6 +1946,9 @@ def sync_ip_con_usuario(sender, instance, **kwargs):
 
 @receiver(pre_save, sender=Servidor)
 def track_historial_servidor(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        return
+
     if not instance.pk:
         return
 
@@ -1962,6 +1991,9 @@ def track_historial_servidor(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Servidor)
 def registrar_creacion_servidor(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        return
+
     if not created:
         return
 
@@ -2021,6 +2053,9 @@ def liberar_ip_al_eliminar_pc_generico(sender, instance, **kwargs):
 
 @receiver(pre_save, sender=Usuario)
 def track_historial_usuario(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        return
+
     if instance.pk:
         try:
             usr_previo = Usuario.objects.get(pk=instance.pk)
@@ -2101,6 +2136,9 @@ def track_historial_usuario(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Usuario)
 def registrar_creacion_usuario(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        return
+
     if not created:
         return
 
@@ -2136,6 +2174,8 @@ def liberar_equipos_usuario(usuario):
 
 @receiver(post_save, sender=Usuario)
 def auto_sync_usuario(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        return
 
     # Baja y Licencia Médica liberan la IP. La licencia conserva el resto
     # de los activos asignados al usuario.

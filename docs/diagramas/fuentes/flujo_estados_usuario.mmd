@@ -1,0 +1,27 @@
+flowchart TB
+    EDIT[Editar usuario] --> WARN[Mostrar advertencia de efectos]
+    WARN --> SAVE[Validar y guardar en una transacción]
+    SAVE --> HISTORY[Registrar actor, fecha, origen y valores]
+
+    SAVE --> ACTIVE[ACTIVO\nPuede mantener o recibir IP\nMantiene equipos y anexo]
+    SAVE --> LEAVE[LICENCIA MÉDICA\nLibera solo la IP\nConserva equipos y anexo]
+    SAVE --> DOWN[BAJA\nLibera IP, equipos y anexo\nValidar devolución física]
+
+    ACTIVE --> RELATED[Historial relacionado del usuario]
+    LEAVE --> RELATED
+    DOWN --> RELATED
+
+    RECORD[Abrir ficha y solicitar acta] --> HAS{¿Tiene al menos un\nequipo asignado?}
+    HAS -->|No| DENY[HTTP 409\nExplicar por qué no se puede emitir]
+    HAS -->|Sí| PDF[Generar acta PDF\ncon usuario y equipos]
+
+    classDef blue fill:#EAF2FF,stroke:#2563EB,color:#10213D;
+    classDef green fill:#E6F7EE,stroke:#138A50,color:#10213D;
+    classDef violet fill:#F1ECFF,stroke:#6D45C7,color:#10213D;
+    classDef amber fill:#FFF5DF,stroke:#C46A08,color:#10213D;
+    classDef red fill:#FDECEE,stroke:#C9363E,color:#10213D;
+    class EDIT,RECORD blue;
+    class SAVE,ACTIVE,PDF green;
+    class WARN,LEAVE,HAS amber;
+    class DOWN,DENY red;
+    class HISTORY,RELATED violet;

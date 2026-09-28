@@ -61,5 +61,7 @@ respaldos.
 - [Arquitectura y diagramas de flujo](docs/ARQUITECTURA_Y_FLUJOS.md)
 - [Modelo de datos y relaciones](docs/MODELO_DATOS.md)
 - [Migración verificada de SQLite a MySQL](docs/MIGRACION_MYSQL.md)
+- [Histórico de importación v1.1](docs/historico/importacion/IMPORTACION_V11.md)
+- [Histórico de rendimiento v1.1](docs/historico/rendimiento/RENDIMIENTO_V11.md)
 
 La entrega no incluye bases de datos, `.env` reales, claves, `node_modules`, `venv`, caches, backups ni `.git`.

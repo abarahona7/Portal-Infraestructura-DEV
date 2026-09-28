@@ -9,13 +9,13 @@ comando `medir_rendimiento_portal`. Cada endpoint se ejecutó tres veces y se
 registró la mediana del tiempo, la cantidad de consultas SQL y el tamaño de la
 respuesta. Los archivos con las muestras completas son:
 
-- `rendimiento_antes_v11.json`
-- `rendimiento_despues_v11.json`
+- `metricas/rendimiento_antes_v11.json`
+- `metricas/rendimiento_despues_v11.json`
 
 Comando para repetir la medición:
 
 ```powershell
-.\venv\Scripts\python.exe manage.py medir_rendimiento_portal --repeticiones 3 --salida rendimiento_actual_v11.json
+.\venv\Scripts\python.exe manage.py medir_rendimiento_portal --repeticiones 3 --salida .\.local\reports\rendimiento_actual_v11.json
 ```
 
 ## Resultados de API y base de datos
@@ -134,4 +134,4 @@ caché sin invalidación inmediata podría mostrar disponibilidad incorrecta.
   elemento raíz de la aplicación.
 - Migración `0040_anexo_idx_anexo_estado_num_and_more` aplicada.
 - Respaldo anterior a los índices:
-  `db.sqlite3.pre_optimizacion_20260923_165840.bak`.
+  `.local/backups/db.sqlite3.pre_optimizacion_20260923_165840.bak`.

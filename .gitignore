@@ -27,6 +27,7 @@ dist/
 # Local backup folders
 *_BACKUP/
 src_BACKUP/
+.local/
 
 # Local import and assignment reports (may contain operational data)
 *_apply.json

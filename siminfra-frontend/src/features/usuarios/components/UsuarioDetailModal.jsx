@@ -63,10 +63,20 @@ export default function UsuarioDetailModal({
     return null;
   }
 
+  const hasAssignedEquipment = Boolean(usuario.equipos?.length);
+  const actaUnavailableMessage = (
+    'No se puede generar el Acta de Entrega porque este usuario no tiene equipos o insumos asignados.'
+  );
+
   const handleGenerateActa = async () => {
     if (!usuario?.id || generatingActa) {
       return;
     }
+
+    if (!hasAssignedEquipment) {
+      return;
+    }
+
     const pdfWindow = window.open(
       '',
       '_blank'
@@ -120,7 +130,8 @@ export default function UsuarioDetailModal({
       }
 
       alert(
-        'No se pudo generar el Acta de Entrega.'
+        error.response?.data?.detail
+        || 'No se pudo generar el Acta de Entrega.'
       );
 
     } finally {
@@ -293,11 +304,20 @@ export default function UsuarioDetailModal({
 
             <button
               type="button"
-              className="user-detail-acta-button"
+              className={`user-detail-acta-button ${generatingActa ? 'is-generating' : ''}`}
               onClick={handleGenerateActa}
-              disabled={generatingActa}
-              title="Crear Acta de Entrega"
+              disabled={generatingActa || !hasAssignedEquipment}
+              title={
+                hasAssignedEquipment
+                  ? 'Crear Acta de Entrega'
+                  : actaUnavailableMessage
+              }
               aria-label="Crear Acta de Entrega"
+              aria-describedby={
+                hasAssignedEquipment
+                  ? undefined
+                  : 'acta-unavailable-reason'
+              }
             >
               <FileText size={17} />
 
@@ -624,6 +644,10 @@ export default function UsuarioDetailModal({
                 <span>
                   Este usuario no tiene equipos vinculados.
                 </span>
+
+                <p id="acta-unavailable-reason">
+                  {actaUnavailableMessage}
+                </p>
               </div>
 
             )}

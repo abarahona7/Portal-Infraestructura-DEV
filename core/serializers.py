@@ -909,7 +909,7 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
         validated_data
         )
 
-        if ip_enviada and usuario.estado != 'BAJA':
+        if ip_enviada and usuario.estado not in {'BAJA', 'LICENCIA'}:
             try:
                 assign_ip_to_user(usuario.pk, ip_seleccionada)
             except IpAssignmentError as exc:
@@ -1044,27 +1044,12 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
         if departamento:
             attrs['dpto_area'] = departamento.nombre
 
-        # Una IP nueva solo puede asignarse a usuarios ACTIVOS.
-        # Si el usuario está en LICENCIA se permite conservar su IP actual,
-        # pero no cambiarla por otra. BAJA libera la IP mediante la señal
-        # post_save y nunca debe recibir una nueva asignación.
+        # Una IP solo puede asignarse a usuarios ACTIVOS. Tanto BAJA como
+        # LICENCIA liberan la IP mediante la señal post_save.
         if 'ip_seleccionada' in attrs and attrs.get('ip_seleccionada') is not None:
             estado_resultante = attrs.get(
                 'estado',
                 getattr(instance, 'estado', 'ACTIVO'),
-            )
-
-            ip_solicitada = str(attrs['ip_seleccionada'])
-            ip_actual = None
-            if instance:
-                ip_actual_obj = IP.objects.filter(usuario=instance).first()
-                if ip_actual_obj:
-                    ip_actual = ip_actual_obj.direccion_ip
-
-            es_ip_actual = bool(
-                instance
-                and ip_actual
-                and ip_actual == ip_solicitada
             )
 
             if estado_resultante == 'BAJA':
@@ -1074,10 +1059,10 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
                     )
                 })
 
-            if estado_resultante == 'LICENCIA' and not es_ip_actual:
+            if estado_resultante == 'LICENCIA':
                 raise serializers.ValidationError({
                     'ip_seleccionada': (
-                        'No se puede asignar una IP nueva a un usuario en licencia médica.'
+                        'Los usuarios en licencia médica no pueden conservar ni recibir una IP.'
                     )
                 })
 

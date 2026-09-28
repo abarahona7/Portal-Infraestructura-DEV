@@ -8,7 +8,7 @@ from .services.acta_entrega_pdf import (
     generar_acta_entrega_pdf
 )
 
-from rest_framework import viewsets, filters, serializers
+from rest_framework import viewsets, filters, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .permissions import PortalRolePermission
@@ -402,6 +402,17 @@ class UsuarioViewSet(
     )
     def acta_entrega(self, request, pk=None):
         usuario = self.get_object()
+
+        if not usuario.equipos.exists():
+            return Response(
+                {
+                    'detail': (
+                        'No se puede generar el Acta de Entrega porque el '
+                        'usuario no tiene equipos o insumos asignados.'
+                    )
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
 
         # Nombre de la persona logueada
         entregado_por = ""

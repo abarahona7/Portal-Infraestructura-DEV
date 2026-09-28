@@ -26,6 +26,57 @@ const extractApiErrorMessage = (error, fallback) => {
   return fallback;
 };
 
+const getUpdateConfirmation = (tab, editingItem, data) => {
+  const defaultConfirmation = {
+    title: 'Guardar cambios',
+    message: '¿Confirmas que deseas guardar los cambios realizados?',
+    confirmText: 'Guardar',
+  };
+
+  if (tab !== 'usuarios' || !editingItem?.id) {
+    return defaultConfirmation;
+  }
+
+  const originalItem = data.find(
+    (item) => String(item.id) === String(editingItem.id)
+  );
+  const nextStatus = editingItem.estado;
+  const isStatusChange = originalItem?.estado !== nextStatus;
+
+  if (!isStatusChange) {
+    return defaultConfirmation;
+  }
+
+  if (nextStatus === 'BAJA') {
+    return {
+      title: 'Guardar cambios',
+      message: (
+        'Al dar de baja al usuario se realizarán estas acciones:\n\n'
+        + '• Se desasignarán sus equipos e insumos.\n'
+        + '• Se liberará su dirección IP.\n'
+        + '• Se liberará su anexo.\n\n'
+        + 'Antes de confirmar, valida la devolución física de los equipos e insumos.'
+      ),
+      confirmText: 'Dar de baja',
+      danger: true,
+    };
+  }
+
+  if (nextStatus === 'LICENCIA') {
+    return {
+      title: 'Guardar cambios',
+      message: (
+        'Al cambiar el estado a Licencia Médica se liberará la dirección IP del usuario.\n\n'
+        + 'Los equipos, insumos y el anexo permanecerán asignados.'
+      ),
+      confirmText: 'Confirmar licencia',
+      danger: true,
+    };
+  }
+
+  return defaultConfirmation;
+};
+
 export const useModuleCrud = ({
   tab,
   data,
@@ -120,11 +171,9 @@ export const useModuleCrud = ({
       return;
     }
 
-    const confirmed = await requestConfirmation?.({
-      title: 'Guardar cambios',
-      message: '¿Confirmas que deseas guardar los cambios realizados?',
-      confirmText: 'Guardar',
-    });
+    const confirmed = await requestConfirmation?.(
+      getUpdateConfirmation(tab, editingItem, data)
+    );
 
     if (confirmed === false) {
       return;

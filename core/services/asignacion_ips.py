@@ -13,6 +13,7 @@ from core.models import (
     Servidor,
     TipoAsignacionIP,
     Usuario,
+    registrar_relacion_usuario,
 )
 
 
@@ -83,6 +84,24 @@ def _write_assignment_history(
         propietario_nombre=owner_name,
         realizado_por=get_current_audit_username(),
     )
+
+    if assignment_type == TipoAsignacionIP.USUARIO and owner_id:
+        is_assignment = action == 'ASIGNACION'
+        registrar_relacion_usuario(
+            owner_id,
+            accion=(
+                'ASIGNACION_IP' if is_assignment else 'LIBERACION_IP'
+            ),
+            campo='Dirección IP',
+            anterior=(
+                'Sin IP asignada' if is_assignment else ip.direccion_ip
+            ),
+            actual=(
+                ip.direccion_ip if is_assignment else 'Sin IP asignada'
+            ),
+            modulo='Gestión de IPs',
+            objeto_id=ip.pk,
+        )
 
 
 def _get_locked_assignment(ip_id):

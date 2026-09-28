@@ -224,9 +224,13 @@
 .user-detail-acta-button:disabled {
     opacity: 0.55;
 
-    cursor: wait;
+    cursor: not-allowed;
 
     transform: none;
+}
+
+.user-detail-acta-button.is-generating:disabled {
+    cursor: wait;
 }
 
 /* =========================
@@ -746,6 +750,15 @@
     font-weight: 600;
 
     text-align: center;
+}
+
+.user-detail-empty-equipment p {
+    max-width: 34rem;
+    margin: 0.25rem 0 0;
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.45;
 }
 
 

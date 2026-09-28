@@ -48,8 +48,7 @@ export default function UsuarioEditForm({
     };
 
     // Si había una selección pendiente y el usuario deja de estar ACTIVO,
-    // la descartamos. La IP actual se conserva visualmente desde ip_actual;
-    // BAJA será liberada automáticamente por el backend al guardar.
+    // la descartamos. BAJA y LICENCIA liberan la IP en el backend al guardar.
     if (value !== 'ACTIVO' && 'ip_seleccionada' in nextUsuario) {
       delete nextUsuario.ip_seleccionada;
     }

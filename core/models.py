@@ -536,10 +536,44 @@ class HistorialUsuario(models.Model):
     fecha_movimiento = models.DateTimeField(auto_now_add=True)
     accion = models.CharField(max_length=50, default='MODIFICACION')
     modificado_por = models.CharField(max_length=150,null=True,blank=True)
+    modulo_relacionado = models.CharField(max_length=80, null=True, blank=True)
+    objeto_relacionado_id = models.CharField(max_length=80, null=True, blank=True)
     observacion = models.TextField(null=True, blank=True)
 
     class Meta:
-        ordering = ['-fecha_movimiento']
+        ordering = ['-fecha_movimiento', '-pk']
+        indexes = [
+            models.Index(
+                fields=['usuario', '-fecha_movimiento'],
+                name='idx_hist_usr_fecha',
+            ),
+        ]
+
+
+def registrar_relacion_usuario(
+    usuario_id,
+    *,
+    accion,
+    campo,
+    anterior,
+    actual,
+    modulo,
+    objeto_id,
+):
+    """Registra en el usuario un movimiento originado en otro módulo."""
+    if not usuario_id:
+        return
+
+    HistorialUsuario.objects.create(
+        usuario_id=usuario_id,
+        accion=accion,
+        modificado_por=get_current_audit_username(),
+        modulo_relacionado=modulo,
+        objeto_relacionado_id=str(objeto_id) if objeto_id is not None else None,
+        observacion=(
+            f"{campo}:::{anterior or 'N/I'}:::{actual or 'N/I'}"
+        ),
+    )
 
 
 class Equipamiento(models.Model):
@@ -1492,7 +1526,6 @@ def track_historial_pc_generico(sender, instance, **kwargs):
             observacion="||".join(cambios)
         )
 
-
 @receiver(post_save, sender=PCGenerico)
 def registrar_creacion_pc_generico(
     sender,
@@ -1577,13 +1610,34 @@ def track_historial_anexo(sender, instance, **kwargs):
 
     if cambios:
         HistorialAnexo.objects.create(
-        anexo=instance,
-        usuario_anterior=usuario_anterior,
-        usuario_nuevo=usuario_nuevo,
-        accion="MODIFICACION",
-        modificado_por=get_current_audit_username(),
-        observacion="||".join(cambios)
-    )
+            anexo=instance,
+            usuario_anterior=usuario_anterior,
+            usuario_nuevo=usuario_nuevo,
+            accion="MODIFICACION",
+            modificado_por=get_current_audit_username(),
+            observacion="||".join(cambios)
+        )
+
+    if anexo_previo.usuario_id != instance.usuario_id:
+        referencia = f"Anexo {instance.numero_anexo}"
+        registrar_relacion_usuario(
+            anexo_previo.usuario_id,
+            accion='LIBERACION_ANEXO',
+            campo='Anexo asignado',
+            anterior=referencia,
+            actual='Sin anexo asignado',
+            modulo='Anexos',
+            objeto_id=instance.pk,
+        )
+        registrar_relacion_usuario(
+            instance.usuario_id,
+            accion='ASIGNACION_ANEXO',
+            campo='Anexo asignado',
+            anterior='Sin anexo asignado',
+            actual=referencia,
+            modulo='Anexos',
+            objeto_id=instance.pk,
+        )
 
 
 @receiver(post_save, sender=Anexo)
@@ -1606,7 +1660,31 @@ def registrar_creacion_anexo(sender, instance, created, **kwargs):
         observacion=(
             f"Anexo creado con estado {instance.estado}"
         )
-    )     
+    )
+
+    if instance.usuario_id:
+        registrar_relacion_usuario(
+            instance.usuario_id,
+            accion='ASIGNACION_ANEXO',
+            campo='Anexo asignado',
+            anterior='Sin anexo asignado',
+            actual=f"Anexo {instance.numero_anexo}",
+            modulo='Anexos',
+            objeto_id=instance.pk,
+        )
+
+
+@receiver(pre_delete, sender=Anexo)
+def registrar_eliminacion_anexo_en_usuario(sender, instance, **kwargs):
+    registrar_relacion_usuario(
+        instance.usuario_id,
+        accion='ELIMINACION_ANEXO',
+        campo='Anexo asignado',
+        anterior=f"Anexo {instance.numero_anexo}",
+        actual='Eliminado',
+        modulo='Anexos',
+        objeto_id=instance.pk,
+    )
 
 # --- HISTORIAL DE EQUIPAMIENTO ---
 
@@ -1731,6 +1809,77 @@ def track_historial_equipo(sender, instance, **kwargs):
             modificado_por=get_current_audit_username(),
             observacion="||".join(cambios)
         )
+
+    if equipo_previo.usuario_id != instance.usuario_id:
+        identificador = (
+            instance.numero_serie
+            or instance.af
+            or instance.hostname
+            or f'ID {instance.pk}'
+        )
+        referencia = f"{instance.tipo}: {instance.marca} {instance.modelo} ({identificador})"
+        registrar_relacion_usuario(
+            equipo_previo.usuario_id,
+            accion='LIBERACION_EQUIPO',
+            campo='Equipo asignado',
+            anterior=referencia,
+            actual='Sin asignar',
+            modulo='Equipos',
+            objeto_id=instance.pk,
+        )
+        registrar_relacion_usuario(
+            instance.usuario_id,
+            accion='ASIGNACION_EQUIPO',
+            campo='Equipo asignado',
+            anterior='Sin asignar',
+            actual=referencia,
+            modulo='Equipos',
+            objeto_id=instance.pk,
+        )
+
+
+@receiver(post_save, sender=Equipamiento)
+def registrar_asignacion_inicial_equipo(sender, instance, created, **kwargs):
+    if not created:
+        return
+
+    identificador = (
+        instance.numero_serie
+        or instance.af
+        or instance.hostname
+        or f'ID {instance.pk}'
+    )
+    referencia = f"{instance.tipo}: {instance.marca} {instance.modelo} ({identificador})"
+    registrar_relacion_usuario(
+        instance.usuario_id,
+        accion='ASIGNACION_EQUIPO',
+        campo='Equipo asignado',
+        anterior='Sin asignar',
+        actual=referencia,
+        modulo='Equipos',
+        objeto_id=instance.pk,
+    )
+
+
+@receiver(pre_delete, sender=Equipamiento)
+def registrar_eliminacion_equipo_en_usuario(sender, instance, **kwargs):
+    identificador = (
+        instance.numero_serie
+        or instance.af
+        or instance.hostname
+        or f'ID {instance.pk}'
+    )
+    referencia = f"{instance.tipo}: {instance.marca} {instance.modelo} ({identificador})"
+    registrar_relacion_usuario(
+        instance.usuario_id,
+        accion='ELIMINACION_EQUIPO',
+        campo='Equipo asignado',
+        anterior=referencia,
+        actual='Eliminado',
+        modulo='Equipos',
+        objeto_id=instance.pk,
+    )
+
 
 # --- SINCRONIZACIÓN Y RESTRICCIÓN DE DUPLICIDAD IP ---
 
@@ -1949,6 +2098,22 @@ def track_historial_usuario(sender, instance, **kwargs):
                     observacion="||".join(cambios)
                 )
 
+
+@receiver(post_save, sender=Usuario)
+def registrar_creacion_usuario(sender, instance, created, **kwargs):
+    if not created:
+        return
+
+    HistorialUsuario.objects.create(
+        usuario=instance,
+        accion='CREACION',
+        modificado_por=get_current_audit_username(),
+        observacion=(
+            f'Usuario creado:::N/I:::{instance.nombre_completo}'
+        ),
+    )
+
+
 def liberar_equipos_usuario(usuario):
     """Libera y audita cada equipo asociado dentro de una transacciÃ³n."""
     with transaction.atomic():
@@ -1972,6 +2137,12 @@ def liberar_equipos_usuario(usuario):
 @receiver(post_save, sender=Usuario)
 def auto_sync_usuario(sender, instance, created, **kwargs):
 
+    # Baja y Licencia Médica liberan la IP. La licencia conserva el resto
+    # de los activos asignados al usuario.
+    if instance.estado in {'BAJA', 'LICENCIA'}:
+        from .services.asignacion_ips import assign_ip_to_user
+        assign_ip_to_user(instance.pk, None)
+
     # =====================================
     # USUARIO DADO DE BAJA
     # =====================================
@@ -1979,10 +2150,6 @@ def auto_sync_usuario(sender, instance, created, **kwargs):
 
         # Liberar todos sus equipos
         liberar_equipos_usuario(instance)
-
-        # Liberar su IP y cerrar la asignación activa.
-        from .services.asignacion_ips import assign_ip_to_user
-        assign_ip_to_user(instance.pk, None)
 
         # Liberar su anexo
         anexo = Anexo.objects.filter(

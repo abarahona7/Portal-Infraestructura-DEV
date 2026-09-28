@@ -420,6 +420,47 @@ export const exportIpsExcel = ({
     ],
   });
 };
+
+export const exportIpHistoryExcel = ({ ip, rows }) => {
+  return exportToExcel({
+    rows,
+    fileName: `historial_ip_${ip.direccion_ip}`,
+    sheetName: 'Historial IP',
+    columns: [
+      {
+        key: 'direccion_ip',
+        header: 'DirecciÃ³n IP',
+      },
+      {
+        key: 'accion_nombre',
+        header: 'Movimiento',
+        value: (entry) => entry.accion_nombre || entry.accion || 'N/I',
+      },
+      {
+        key: 'tipo_nombre',
+        header: 'Tipo de asignaciÃ³n',
+        value: (entry) => entry.tipo_nombre || 'Sin tipo registrado',
+      },
+      {
+        key: 'propietario_nombre',
+        header: 'Propietario',
+        value: (entry) => entry.propietario_nombre || 'Sin propietario',
+      },
+      {
+        key: 'realizado_por',
+        header: 'Realizado por',
+        value: (entry) => entry.realizado_por || 'No registrado',
+      },
+      {
+        key: 'fecha_movimiento',
+        header: 'Fecha y hora',
+        value: (entry) => entry.fecha_movimiento
+          ? new Date(entry.fecha_movimiento).toLocaleString('es-CL')
+          : 'Fecha no registrada',
+      },
+    ],
+  });
+};
 /* =========================
    SERVIDORES
 ========================= */

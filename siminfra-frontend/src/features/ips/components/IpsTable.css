@@ -81,7 +81,7 @@
   text-align: center;
   white-space: nowrap;
 
-  min-width: 90px;
+  min-width: 126px;
 }
 
 .ips-actions {
@@ -124,6 +124,10 @@
 
 .ip-action-edit {
   color: #2563eb;
+}
+
+.ip-action-history {
+  color: #d97706;
 }
 
 .ip-action-delete {

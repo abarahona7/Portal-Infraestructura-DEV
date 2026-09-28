@@ -16,6 +16,7 @@ export default function ModuleTable({
   onSelectUser,
   onShowUserHistory,
   onShowEquipmentHistory,
+  onShowIpHistory,
   onEdit,
   onDelete,
   onToggleProfileStatus,
@@ -74,6 +75,7 @@ export default function ModuleTable({
       <IpsTable
         ips={data}
         renderIpStatusBadge={renderIpStatusBadge}
+        onShowHistory={onShowIpHistory}
         onEdit={onEdit}
         onDelete={onDelete}
       />

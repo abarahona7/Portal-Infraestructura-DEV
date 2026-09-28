@@ -4,6 +4,7 @@ import EquipoHistoryModal from '../../features/equipos/components/EquipoHistoryM
 import AnexoHistoryModal from '../../features/anexos/components/AnexoHistoryModal';
 import PCGenericoHistoryModal from '../../features/pcsGenericos/components/PCGenericoHistoryModal';
 import ServidorHistoryModal from '../../features/servidores/components/ServidorHistoryModal';
+import IpHistoryModal from '../../features/ips/components/IpHistoryModal';
 
 export default function ModuleDetailModals({
   selectedUser,
@@ -20,6 +21,8 @@ export default function ModuleDetailModals({
   onClosePCGenericoHistory,
   historyServidor,
   onCloseServidorHistory,
+  historyIp,
+  onCloseIpHistory,
   role,
   onRevealSecret,
 }) {
@@ -57,6 +60,11 @@ export default function ModuleDetailModals({
       <ServidorHistoryModal
         servidor={historyServidor}
         onClose={onCloseServidorHistory}
+      />
+
+      <IpHistoryModal
+        ip={historyIp}
+        onClose={onCloseIpHistory}
       />
     </>
   );

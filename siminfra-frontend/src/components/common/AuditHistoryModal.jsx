@@ -3,6 +3,7 @@ import {
   CalendarClock,
   ChevronDown,
   ChevronUp,
+  Download,
   History,
   UserRound,
   X,
@@ -35,6 +36,8 @@ export default function AuditHistoryModal({
   emptyMessage,
   onClose,
   getMetaRows,
+  onExport,
+  exportLabel = 'Exportar Excel',
 }) {
   const [expanded, setExpanded] = useState({});
 
@@ -86,15 +89,28 @@ export default function AuditHistoryModal({
             </div>
           </div>
 
-          <button
-            type="button"
-            className="audit-history-close"
-            onClick={onClose}
-            aria-label="Cerrar historial"
-            title="Cerrar"
-          >
-            <X size={20} />
-          </button>
+          <div className="audit-history-header-actions">
+            {onExport && (
+              <button
+                type="button"
+                className="audit-history-export"
+                onClick={onExport}
+              >
+                <Download size={17} />
+                <span>{exportLabel}</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="audit-history-close"
+              onClick={onClose}
+              aria-label="Cerrar historial"
+              title="Cerrar"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </header>
 
         <div className="audit-history-body">

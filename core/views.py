@@ -162,7 +162,10 @@ class SubAreaViewSet(
         super().perform_destroy(instance)
 
 
-class IPViewSet(viewsets.ModelViewSet):
+class IPViewSet(
+    AuditUserMixin,
+    viewsets.ModelViewSet
+):
     permission_classes = [PortalRolePermission]
     queryset = IP.objects.select_related('usuario').all()
     serializer_class = IPSerializer

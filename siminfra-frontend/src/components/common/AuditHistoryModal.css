@@ -83,6 +83,36 @@
   transition: background 160ms ease, transform 160ms ease;
 }
 
+.audit-history-header-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.audit-history-export {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid rgba(147, 197, 253, 0.28);
+  border-radius: 11px;
+  color: #dbeafe;
+  background: rgba(37, 99, 235, 0.18);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.audit-history-export:hover {
+  background: rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+}
+
 .audit-history-close:hover {
   background: rgba(255, 255, 255, 0.15);
   transform: translateY(-1px);
@@ -335,6 +365,20 @@
 
   .audit-history-header {
     padding: 17px 16px;
+  }
+
+  .audit-history-export {
+    width: 44px;
+    padding: 0;
+  }
+
+  .audit-history-export span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .audit-history-body {

@@ -73,6 +73,7 @@ import DepartamentosSubareasPage
 
 import { formatEquipmentType } from './utils/formatEquipmentType';
 import apiClient from './api/client';
+import { getIpAssignmentHistory } from './api/ipsApi';
 import { getItemDetailsByTab } from './services/getItemService';
 
 import {
@@ -253,6 +254,9 @@ export default function App() {
 
     historyServidor,
     setHistoryServidor,
+
+    historyIp,
+    setHistoryIp,
   } = useModuleModals();
 
   const {
@@ -465,6 +469,16 @@ export default function App() {
     } catch (error) {
       console.error('Error cargando detalle:', error.response?.data || error);
       showToast('No se pudo cargar el detalle solicitado.', 'error');
+    }
+  };
+
+  const openIpHistory = async (ip) => {
+    try {
+      const historial = await getIpAssignmentHistory(ip.id);
+      setHistoryIp({ ...ip, historial });
+    } catch (error) {
+      console.error('Error cargando historial IP:', error.response?.data || error);
+      showToast('No se pudo cargar el historial de la IP.', 'error');
     }
   };
 
@@ -1151,6 +1165,8 @@ export default function App() {
                     (item) => openDetailedItem('equipos', item, setHistoryEquipo)
                   }
 
+                  onShowIpHistory={openIpHistory}
+
                   onShowAnexoHistory={
                     (item) => openDetailedItem('anexos', item, setHistoryAnexo)
                   }
@@ -1212,6 +1228,10 @@ export default function App() {
             historyServidor
           }
 
+          historyIp={
+            historyIp
+          }
+
           onCloseUser={() =>
             setSelectedUser(null)
           }
@@ -1234,6 +1254,10 @@ export default function App() {
 
           onCloseServidorHistory={() =>
             setHistoryServidor(null)
+          }
+
+          onCloseIpHistory={() =>
+            setHistoryIp(null)
           }
 
           renderUsuarioStatusBadge={

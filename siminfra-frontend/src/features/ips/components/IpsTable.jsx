@@ -1,5 +1,6 @@
 import {
   Edit,
+  History,
   Trash2,
   Network
 } from 'lucide-react';
@@ -9,6 +10,7 @@ import './IpsTable.css';
 export default function IpsTable({
   ips,
   renderIpStatusBadge,
+  onShowHistory,
   onEdit,
   onDelete,
 }) {
@@ -19,6 +21,16 @@ export default function IpsTable({
 
     return (
       <div className="ips-actions">
+        <button
+          type="button"
+          className="ip-action ip-action-history"
+          onClick={() => onShowHistory(ip)}
+          title="Ver historial de asignaciones"
+          aria-label={`Ver historial de ${ip.direccion_ip}`}
+        >
+          <History size={18} />
+        </button>
+
         <button
           type="button"
           className="ip-action ip-action-edit"

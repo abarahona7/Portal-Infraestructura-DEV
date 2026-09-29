@@ -86,6 +86,7 @@ El procedimiento ampliado, su validación por huellas y la vuelta atrás están 
 ```powershell
 .\venv\Scripts\python.exe manage.py check --deploy --settings=config.settings_production
 .\venv\Scripts\python.exe manage.py migrate --check --settings=config.settings_production
+.\venv\Scripts\python.exe manage.py validar_integridad_portal --settings=config.settings_production
 .\venv\Scripts\python.exe manage.py collectstatic --noinput --settings=config.settings_production
 ```
 

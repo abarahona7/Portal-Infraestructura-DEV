@@ -31,6 +31,7 @@ después del cambio.
 ```powershell
 .\venv\Scripts\python.exe manage.py check
 .\venv\Scripts\python.exe manage.py migrate --check
+.\venv\Scripts\python.exe manage.py validar_integridad_portal
 .\venv\Scripts\python.exe manage.py verify_secrets
 ```
 
@@ -109,6 +110,7 @@ datos y restablece las secuencias de claves primarias.
   --salida auditoria-mysql.json `
   --comparar auditoria-sqlite.json `
   --settings=config.settings_production
+.\venv\Scripts\python.exe manage.py validar_integridad_portal --settings=config.settings_production
 ```
 
 El comando termina con error si cambia un conteo, una relación, una huella o el

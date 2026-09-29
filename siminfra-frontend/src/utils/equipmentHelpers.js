@@ -154,7 +154,7 @@ export const getEquipmentIdentifierLabel = (
 export const buildEquipmentStateFromHostname = (
   hostnameValue,
   currentState,
-  usuariosList = []
+  _usuariosList = []
 ) => {
   /*
     Por seguridad, solo buscamos usuario
@@ -168,27 +168,6 @@ export const buildEquipmentStateFromHostname = (
     return {
       ...currentState,
       hostname: '',
-    };
-  }
-
-  const normalizedHostname = hostnameValue
-    .trim()
-    .toLowerCase();
-
-  const matchingUser = usuariosList.find(
-    (usuario) =>
-      usuario.hostname &&
-      usuario.hostname
-        .trim()
-        .toLowerCase() === normalizedHostname
-  );
-
-  if (matchingUser) {
-    return {
-      ...currentState,
-      hostname: hostnameValue,
-      usuario: matchingUser.id,
-      estado: 'ASIGNADO',
     };
   }
 

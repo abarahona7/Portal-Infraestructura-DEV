@@ -6,6 +6,9 @@ export const getInitialCreateItem = (tab) => {
         nombre_completo: '',
         hostname: '',
         cargo: '',
+        rut: '',
+        centro_costo: '',
+        ubicacion: 'Casa Matriz - Quilicura',
         dpto_area: '',
         departamento: null,
         subarea: null,
@@ -25,14 +28,15 @@ export const getInitialCreateItem = (tab) => {
         numero_serie: '',
         hostname: '',
         af: '',
-        usuario: '',
-        fecha_asignacion: '',
         numero_telefono: '',
         imei: '',
         pin: '',
         icloud_cuenta: '',
         icloud_password: '',
-        estado: 'ASIGNADO',
+        estado: 'STOCK',
+        estado_fisico: 'USADO',
+        ubicacion_actual: 'Bodega TI',
+        mac_address: '',
       };
 
     case 'perfiles':

@@ -73,6 +73,8 @@ import DepartamentosSubareasPage
 
 import { formatEquipmentType } from './utils/formatEquipmentType';
 import apiClient from './api/client';
+import NuevoMovimientoModal from './features/movimientos/components/NuevoMovimientoModal';
+import HistorialMovimientosModal from './features/movimientos/components/HistorialMovimientosModal';
 import { getIpAssignmentHistory } from './api/ipsApi';
 import { getItemDetailsByTab } from './services/getItemService';
 
@@ -102,6 +104,8 @@ export default function App() {
   });
 
   const [secretRequest, setSecretRequest] = useState(null);
+  const [movimientoOpen, setMovimientoOpen] = useState(false);
+  const [historialActivo, setHistorialActivo] = useState(null);
 
   const confirmResolverRef = useRef(null);
 
@@ -1061,6 +1065,8 @@ export default function App() {
                     </h2>
                   </div>
 
+                  {!isViewer && <button type="button" className="movimiento-button movimiento-button-primary" onClick={() => setMovimientoOpen(true)}>Nuevo movimiento</button>}
+
                   <div className="equipment-results-count">
                     <strong>
                       {pagination.count}
@@ -1226,6 +1232,7 @@ export default function App() {
                   onShowEquipmentHistory={
                     (item) => openDetailedItem('equipos', item, setHistoryEquipo)
                   }
+                  onShowAssetMovements={setHistorialActivo}
 
                   onShowIpHistory={openIpHistory}
 
@@ -1265,6 +1272,9 @@ export default function App() {
               />
             </>
           )}
+
+        <NuevoMovimientoModal open={movimientoOpen} onClose={() => setMovimientoOpen(false)} onCompleted={() => { refreshAllData(); showToast('Movimiento y acta generados.'); }} />
+        <HistorialMovimientosModal activo={historialActivo} onClose={() => setHistorialActivo(null)} />
 
         {/* MODALES DE DETALLE / HISTORIAL */}
         <ModuleDetailModals

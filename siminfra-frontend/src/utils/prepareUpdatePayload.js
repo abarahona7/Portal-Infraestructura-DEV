@@ -81,6 +81,14 @@ export const prepareUpdatePayload = (
   ========================= */
 
   if (tab === 'equipos') {
+    delete payload.usuario;
+    delete payload.estado;
+    delete payload.estado_fisico;
+    delete payload.ubicacion_actual;
+    delete payload.fecha_asignacion;
+    delete payload.accesorios_requeridos;
+    delete payload.token_qr;
+    delete payload.fecha_alta;
     ['marca', 'modelo', 'numero_serie', 'hostname', 'af', 'numero_telefono', 'imei', 'icloud_cuenta', 'accesorios'].forEach((field) => {
       if (typeof payload[field] === 'string') {
         payload[field] = payload[field].trim();
@@ -96,14 +104,6 @@ export const prepareUpdatePayload = (
     if (!payload.accesorios) payload.accesorios = null;
     if (payload.icloud_cuenta) payload.icloud_cuenta = payload.icloud_cuenta.toLowerCase();
 
-    if (!payload.usuario) {
-      payload.estado = 'STOCK';
-      payload.fecha_asignacion = null;
-    } else if (
-      payload.estado === 'STOCK'
-    ) {
-      payload.estado = 'ASIGNADO';
-    }
   }
 
 

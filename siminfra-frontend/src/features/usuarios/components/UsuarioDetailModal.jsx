@@ -261,10 +261,10 @@ export default function UsuarioDetailModal({
               disabled={generatingActa || !hasAssignedEquipment}
               title={
                 hasAssignedEquipment
-                  ? 'Crear Acta de Entrega'
+                  ? 'Descargar resumen actual (sin folio)'
                   : actaUnavailableMessage
               }
-              aria-label="Crear Acta de Entrega"
+              aria-label="Descargar resumen actual sin folio"
               aria-describedby={
                 hasAssignedEquipment
                   ? undefined
@@ -276,7 +276,7 @@ export default function UsuarioDetailModal({
               <span>
                 {generatingActa
                   ? 'Generando...'
-                  : 'Crear Acta de Entrega'}
+                  : 'Resumen actual (sin folio)'}
               </span>
             </button>
 

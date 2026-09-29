@@ -41,6 +41,9 @@ export const prepareCreatePayload = (
   ========================= */
 
   if (tab === 'equipos') {
+    delete payload.usuario;
+    delete payload.fecha_asignacion;
+    payload.estado = 'STOCK';
     ['marca', 'modelo', 'numero_serie', 'hostname', 'af', 'numero_telefono', 'imei', 'icloud_cuenta', 'accesorios'].forEach((field) => {
       if (typeof payload[field] === 'string') {
         payload[field] = payload[field].trim();

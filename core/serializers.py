@@ -524,6 +524,7 @@ class HistorialEquipoSerializer(serializers.ModelSerializer):
 
 
 class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
+    accesorios_requeridos = serializers.SerializerMethodField()
     internal_model_fields = (
         'numero_serie_normalizado',
         'hostname_computador_normalizado',
@@ -552,6 +553,10 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
         model = Equipamiento
         fields = '__all__'
 
+    def get_accesorios_requeridos(self, obj):
+        from .services.asset_lifecycle_service import accesorios_requeridos
+        return accesorios_requeridos(obj)
+
     def get_icloud_password_configured(self, obj):
         return bool(obj.icloud_password)
 
@@ -579,6 +584,15 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
             'instance',
             None
         )
+
+        # Assignment, return and physical state changes need a numbered acta.
+        if instance is None:
+            if attrs.get('usuario') is not None or attrs.get('fecha_asignacion') or attrs.get('estado', 'STOCK') != 'STOCK':
+                raise serializers.ValidationError({'usuario': 'Registre el activo disponible y luego use Nuevo movimiento para asignarlo.'})
+        else:
+            for field in ('usuario', 'fecha_asignacion', 'estado', 'estado_fisico', 'ubicacion_actual'):
+                if field in attrs and attrs[field] != getattr(instance, field):
+                    raise serializers.ValidationError({field: 'Use Nuevo movimiento para cambiar asignación, estado o ubicación.'})
 
         serie = attrs.get('numero_serie')
         af = attrs.get('af')
@@ -772,6 +786,16 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
 
 
 class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
+    def validate_rut(self, value):
+        if not value:
+            return None
+        from .rut_validator import validar_rut
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        try:
+            return validar_rut(value)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.message_dict.get('rut', exc.messages)) from exc
+
     internal_model_fields = (
         'nombre_completo_normalizado',
         'usuario_red_normalizado',
@@ -927,6 +951,9 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
 
     def validate(self, attrs):
         instance = getattr(self, 'instance', None)
+
+        if instance and attrs.get('estado') == 'BAJA' and instance.estado != 'BAJA' and instance.equipos.exists():
+            raise serializers.ValidationError({'estado': 'Registre la devolución de los activos antes de dar de baja al colaborador.'})
 
         for field in (
             'nombre_completo',
@@ -1437,6 +1464,12 @@ class PCGenericoSerializer(serializers.ModelSerializer):
 # =========================================
 
 class EquipamientoListSerializer(serializers.ModelSerializer):
+    accesorios_requeridos = serializers.SerializerMethodField()
+
+    def get_accesorios_requeridos(self, obj):
+        from .services.asset_lifecycle_service import accesorios_requeridos
+        return accesorios_requeridos(obj)
+
     usuario_red = serializers.ReadOnlyField(source='usuario.usuario_red')
     usuario_nombre = serializers.ReadOnlyField(source='usuario.nombre_completo')
     icloud_password_configured = serializers.SerializerMethodField()
@@ -1450,7 +1483,8 @@ class EquipamientoListSerializer(serializers.ModelSerializer):
             'modelo', 'numero_serie', 'hostname', 'af', 'accesorios',
             'fecha_asignacion', 'estado', 'numero_telefono', 'imei',
             'icloud_cuenta', 'icloud_password_configured', 'pin_configured',
-            'ip_asignada',
+            'ip_asignada', 'estado_fisico', 'mac_address', 'ubicacion_actual',
+            'accesorios_requeridos', 'fecha_alta', 'token_qr',
         ]
 
     def get_icloud_password_configured(self, obj):
@@ -1482,7 +1516,8 @@ class UsuarioListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'nombre_completo', 'usuario_red', 'correo_corp', 'dpto_area',
             'departamento', 'departamento_nombre', 'subarea', 'subarea_nombre',
-            'cargo', 'hostname', 'estado', 'gmail', 'celular', 'telefono',
+            'cargo', 'hostname', 'estado', 'rut', 'centro_costo', 'ubicacion',
+            'gmail', 'celular', 'telefono',
             'anexo', 'sif', 'vpn_cisco', 'equipos', 'ip_actual', 'anexo_actual',
             'password_gmail_configured', 'password_vpn_configured',
         ]

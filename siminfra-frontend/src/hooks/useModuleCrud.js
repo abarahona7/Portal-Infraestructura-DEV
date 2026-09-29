@@ -52,7 +52,7 @@ const getUpdateConfirmation = (tab, editingItem, data) => {
       title: 'Guardar cambios',
       message: (
         'Al dar de baja al usuario se realizarán estas acciones:\n\n'
-        + '• Se desasignarán sus equipos e insumos.\n'
+        + '• Devuelve los equipos e insumos desde Nuevo movimiento antes de continuar.\n'
         + '• Se liberará su dirección IP.\n'
         + '• Se liberará su anexo.\n\n'
         + 'Antes de confirmar, valida la devolución física de los equipos e insumos.'

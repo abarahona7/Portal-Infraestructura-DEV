@@ -23,7 +23,15 @@ ESTADOS_EQUIPO = [
     ('ASIGNADO', 'Asignado'),
     ('STOCK', 'Stock / Disponible'),
     ('MANTENCION', 'En Mantención'),
+    ('PRESTAMO', 'En Préstamo'),
     ('BAJA', 'Dado de Baja'),
+]
+
+ESTADOS_FISICOS = [
+    ('NUEVO', 'Nuevo'),
+    ('SEMINUEVO', 'Seminuevo'),
+    ('USADO', 'Usado'),
+    ('DANADO', 'Dañado'),
 ]
 
 TIPOS_EQUIPO = [
@@ -178,6 +186,20 @@ class Usuario(models.Model):
         blank=True,
         related_name='usuarios',
     )
+    rut = models.CharField(max_length=12, null=True, blank=True)
+    rut_normalizado = models.CharField(
+        max_length=12,
+        null=True,
+        blank=True,
+        unique=True,
+        editable=False,
+    )
+    centro_costo = models.CharField(max_length=50, null=True, blank=True)
+    ubicacion = models.CharField(
+        max_length=100,
+        default='Casa Matriz - Quilicura',
+        blank=True,
+    )
     cargo = models.CharField(max_length=100, null=True, blank=True)
     hostname = models.CharField(max_length=50, null=True, blank=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='ACTIVO', null=True, blank=True)
@@ -216,6 +238,10 @@ class Usuario(models.Model):
                     'subarea': 'La subárea seleccionada no pertenece al departamento indicado.'
                 })
 
+        if self.rut:
+            from .rut_validator import validar_rut
+            self.rut = validar_rut(self.rut)
+
     def save(self, *args, **kwargs):
         self.nombre_completo = _normalize_spaces(self.nombre_completo) or ''
         self.usuario_red = (_normalize_spaces(self.usuario_red) or '').lower()
@@ -223,6 +249,9 @@ class Usuario(models.Model):
         self.dpto_area = _normalize_spaces(self.dpto_area) or ''
         self.cargo = _normalize_spaces(self.cargo) if self.cargo else self.cargo
         self.hostname = _normalize_spaces(self.hostname) if self.hostname else self.hostname
+        self.rut = _normalize_spaces(self.rut) or None
+        self.centro_costo = _normalize_spaces(self.centro_costo) or None
+        self.ubicacion = _normalize_spaces(self.ubicacion) or 'Casa Matriz - Quilicura'
         self.gmail = (_normalize_spaces(self.gmail) or '').lower() if self.gmail else self.gmail
         self.celular = _normalize_spaces(self.celular) if self.celular else self.celular
         self.telefono = _normalize_spaces(self.telefono) if self.telefono else self.telefono
@@ -236,12 +265,22 @@ class Usuario(models.Model):
             'nombre_completo_normalizado',
             'usuario_red_normalizado',
             'correo_corp_normalizado',
+            'rut',
+            'rut_normalizado',
         )
 
         if self.departamento_id:
             self.dpto_area = self.departamento.nombre
 
+        if self.pk and self.estado == 'BAJA':
+            estado_previo = type(self).objects.filter(pk=self.pk).values_list('estado', flat=True).first()
+            if estado_previo != 'BAJA' and Equipamiento.objects.filter(
+                usuario_id=self.pk, movimientos__isnull=False,
+            ).exists():
+                raise ValidationError({'estado': 'Devuelva los activos con trazabilidad antes de dar de baja al colaborador.'})
+
         self.clean()
+        self.rut_normalizado = self.rut
 
         if self.password_gmail and not is_encrypted(self.password_gmail):
             self.password_gmail = encrypt_val(self.password_gmail)
@@ -680,6 +719,29 @@ class Equipamiento(models.Model):
         blank=True
     )
 
+    estado_fisico = models.CharField(
+        max_length=20,
+        choices=ESTADOS_FISICOS,
+        default='USADO',
+    )
+    mac_address = models.CharField(
+        max_length=30,
+        null=True,
+        blank=True,
+    )
+    ubicacion_actual = models.CharField(
+        max_length=100,
+        default='Bodega TI',
+    )
+    token_qr = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+    )
+    fecha_alta = models.DateTimeField(
+        default=timezone.now,
+    )
+
     class Meta:
         indexes = [
             models.Index(
@@ -689,6 +751,10 @@ class Equipamiento(models.Model):
             models.Index(
                 fields=['usuario', 'tipo'],
                 name='idx_equipo_usr_tipo',
+            ),
+            models.Index(
+                fields=['token_qr'],
+                name='idx_equipo_token_qr',
             ),
         ]
         constraints = [
@@ -701,7 +767,7 @@ class Equipamiento(models.Model):
                     )
                     | models.Q(
                         usuario__isnull=False,
-                        estado__in=['ASIGNADO', 'MANTENCION', 'BAJA'],
+                        estado__in=['ASIGNADO', 'MANTENCION', 'BAJA', 'PRESTAMO'],
                     )
                 ),
                 name='ck_equipo_asignacion_valida',
@@ -710,7 +776,7 @@ class Equipamiento(models.Model):
 
     def clean(self):
         if not self.usuario_id:
-            if self.estado == 'ASIGNADO':
+            if self.estado in ['ASIGNADO', 'PRESTAMO']:
                 self.estado = 'STOCK'
             self.fecha_asignacion = None
         elif self.estado == 'STOCK':
@@ -721,6 +787,10 @@ class Equipamiento(models.Model):
         self.numero_serie = _normalize_spaces(self.numero_serie) or None
         self.hostname = _normalize_spaces(self.hostname) or None
         self.af = _normalize_spaces(self.af) or None
+        self.mac_address = _normalize_spaces(self.mac_address) or None
+        self.ubicacion_actual = _normalize_spaces(self.ubicacion_actual) or 'Bodega TI'
+        if not self.token_qr:
+            self.token_qr = uuid.uuid4()
 
         # =====================================
         # COHERENCIA DE ASIGNACIÓN
@@ -815,6 +885,188 @@ class HistorialEquipo(models.Model):
 
     class Meta:
         ordering = ['-fecha_movimiento']
+
+
+# =========================================
+# TRAZABILIDAD Y CICLO DE VIDA DE ACTIVOS
+# =========================================
+
+class FolioContador(models.Model):
+    anio = models.PositiveSmallIntegerField()
+    tipo_documento = models.CharField(max_length=10, default='ATI')
+    ultimo_folio = models.PositiveIntegerField(default=0)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Contador de Folio'
+        verbose_name_plural = 'Contadores de Folios'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['anio', 'tipo_documento'],
+                name='uniq_folio_anio_tipo',
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.tipo_documento}-{self.anio}: {self.ultimo_folio}"
+
+
+ESTADOS_ACTA = [
+    ('BORRADOR', 'Borrador'),
+    ('GENERADA', 'Generada'),
+    ('PENDIENTE_FIRMA', 'Pendiente de firma'),
+    ('FIRMADA', 'Firmada'),
+    ('CERRADA', 'Cerrada'),
+    ('ANULADA', 'Anulada'),
+]
+
+TIPOS_MOVIMIENTO = [
+    ('ALTA', 'Alta de Activo'),
+    ('ASIGNACION', 'Asignación'),
+    ('REASIGNACION', 'Reasignación'),
+    ('DEVOLUCION', 'Devolución'),
+    ('CAMBIO', 'Cambio de equipo'),
+    ('PRESTAMO', 'Préstamo'),
+    ('INGRESO_REPARACION', 'Ingreso a reparación'),
+    ('SALIDA_REPARACION', 'Salida de reparación'),
+    ('BAJA', 'Baja'),
+]
+
+
+class RegistroInmutableQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise ValidationError('Los documentos y movimientos emitidos son inmutables.')
+
+    def delete(self):
+        raise ValidationError('Los documentos y movimientos emitidos no pueden eliminarse.')
+
+    def bulk_update(self, objs, fields, batch_size=None):
+        raise ValidationError('Los documentos y movimientos emitidos son inmutables.')
+
+    def bulk_create(self, objs, **kwargs):
+        raise ValidationError('Los documentos y movimientos deben registrarse individualmente.')
+
+
+class RegistroInmutable(models.Model):
+    objects = RegistroInmutableQuerySet.as_manager()
+
+    class Meta:
+        abstract = True
+        base_manager_name = 'objects'
+
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            raise ValidationError('Los documentos y movimientos emitidos son inmutables.')
+        # An explicit primary key must never turn an insertion into an UPDATE.
+        kwargs['force_insert'] = True
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError('Los documentos y movimientos emitidos no pueden eliminarse.')
+
+
+class ActaEntrega(RegistroInmutable):
+    folio = models.CharField(max_length=25, unique=True)
+    anio = models.PositiveSmallIntegerField()
+    numero_correlativo = models.PositiveIntegerField()
+    tipo_movimiento = models.CharField(max_length=30, choices=TIPOS_MOVIMIENTO)
+    colaborador = models.ForeignKey(
+        Usuario,
+        on_delete=models.PROTECT,
+        related_name='actas',
+    )
+    usuario_ti = models.ForeignKey(
+        'auth.User',
+        on_delete=models.PROTECT,
+        related_name='actas_emitidas',
+    )
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADOS_ACTA,
+        default='GENERADA',
+    )
+    motivo_anulacion = models.TextField(null=True, blank=True)
+    fecha_emision = models.DateTimeField(default=timezone.now, editable=False)
+    fecha_cierre = models.DateTimeField(null=True, blank=True)
+    hash_verificacion = models.CharField(max_length=64, blank=True, default='', editable=False)
+    snapshot_documento = models.JSONField(default=dict, editable=False)
+    documento_pdf = models.BinaryField(null=True, editable=False)
+    observaciones = models.TextField(null=True, blank=True)
+
+    class Meta:
+        base_manager_name = 'objects'
+        ordering = ['-fecha_emision', '-pk']
+        verbose_name = 'Acta de Entrega y Custodia'
+        verbose_name_plural = 'Actas de Entrega y Custodia'
+        indexes = [
+            models.Index(fields=['folio'], name='idx_acta_folio'),
+            models.Index(fields=['colaborador', '-fecha_emision'], name='idx_acta_colab_fecha'),
+            models.Index(fields=['estado', '-fecha_emision'], name='idx_acta_estado_fecha'),
+        ]
+
+    def __str__(self):
+        return f"{self.folio} - {self.colaborador.nombre_completo} ({self.estado})"
+
+
+class MovimientoActivo(RegistroInmutable):
+    activo = models.ForeignKey(
+        Equipamiento,
+        on_delete=models.PROTECT,
+        related_name='movimientos',
+    )
+    acta = models.ForeignKey(
+        ActaEntrega,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='movimientos',
+    )
+    tipo_movimiento = models.CharField(
+        max_length=30,
+        choices=TIPOS_MOVIMIENTO,
+    )
+    fecha_movimiento = models.DateTimeField(default=timezone.now, editable=False)
+    colaborador_origen = models.ForeignKey(
+        Usuario,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='movimientos_origen',
+    )
+    colaborador_destino = models.ForeignKey(
+        Usuario,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='movimientos_destino',
+    )
+    ubicacion_origen = models.CharField(max_length=100, null=True, blank=True)
+    ubicacion_destino = models.CharField(max_length=100)
+    estado_fisico = models.CharField(max_length=20, choices=ESTADOS_FISICOS, default='USADO')
+    estado_operativo_resultante = models.CharField(max_length=20, choices=ESTADOS_EQUIPO)
+    accesorios_detalle = models.JSONField(default=list, blank=True)
+    observaciones = models.TextField(null=True, blank=True)
+    ejecutado_por = models.CharField(max_length=150)
+    usuario_ti = models.ForeignKey(
+        'auth.User', on_delete=models.PROTECT, null=True,
+        related_name='movimientos_activos_ejecutados',
+    )
+    snapshot = models.JSONField(default=dict, editable=False)
+
+    class Meta:
+        base_manager_name = 'objects'
+        ordering = ['-fecha_movimiento', '-pk']
+        verbose_name = 'Movimiento de Activo'
+        verbose_name_plural = 'Movimientos de Activos'
+        indexes = [
+            models.Index(fields=['activo', '-fecha_movimiento'], name='idx_mov_act_fecha'),
+            models.Index(fields=['colaborador_destino', '-fecha_movimiento'], name='idx_mov_coldest_fec'),
+            models.Index(fields=['tipo_movimiento', '-fecha_movimiento'], name='idx_mov_tipo_fec'),
+        ]
+
+    def __str__(self):
+        return f"{self.tipo_movimiento} - {self.activo} ({self.fecha_movimiento.strftime('%Y-%m-%d %H:%M')})"
+
 
 class PerfilGenerico(models.Model):
     nombre = models.CharField(max_length=150, null=True, blank=True)
@@ -1294,7 +1546,7 @@ class SecurityAuditLog(models.Model):
     object_id_text = models.CharField(max_length=80, null=True, blank=True)
     secret_type = models.CharField(max_length=80, null=True, blank=True)
     success = models.BooleanField(default=False)
-    detail = models.CharField(max_length=255, null=True, blank=True)
+    detail = models.TextField(null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

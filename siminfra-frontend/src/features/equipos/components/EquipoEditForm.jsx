@@ -7,7 +7,6 @@ import {
 export default function EquipoEditForm({
   equipo,
   onChange,
-  usuarios,
   formatEquipmentType,
   onHostnameChange,
 }) {
@@ -49,9 +48,6 @@ export default function EquipoEditForm({
   const esMac =
     tipoActual === 'Mac';
 
-  const usuariosAsignables = usuarios.filter(
-    (usuario) => usuario.estado === 'ACTIVO'
-  );
 
   const handleTipoChange = (nuevoTipo) => {
     const nuevoEstado =
@@ -471,7 +467,7 @@ export default function EquipoEditForm({
           >
             Hostname
             {' '}
-            (Autocompleta usuario asignado)
+            (identificador del equipo)
           </label>
 
           <input
@@ -520,6 +516,10 @@ export default function EquipoEditForm({
         />
       </div>
 
+      <div><label style={labelStyle}>Estado físico</label><input value={equipo.estado_fisico || 'USADO'} disabled style={inputStyle} /></div>
+      <div><label style={labelStyle}>Ubicación actual</label><input value={equipo.ubicacion_actual || ''} disabled style={inputStyle} /></div>
+      {usaHostname && <div><label style={labelStyle}>MAC Address</label><input aria-label="MAC Address" value={equipo.mac_address || ''} maxLength={30} onChange={(e) => updateField('mac_address', e.target.value)} style={inputStyle} placeholder="AA:BB:CC:DD:EE:FF" /></div>}
+
       {/* =========================
           ACCESORIOS
       ========================= */}
@@ -549,112 +549,7 @@ export default function EquipoEditForm({
         />
       </div>
 
-      {/* =========================
-          USUARIO
-      ========================= */}
-
-      <div>
-        <label
-          style={{
-            ...labelStyle,
-            color: '#2563eb',
-          }}
-        >
-          Asignar a Usuario
-        </label>
-
-        <select
-          aria-label="Usuario asignado"
-          value={equipo.usuario || ''}
-          onChange={(e) =>
-            updateField(
-              'usuario',
-              e.target.value || null
-            )
-          }
-          style={inputStyle}
-        >
-          <option value="">
-            Sin Asignar (Stock)
-          </option>
-
-          {usuariosAsignables.map((usuario) => (
-            <option
-              key={usuario.id}
-              value={usuario.id}
-            >
-              {usuario.nombre_completo}
-              {' '}
-              ({usuario.usuario_red})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* =========================
-          FECHA
-      ========================= */}
-
-      <div>
-        <label style={labelStyle}>
-          Fecha de Asignación
-        </label>
-
-        <input
-          aria-label="Fecha de asignación"
-          type="date"
-          value={
-            equipo.fecha_asignacion || ''
-          }
-          onChange={(e) =>
-            updateField(
-              'fecha_asignacion',
-              e.target.value
-            )
-          }
-          style={inputStyle}
-        />
-      </div>
-
-      {/* =========================
-          ESTADO
-      ========================= */}
-
-      <div>
-        <label style={labelStyle}>
-          Estado
-        </label>
-
-        <select
-          aria-label="Estado del equipo"
-          value={
-            equipo.estado || 'ASIGNADO'
-          }
-          onChange={(e) =>
-            updateField(
-              'estado',
-              e.target.value
-            )
-          }
-          style={inputStyle}
-        >
-          <option value="ASIGNADO">
-            Asignado
-          </option>
-
-          <option value="STOCK">
-            Stock / Disponible
-          </option>
-
-          <option value="MANTENCION">
-            En Mantención
-          </option>
-
-          <option value="BAJA">
-            Dado de Baja
-          </option>
-        </select>
-      </div>
+      <p style={{ color: '#475569', fontSize: '0.85rem' }}>Asignación y estado: {equipo.usuario_nombre || 'Disponible'} · {equipo.estado}. Los cambios se registran mediante «Nuevo movimiento».</p>
     </>
   );
 }

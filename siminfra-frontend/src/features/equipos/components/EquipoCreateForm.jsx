@@ -7,7 +7,6 @@ import {
 export default function EquipoCreateForm({
   equipo,
   onChange,
-  usuarios,
   formatEquipmentType,
   onHostnameChange,
 }) {
@@ -49,9 +48,6 @@ export default function EquipoCreateForm({
   const esMac =
     tipoActual === 'Mac';
 
-  const usuariosAsignables = usuarios.filter(
-    (usuario) => usuario.estado === 'ACTIVO'
-  );
 
   const handleTipoChange = (nuevoTipo) => {
     const nuevoEstado =
@@ -479,7 +475,7 @@ export default function EquipoCreateForm({
           >
             Hostname
             {' '}
-            (Autocompleta usuario asignado)
+            (identificador del equipo)
           </label>
 
           <input
@@ -528,6 +524,10 @@ export default function EquipoCreateForm({
         />
       </div>
 
+      <div><label style={labelStyle}>Estado físico</label><select aria-label="Estado físico" value={equipo.estado_fisico || 'USADO'} onChange={(e) => updateField('estado_fisico', e.target.value)} style={inputStyle}><option value="NUEVO">Nuevo</option><option value="SEMINUEVO">Seminuevo</option><option value="USADO">Usado</option><option value="DANADO">Dañado</option></select></div>
+      <div><label style={labelStyle}>Ubicación inicial</label><input aria-label="Ubicación inicial" value={equipo.ubicacion_actual || ''} maxLength={100} onChange={(e) => updateField('ubicacion_actual', e.target.value)} style={inputStyle} /></div>
+      {usaHostname && <div><label style={labelStyle}>MAC Address</label><input aria-label="MAC Address" value={equipo.mac_address || ''} maxLength={30} onChange={(e) => updateField('mac_address', e.target.value)} style={inputStyle} placeholder="AA:BB:CC:DD:EE:FF" /></div>}
+
       {/* =========================
           ACCESORIOS
       ========================= */}
@@ -557,72 +557,7 @@ export default function EquipoCreateForm({
         />
       </div>
 
-      {/* =========================
-          USUARIO
-      ========================= */}
-
-      <div>
-        <label
-          style={{
-            ...labelStyle,
-            color: '#2563eb',
-          }}
-        >
-          Asignar a Usuario
-        </label>
-
-        <select
-          aria-label="Usuario asignado"
-          value={equipo.usuario || ''}
-          onChange={(e) =>
-            updateField(
-              'usuario',
-              e.target.value || null
-            )
-          }
-          style={inputStyle}
-        >
-          <option value="">
-            Sin Asignar (Stock)
-          </option>
-
-          {usuariosAsignables.map((usuario) => (
-            <option
-              key={usuario.id}
-              value={usuario.id}
-            >
-              {usuario.nombre_completo}
-              {' '}
-              ({usuario.usuario_red})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* =========================
-          FECHA
-      ========================= */}
-
-      <div>
-        <label style={labelStyle}>
-          Fecha de Asignación
-        </label>
-
-        <input
-          aria-label="Fecha de asignación"
-          type="date"
-          value={
-            equipo.fecha_asignacion || ''
-          }
-          onChange={(e) =>
-            updateField(
-              'fecha_asignacion',
-              e.target.value
-            )
-          }
-          style={inputStyle}
-        />
-      </div>
+      <p style={{ color: '#475569', fontSize: '0.85rem' }}>El activo se registra disponible. Para entregarlo use «Nuevo movimiento» y se generará su acta con folio.</p>
     </>
   );
 }

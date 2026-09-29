@@ -1005,3 +1005,91 @@ def generar_acta_entrega_pdf(
     buffer.seek(0)
 
     return buffer
+
+def generar_acta_custodia_pdf(snapshot):
+    """Render a historical acta strictly from its persisted, immutable snapshot."""
+    from xml.sax.saxutils import escape
+    from reportlab.platypus import SimpleDocTemplate
+
+    def plain(value, fallback='—'):
+        value = str(value or '').strip()
+        return escape(value) if value else fallback
+
+    def row(label, value):
+        return [Paragraph(f'<b>{plain(label)}</b>', small), Paragraph(plain(value), small)]
+
+    colaborador = snapshot.get('colaborador') or {}
+    activo = snapshot.get('activo') or {}
+    operador = snapshot.get('usuario_ti') or {}
+    accesorios = snapshot.get('accesorios') or []
+    fecha = snapshot.get('fecha_emision', '')[:10]
+    fecha = '/'.join(reversed(fecha.split('-'))) if len(fecha) == 10 else fecha
+    tipo = snapshot.get('tipo_movimiento') or ''
+    title_style = ParagraphStyle('ItamTitle', fontName='Helvetica-Bold', fontSize=12,
+                                 leading=15, alignment=TA_CENTER, spaceAfter=11)
+    heading = ParagraphStyle('ItamHeading', fontName='Helvetica-Bold', fontSize=9,
+                             leading=12, textColor=BLUE, spaceBefore=10, spaceAfter=5)
+    small = ParagraphStyle('ItamText', fontName='Helvetica', fontSize=8.5, leading=11,
+                           textColor=TEXT_COLOR, wordWrap='CJK')
+    story = [Paragraph('ACTA DE ASIGNACIÓN Y CUSTODIA DE ACTIVO TI', title_style)]
+    story.append(Paragraph(f"<b>Folio:</b> {plain(snapshot.get('folio'))} &nbsp;&nbsp; "
+                           f"<b>Fecha:</b> {plain(fecha)} &nbsp;&nbsp; "
+                           f"<b>Movimiento:</b> {plain(tipo)}", small))
+    story.append(Paragraph(f"<b>Ubicación:</b> {plain(snapshot.get('ubicacion_destino'))}", small))
+    story.append(Paragraph('DATOS DEL COLABORADOR', heading))
+    col_table = Table([
+        row('Nombre', colaborador.get('nombre_completo')),
+        row('RUT', colaborador.get('rut')),
+        row('Área / cargo', f"{colaborador.get('area') or ''} / {colaborador.get('cargo') or ''}"),
+        row('Correo', colaborador.get('correo_corp')),
+        row('Ubicación', colaborador.get('ubicacion')),
+    ], colWidths=[3.2 * cm, 14.6 * cm], hAlign='LEFT')
+    col_table.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                                   ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+                                   ('TOPPADDING', (0, 0), (-1, -1), 2)]))
+    story.append(col_table)
+    story.append(Paragraph('DATOS DEL ACTIVO', heading))
+    activo_rows = [
+        row('Tipo / marca / modelo', ' / '.join(str(activo.get(k) or '') for k in ('tipo', 'marca', 'modelo'))),
+        row('Serie / activo fijo', f"{activo.get('numero_serie') or '—'} / {activo.get('af') or '—'}"),
+    ]
+    for key, label in (('imei', 'IMEI'), ('mac_address', 'MAC'), ('hostname', 'Hostname')):
+        if activo.get(key):
+            activo_rows.append(row(label, activo[key]))
+    activo_rows.extend([
+        row('Estado físico', snapshot.get('estado_fisico')),
+        row('Estado operativo', snapshot.get('estado_operativo_resultante')),
+        row('Accesorios', ', '.join(
+            f"{a.get('nombre', '')}{' (faltante: ' + a.get('nota', '') + ')' if not a.get('entregado') else ''}"
+            for a in accesorios) or 'Sin accesorios registrados'),
+        row('Observaciones', snapshot.get('observaciones')),
+    ])
+    activo_table = Table(activo_rows, colWidths=[3.2 * cm, 14.6 * cm], hAlign='LEFT')
+    activo_table.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                                     ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+                                     ('TOPPADDING', (0, 0), (-1, -1), 2)]))
+    story.append(activo_table)
+    story.append(Paragraph('CONDICIÓN DE CUSTODIA', heading))
+    story.append(Paragraph(
+        'El colaborador recibe el activo y sus accesorios en el estado señalado. '
+        'Se responsabiliza de su cuidado y buen uso, y se compromete a devolverlos '
+        'cuando la organización lo solicite, ante un cambio de funciones o al '
+        'término de la relación laboral.', small))
+    story.append(Spacer(1, 1.0 * cm))
+    firmas = Table([[
+        Paragraph(f"________________________<br/><b>Entrega</b><br/>{plain(operador.get('nombre'))}", small),
+        Paragraph(f"________________________<br/><b>Recibe</b><br/>{plain(colaborador.get('nombre_completo'))}", small),
+        Paragraph('________________________<br/><b>V°B°</b><br/>Nombre y firma', small),
+    ]], colWidths=[5.95 * cm] * 3)
+    firmas.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                                ('ALIGN', (0, 0), (-1, -1), 'CENTER')]))
+    story.append(firmas)
+    buffer = BytesIO()
+    document = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=1.6 * cm,
+                                 rightMargin=1.6 * cm, topMargin=3.2 * cm,
+                                 bottomMargin=1.8 * cm,
+                                 title=f"Acta de Asignación y Custodia {snapshot.get('folio', '')}")
+    document.build(story, onFirstPage=_draw_page_background,
+                   onLaterPages=_draw_page_background)
+    buffer.seek(0)
+    return buffer

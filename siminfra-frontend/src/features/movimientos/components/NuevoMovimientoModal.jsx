@@ -5,6 +5,7 @@ import MovimientoShell from './MovimientoShell';
 
 const TYPES = [
   ['ASIGNACION', 'Asignación'],
+  ['PRESTAMO', 'Préstamo'],
   ['DEVOLUCION', 'Devolución'],
   ['REASIGNACION', 'Reasignación'],
   ['INGRESO_REPARACION', 'Ingreso a reparación'],
@@ -18,15 +19,15 @@ const initial = {
   accesorios_detalle: [], observaciones: '',
 };
 
-const receivesAsset = (kind) => ['ASIGNACION', 'REASIGNACION'].includes(kind);
+const receivesAsset = (kind) => ['ASIGNACION', 'PRESTAMO', 'REASIGNACION'].includes(kind);
 const needsOrigin = (kind, asset) => ['DEVOLUCION', 'REASIGNACION'].includes(kind)
   || (kind === 'INGRESO_REPARACION' && Boolean(asset?.usuario));
-const usesChecklist = (kind, asset) => ['ASIGNACION', 'DEVOLUCION', 'REASIGNACION'].includes(kind)
+const usesChecklist = (kind, asset) => ['ASIGNACION', 'PRESTAMO', 'DEVOLUCION', 'REASIGNACION'].includes(kind)
   || (kind === 'INGRESO_REPARACION' && Boolean(asset?.usuario));
 const canMove = (kind, asset) => {
   if (!asset) return false;
   const assigned = Boolean(asset.usuario);
-  if (kind === 'ASIGNACION' || kind === 'BAJA') return !assigned && asset.estado === 'STOCK';
+  if (['ASIGNACION', 'PRESTAMO', 'BAJA'].includes(kind)) return !assigned && asset.estado === 'STOCK';
   if (kind === 'DEVOLUCION') return assigned && ['ASIGNADO', 'PRESTAMO', 'MANTENCION'].includes(asset.estado);
   if (kind === 'REASIGNACION') return assigned && ['ASIGNADO', 'PRESTAMO'].includes(asset.estado);
   if (kind === 'INGRESO_REPARACION') return assigned
@@ -35,7 +36,7 @@ const canMove = (kind, asset) => {
   return false;
 };
 const resultingState = (kind, returnState) => ({
-  ASIGNACION: 'ASIGNADO', DEVOLUCION: returnState, REASIGNACION: 'ASIGNADO',
+  ASIGNACION: 'ASIGNADO', PRESTAMO: 'PRESTAMO', DEVOLUCION: returnState, REASIGNACION: 'ASIGNADO',
   INGRESO_REPARACION: 'MANTENCION', SALIDA_REPARACION: 'STOCK', BAJA: 'BAJA',
 })[kind];
 

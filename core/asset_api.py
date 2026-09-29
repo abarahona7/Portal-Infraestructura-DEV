@@ -1,4 +1,5 @@
 """API de movimientos y documentos persistidos del inventario TI."""
+import uuid
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, OperationalError
 from django.db.models import Q
@@ -24,7 +25,7 @@ class AccesorioSerializer(serializers.Serializer):
 
 
 class NuevoMovimientoSerializer(serializers.Serializer):
-    tipo_movimiento = serializers.ChoiceField(choices=['ASIGNACION', 'DEVOLUCION', 'REASIGNACION',
+    tipo_movimiento = serializers.ChoiceField(choices=['ASIGNACION', 'PRESTAMO', 'DEVOLUCION', 'REASIGNACION',
                                                       'INGRESO_REPARACION', 'SALIDA_REPARACION', 'BAJA'])
     activo_id = serializers.IntegerField(min_value=1)
     colaborador_destino_id = serializers.IntegerField(min_value=1, required=False, allow_null=True)
@@ -32,13 +33,13 @@ class NuevoMovimientoSerializer(serializers.Serializer):
     ubicacion_destino = serializers.CharField(max_length=100)
     estado_fisico = serializers.ChoiceField(choices=ESTADOS_FISICOS)
     estado_operativo_resultante = serializers.ChoiceField(
-        choices=['STOCK', 'MANTENCION', 'ASIGNADO', 'BAJA'], required=False)
+        choices=['STOCK', 'MANTENCION', 'ASIGNADO', 'PRESTAMO', 'BAJA'], required=False)
     accesorios_detalle = AccesorioSerializer(many=True, max_length=50)
     observaciones = serializers.CharField(max_length=2000, required=False, allow_blank=True)
 
     def validate(self, attrs):
         kind = attrs['tipo_movimiento']
-        if kind in {'ASIGNACION', 'REASIGNACION'} and not attrs.get('colaborador_destino_id'):
+        if kind in {'ASIGNACION', 'PRESTAMO', 'REASIGNACION'} and not attrs.get('colaborador_destino_id'):
             raise serializers.ValidationError({'colaborador_destino_id': 'Seleccione el colaborador que recibe.'})
         if kind in {'DEVOLUCION', 'REASIGNACION'} and not attrs.get('colaborador_origen_id'):
             raise serializers.ValidationError({'colaborador_origen_id': 'Indique al custodio actual.'})
@@ -46,6 +47,27 @@ class NuevoMovimientoSerializer(serializers.Serializer):
             raise serializers.ValidationError({'observaciones': 'Indique el motivo o trabajo realizado.'})
         if attrs['estado_fisico'] == 'DANADO' and not attrs.get('observaciones', '').strip():
             raise serializers.ValidationError({'observaciones': 'Describa los daños del activo.'})
+        return attrs
+
+
+class CambioEquipoSerializer(serializers.Serializer):
+    activo_origen_id = serializers.IntegerField(min_value=1)
+    activo_destino_id = serializers.IntegerField(min_value=1)
+    colaborador_id = serializers.IntegerField(min_value=1)
+    ubicacion_retorno = serializers.CharField(max_length=100)
+    ubicacion_entrega = serializers.CharField(max_length=100)
+    estado_fisico_origen = serializers.ChoiceField(choices=ESTADOS_FISICOS)
+    estado_fisico_destino = serializers.ChoiceField(choices=ESTADOS_FISICOS)
+    estado_operativo_origen = serializers.ChoiceField(choices=['STOCK', 'MANTENCION'], required=False)
+    accesorios_devueltos = AccesorioSerializer(many=True, max_length=50)
+    accesorios_entregados = AccesorioSerializer(many=True, max_length=50)
+    observaciones = serializers.CharField(max_length=2000)
+
+    def validate(self, attrs):
+        if attrs['activo_origen_id'] == attrs['activo_destino_id']:
+            raise serializers.ValidationError({'activo_destino_id': 'Seleccione otro equipo de reemplazo.'})
+        if not attrs['observaciones'].strip():
+            raise serializers.ValidationError({'observaciones': 'Indique el motivo del cambio.'})
         return attrs
 
 
@@ -65,7 +87,7 @@ class MovimientoSerializer(serializers.ModelSerializer):
     class Meta:
         model = MovimientoActivo
         fields = ['id', 'activo_id', 'tipo_movimiento', 'fecha_movimiento',
-                  'colaborador_origen_id', 'colaborador_destino_id',
+                  'operacion_id', 'colaborador_origen_id', 'colaborador_destino_id',
                   'colaborador_origen', 'colaborador_destino', 'ubicacion_origen',
                   'ubicacion_destino', 'estado_fisico', 'estado_operativo_resultante',
                   'accesorios_detalle', 'observaciones', 'ejecutado_por', 'acta', 'snapshot']
@@ -107,6 +129,13 @@ class MovimientoActivoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         if colaborador_id:
             queryset = queryset.filter(Q(colaborador_origen_id=colaborador_id) |
                                        Q(colaborador_destino_id=colaborador_id))
+        operation = self.request.query_params.get('operacion_id')
+        if operation:
+            try:
+                operation = uuid.UUID(operation)
+            except (ValueError, TypeError, AttributeError) as exc:
+                raise serializers.ValidationError({'operacion_id': 'Indique un UUID válido.'}) from exc
+            queryset = queryset.filter(operacion_id=operation)
         return queryset
 
     def create(self, request, *args, **kwargs):
@@ -129,6 +158,33 @@ class MovimientoActivoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                     'detail': 'Otra operación está modificando estos datos. Actualice y vuelva a intentar.'}) from exc
             raise
         return Response(MovimientoSerializer(movimiento).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'], url_path='cambio')
+    def cambio(self, request):
+        from .services.asset_change_service import registrar_cambio_equipo
+        from .services.asset_lifecycle_service import MovimientoConflict
+        serializer = CambioEquipoSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            operation_id, returned, issued = registrar_cambio_equipo(
+                usuario_ti=request.user, request=request, **serializer.validated_data)
+        except MovimientoConflict as exc:
+            raise MovimientoConflictResponse({'codigo': exc.codigo, 'detail': exc.detail}) from exc
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(getattr(exc, 'message_dict', None) or exc.messages) from exc
+        except IntegrityError as exc:
+            raise MovimientoConflictResponse({'codigo': 'CONFLICTO_INTEGRIDAD',
+                'detail': 'Los datos cambiaron durante la operación. Actualice y vuelva a intentar.'}) from exc
+        except OperationalError as exc:
+            if exc.args and exc.args[0] in (1205, 1213):
+                raise MovimientoConflictResponse({'codigo': 'CONFLICTO_CONCURRENCIA',
+                    'detail': 'Otra operación está modificando estos datos. Actualice y vuelva a intentar.'}) from exc
+            raise
+        return Response({
+            'tipo_operacion': 'CAMBIO', 'operacion_id': str(operation_id),
+            'salida': MovimientoSerializer(returned).data,
+            'entrada': MovimientoSerializer(issued).data,
+        }, status=status.HTTP_201_CREATED)
 
 
 class ActaEntregaViewSet(viewsets.ReadOnlyModelViewSet):

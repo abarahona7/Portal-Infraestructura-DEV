@@ -69,7 +69,7 @@ def _activo_snapshot(activo):
 
 def accesorios_requeridos(activo):
     """Return the issued checklist, falling back to the legacy accessory text."""
-    ultimo = activo.movimientos.filter(tipo_movimiento__in=['ASIGNACION', 'REASIGNACION']).first()
+    ultimo = activo.movimientos.filter(tipo_movimiento__in=['ASIGNACION', 'REASIGNACION', 'PRESTAMO', 'CAMBIO']).first()
     if ultimo is not None:
         return [item['nombre'] for item in ultimo.accesorios_detalle if item.get('entregado')]
     return list(dict.fromkeys(
@@ -98,7 +98,7 @@ def _validar_accesorios(items, *, activo, devolucion, exigir_maestro=False):
             raise ValidationError({'accesorios_detalle': f'Explique el accesorio faltante: {nombre}.'})
         seen.add(nombre.casefold())
         normalized.append({'nombre': nombre, 'entregado': entregado, 'nota': nota})
-    if exigir_maestro and not activo.movimientos.filter(tipo_movimiento__in=['ASIGNACION', 'REASIGNACION']).exists():
+    if exigir_maestro and not activo.movimientos.filter(tipo_movimiento__in=['ASIGNACION', 'REASIGNACION', 'PRESTAMO', 'CAMBIO']).exists():
         missing = [name for name in re.split(r'[,;\n]+', activo.accesorios or '')
                    if _text(name) and _text(name).casefold() not in seen]
         if missing:
@@ -126,12 +126,14 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
                          colaborador_destino_id=None, colaborador_origen_id=None,
                          ubicacion_destino, estado_fisico='USADO',
                          estado_operativo_resultante=None, accesorios_detalle=None,
-                         observaciones='', request=None, qr_base_url=None):
+                         observaciones='', request=None, qr_base_url=None, operacion_id=None):
     """Persist state, movement, numbered PDF and audit atomically after locking the asset."""
-    supported = {'ASIGNACION', 'DEVOLUCION', 'REASIGNACION',
+    supported = {'ASIGNACION', 'PRESTAMO', 'CAMBIO', 'DEVOLUCION', 'REASIGNACION',
                  'INGRESO_REPARACION', 'SALIDA_REPARACION', 'BAJA'}
     if tipo_movimiento not in supported:
         raise ValidationError({'tipo_movimiento': 'Tipo de movimiento no disponible.'})
+    if tipo_movimiento == 'CAMBIO' and not operacion_id:
+        raise ValidationError({'operacion_id': 'El cambio de equipo requiere una operación vinculada.'})
     if not getattr(usuario_ti, 'is_authenticated', False) or not usuario_ti.pk or not usuario_ti.is_active:
         raise ValidationError({'usuario_ti': 'Se requiere un operador autenticado y activo.'})
     ubicacion_destino = _text(ubicacion_destino)
@@ -155,7 +157,7 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
     destino_id = colaborador_destino_id
     needs_origin = (tipo_movimiento in {'DEVOLUCION', 'REASIGNACION'}
                     or (tipo_movimiento == 'INGRESO_REPARACION' and assigned))
-    needs_destination = tipo_movimiento in {'ASIGNACION', 'REASIGNACION'}
+    needs_destination = tipo_movimiento in {'ASIGNACION', 'PRESTAMO', 'REASIGNACION', 'CAMBIO'}
     if needs_origin:
         if not assigned or activo.usuario_id != origen_id:
             raise MovimientoConflict('COLABORADOR_ORIGEN_INCORRECTO', 'Indique al custodio actual del activo.')
@@ -169,10 +171,10 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
     elif destino_id is not None:
         raise ValidationError({'colaborador_destino_id': 'Este movimiento no admite colaborador de destino.'})
 
-    if tipo_movimiento == 'ASIGNACION':
+    if tipo_movimiento in {'ASIGNACION', 'PRESTAMO', 'CAMBIO'}:
         if assigned or activo.estado != 'STOCK':
-            raise MovimientoConflict('ACTIVO_NO_DISPONIBLE', 'El activo no está disponible para asignación.')
-        estado_resultante = 'ASIGNADO'
+            raise MovimientoConflict('ACTIVO_NO_DISPONIBLE', 'El activo no está disponible para entrega.')
+        estado_resultante = 'PRESTAMO' if tipo_movimiento == 'PRESTAMO' else 'ASIGNADO'
     elif tipo_movimiento == 'DEVOLUCION':
         if activo.estado not in {'ASIGNADO', 'PRESTAMO', 'MANTENCION'}:
             raise MovimientoConflict('ACTIVO_SIN_ASIGNACION', 'El activo no tiene una asignación vigente.')
@@ -216,7 +218,7 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
         accesorios_detalle, activo=activo,
         devolucion=tipo_movimiento in {'DEVOLUCION', 'REASIGNACION'} or
                    (tipo_movimiento == 'INGRESO_REPARACION' and assigned),
-        exigir_maestro=tipo_movimiento == 'ASIGNACION',
+        exigir_maestro=tipo_movimiento in {'ASIGNACION', 'PRESTAMO', 'CAMBIO'},
     )
     colaborador = destino or origen
     momento = timezone.now()
@@ -239,6 +241,7 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
         'folio': folio,
         'fecha_emision': momento.isoformat(),
         'tipo_movimiento': tipo_movimiento,
+        'operacion_id': str(operacion_id) if operacion_id else None,
         'colaborador': _colaborador_snapshot(colaborador),
         'colaborador_origen': _colaborador_snapshot(origen),
         'colaborador_destino': _colaborador_snapshot(destino),
@@ -267,6 +270,7 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
     snapshot = {
         'schema_version': 1,
         'fecha_movimiento': momento.isoformat(),
+        'operacion_id': str(operacion_id) if operacion_id else None,
         'antes': antes,
         'despues': despues,
         'colaborador_origen': _colaborador_snapshot(origen),
@@ -274,7 +278,7 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
         'documento': deepcopy(documento),
     }
     movimiento = MovimientoActivo.objects.create(
-        activo=activo, acta=acta, tipo_movimiento=tipo_movimiento,
+        activo=activo, acta=acta, tipo_movimiento=tipo_movimiento, operacion_id=operacion_id,
         fecha_movimiento=momento, colaborador_origen=origen,
         colaborador_destino=destino, ubicacion_origen=antes['ubicacion_actual'],
         ubicacion_destino=ubicacion_destino, estado_fisico=estado_fisico,

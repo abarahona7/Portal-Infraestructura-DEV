@@ -1031,13 +1031,15 @@ def generar_acta_custodia_pdf(snapshot):
                              leading=12, textColor=BLUE, spaceBefore=10, spaceAfter=5)
     small = ParagraphStyle('ItamText', fontName='Helvetica', fontSize=8.5, leading=11,
                            textColor=TEXT_COLOR, wordWrap='CJK')
-    custody = tipo in {'ASIGNACION', 'REASIGNACION'}
+    custody = tipo in {'ASIGNACION', 'REASIGNACION', 'PRESTAMO', 'CAMBIO'}
     title = 'ACTA DE ASIGNACIÓN Y CUSTODIA DE ACTIVO TI' if custody else 'ACTA DE MOVIMIENTO DE ACTIVO TI'
     story = [Paragraph(title, title_style)]
     story.append(Paragraph(f"<b>Folio:</b> {plain(snapshot.get('folio'))} &nbsp;&nbsp; "
                            f"<b>Fecha:</b> {plain(fecha)} &nbsp;&nbsp; "
                            f"<b>Movimiento:</b> {plain(tipo)}", small))
     story.append(Paragraph(f"<b>Ubicación:</b> {plain(snapshot.get('ubicacion_destino'))}", small))
+    if snapshot.get('operacion_id'):
+        story.append(Paragraph(f"<b>Cambio de equipo:</b> {plain(snapshot['operacion_id'])}", small))
     if colaborador:
         story.append(Paragraph('DATOS DEL COLABORADOR', heading))
         col_rows = [

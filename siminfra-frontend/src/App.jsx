@@ -74,6 +74,7 @@ import DepartamentosSubareasPage
 import { formatEquipmentType } from './utils/formatEquipmentType';
 import apiClient from './api/client';
 import NuevoMovimientoModal from './features/movimientos/components/NuevoMovimientoModal';
+import CambioEquipoModal from './features/movimientos/components/CambioEquipoModal';
 import HistorialMovimientosModal from './features/movimientos/components/HistorialMovimientosModal';
 import FichaActivoModal from './features/movimientos/components/FichaActivoModal';
 import AssetDashboard from './features/dashboard/components/AssetDashboard';
@@ -108,6 +109,7 @@ export default function App() {
 
   const [secretRequest, setSecretRequest] = useState(null);
   const [movimientoOpen, setMovimientoOpen] = useState(false);
+  const [cambioEquipoOpen, setCambioEquipoOpen] = useState(false);
   const [historialActivo, setHistorialActivo] = useState(null);
   const [historialColaborador, setHistorialColaborador] = useState(null);
   const [fichaQrToken, setFichaQrToken] = useState(() => window.location.pathname.match(/^\/qr\/a\/([0-9a-f-]{36})\/?$/i)?.[1] || null);
@@ -1074,7 +1076,7 @@ export default function App() {
                     </h2>
                   </div>
 
-                  {!isViewer && <button type="button" className="movimiento-button movimiento-button-primary" onClick={() => setMovimientoOpen(true)}>Nuevo movimiento</button>}
+                  {!isViewer && <div className="movimiento-footer"><button type="button" className="movimiento-button" onClick={() => setCambioEquipoOpen(true)}>Cambio de equipo</button><button type="button" className="movimiento-button movimiento-button-primary" onClick={() => setMovimientoOpen(true)}>Nuevo movimiento</button></div>}
 
                   <div className="equipment-results-count">
                     <strong>
@@ -1285,6 +1287,7 @@ export default function App() {
           )}
 
         <NuevoMovimientoModal open={movimientoOpen} onClose={() => setMovimientoOpen(false)} onCompleted={() => { refreshAllData(); showToast('Movimiento y acta generados.'); }} />
+        <CambioEquipoModal open={cambioEquipoOpen} onClose={() => setCambioEquipoOpen(false)} onCompleted={() => { refreshAllData(); showToast('Cambio de equipo y dos actas generados.'); }} />
         <HistorialMovimientosModal activo={historialActivo} onClose={() => setHistorialActivo(null)} />
         {historialColaborador && <HistorialColaboradorModal colaborador={historialColaborador} onClose={() => setHistorialColaborador(null)} onOpenAsset={setHistorialActivo} />}
         {fichaQrToken && <FichaActivoModal key={fichaQrToken} token={fichaQrToken} onHistory={setHistorialActivo} onClose={() => { setFichaQrToken(null); if (window.location.pathname.startsWith('/qr/a/')) window.history.replaceState(null, '', '/'); }} />}

@@ -1027,6 +1027,7 @@ class MovimientoActivo(RegistroInmutable):
         max_length=30,
         choices=TIPOS_MOVIMIENTO,
     )
+    operacion_id = models.UUIDField(null=True, blank=True, db_index=True, editable=False)
     fecha_movimiento = models.DateTimeField(default=timezone.now, editable=False)
     colaborador_origen = models.ForeignKey(
         Usuario,

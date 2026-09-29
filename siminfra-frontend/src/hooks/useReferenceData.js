@@ -8,7 +8,7 @@ const REFERENCE_SECTIONS_BY_MODULE = {
   equipos: ['usuarios', 'departamentos'],
   anexos: ['usuarios'],
   perfiles: ['perfiles', 'departamentos'],
-  departamentos: ['departamentos', 'usuarios', 'perfiles'],
+  departamentos: [],
   'pcs-genericos': ['departamentos'],
   ips: ['ips_stats'],
 };
@@ -97,6 +97,33 @@ export const useReferenceData = (token, role, activeModule) => {
     [loadReferenceData]
   );
 
+  const invalidateReferenceData = useCallback((sections = []) => {
+    const invalidatedSections = new Set(sections);
+
+    invalidatedSections.forEach((section) => {
+      loadedSectionsRef.current.delete(section);
+    });
+
+    if (invalidatedSections.has('usuarios')) {
+      setUsuariosList([]);
+    }
+    if (invalidatedSections.has('usuarios_stats')) {
+      setUsuariosStats({ total: 0, departamentos: [] });
+    }
+    if (invalidatedSections.has('ips')) {
+      setIpsList([]);
+    }
+    if (invalidatedSections.has('departamentos')) {
+      setDepartamentosList([]);
+    }
+    if (invalidatedSections.has('perfiles')) {
+      setPerfilesList([]);
+    }
+    if (invalidatedSections.has('ips_stats')) {
+      setIpSegmentStats({});
+    }
+  }, []);
+
   useEffect(() => {
     if (!canLoadReferenceData) {
       loadedSectionsRef.current.clear();
@@ -134,5 +161,6 @@ export const useReferenceData = (token, role, activeModule) => {
     ipSegmentStats: canLoadReferenceData ? ipSegmentStats : {},
     refreshReferenceData,
     ensureReferenceData,
+    invalidateReferenceData,
   };
 };

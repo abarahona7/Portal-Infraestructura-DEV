@@ -272,6 +272,7 @@ export default function App() {
     ipSegmentStats,
     refreshReferenceData,
     ensureReferenceData,
+    invalidateReferenceData,
   } = useReferenceData(token, authUser?.role, activeModuleTab);
 
   const hasOpenIpAssignmentForm = Boolean(newItem || editingItem) && (
@@ -343,6 +344,17 @@ export default function App() {
   });
 
   const refreshAllData = async () => {
+    if (activeModuleTab === 'departamentos') {
+      invalidateReferenceData([
+        'departamentos',
+        'usuarios',
+        'usuarios_stats',
+        'perfiles',
+      ]);
+      await refreshData();
+      return;
+    }
+
     const referenceSections = {
       usuarios: ['usuarios_stats', 'ips'],
       equipos: ['usuarios'],
@@ -350,12 +362,6 @@ export default function App() {
       servidores: ['ips'],
       'pcs-genericos': ['ips'],
       perfiles: ['perfiles'],
-      departamentos: [
-        'departamentos',
-        'usuarios',
-        'usuarios_stats',
-        'perfiles',
-      ],
     }[activeModuleTab] || [];
 
     const refreshTasks = [refreshData()];

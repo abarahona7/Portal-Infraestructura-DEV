@@ -20,6 +20,23 @@ Mediciones locales con SQLite y cinco repeticiones:
 La lista auxiliar completa continúa disponible para Equipos y Anexos, donde sí
 se necesita para seleccionar o relacionar usuarios.
 
+## Optimización de Departamentos y Subáreas
+
+La pantalla ya obtiene su catálogo completo desde `/api/departamentos/`. Se
+eliminó una segunda solicitud que descargaba nuevamente departamentos, usuarios
+y perfiles sin utilizarlos.
+
+| Indicador de la carga auxiliar eliminada | Antes | Después |
+| --- | ---: | ---: |
+| Solicitudes adicionales | 1 | 0 |
+| Consultas SQL adicionales | 4 | 0 |
+| Tiempo mediano adicional | 15,07 ms | 0 ms |
+| Datos adicionales transferidos | 87.303 bytes | 0 bytes |
+
+Después de modificar la estructura organizacional, los catálogos relacionados
+se invalidan y se vuelven a solicitar solamente al entrar en Usuarios, Equipos,
+Perfiles u otro módulo que realmente los necesita.
+
 ## Referencia de endpoints principales
 
 | Endpoint | Mediana | Consultas SQL | Respuesta |

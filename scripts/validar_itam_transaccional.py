@@ -33,6 +33,8 @@ with transaction.atomic():
     assert qr_detail.data['activo']['usuario_nombre'] == person.nombre_completo
     assert qr_detail.data['qr_url'].endswith(f'/qr/a/{asset.token_qr}')
     assert 'rut' not in qr_detail.data['activo']
+    collaborator = client.get(f'/api/usuarios/{person.pk}/')
+    assert collaborator.status_code == 200 and any(item['id'] == asset.pk for item in collaborator.data['equipos'])
     qr_image = client.get(f'{qr_path}imagen/')
     assert qr_image.status_code == 200 and qr_image['Content-Type'].startswith('image/svg+xml')
     assert b'<svg' in qr_image.content and person.nombre_completo.encode() not in qr_image.content
@@ -69,10 +71,14 @@ with transaction.atomic():
     assert asset.usuario_id is None and asset.estado == 'STOCK'
     history = client.get(f'/api/movimientos/?activo_id={asset.pk}')
     assert history.status_code == 200 and history.data['count'] == 2
+    collaborator_history = client.get(f'/api/movimientos/?colaborador_id={person.pk}')
+    assert collaborator_history.status_code == 200 and collaborator_history.data['count'] == 2
+    collaborator = client.get(f'/api/usuarios/{person.pk}/')
+    assert collaborator.status_code == 200 and not collaborator.data['equipos']
     assert MovimientoActivo.objects.filter(activo=asset).count() == 2
     assert ActaEntrega.objects.filter(movimientos__activo=asset).count() == 2
     assert SecurityAuditLog.objects.filter(module='ACTIVOS_ITAM', object_id_text=str(asset.pk)).count() == 2
-    print('ITAM transacción: asignación/devolución/folio/PDF/QR/historial/conflicto/accesorios/auditoría OK')
+    print('ITAM transacción: asignación/devolución/folio/PDF/QR/historial por activo y colaborador/conflicto/accesorios/auditoría OK')
     print(f'Folios temporales: {first.data["acta"]["folio"]}, {returned.data["acta"]["folio"]}')
     transaction.set_rollback(True)
 assert not Equipamiento.objects.filter(numero_serie=f'ITAM-{suffix}').exists()

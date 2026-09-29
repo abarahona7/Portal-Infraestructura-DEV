@@ -15,6 +15,7 @@ export default function ModuleTable({
   renderIpStatusBadge,
   onSelectUser,
   onShowUserHistory,
+  onShowCollaboratorAssets,
   onShowEquipmentHistory,
   onShowAssetMovements,
   onShowAssetQr,
@@ -36,6 +37,7 @@ export default function ModuleTable({
         usuarios={data}
         onSelectUser={onSelectUser}
         onShowHistory={onShowUserHistory}
+        onShowAssets={onShowCollaboratorAssets}
         onEdit={onEdit}
         onDelete={onDelete}
         role={role}

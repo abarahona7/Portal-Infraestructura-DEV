@@ -2,6 +2,7 @@ import {
   Edit,
   Trash2,
   History,
+  Package,
   UserRound,
 } from 'lucide-react';
 
@@ -11,6 +12,7 @@ export default function UsuariosTable({
   usuarios,
   onSelectUser,
   onShowHistory,
+  onShowAssets,
   onEdit,
   onDelete,
   renderStatusBadge,
@@ -37,6 +39,7 @@ export default function UsuariosTable({
 
   const Actions = ({ usuario }) => (
     <div className="usuarios-actions">
+      <button type="button" className="usuario-action usuario-action-history" onClick={(event) => { event.stopPropagation(); onShowAssets(usuario); }} title="Ver activos y movimientos" aria-label={`Ver activos y movimientos de ${usuario.nombre_completo || 'usuario'}`}><Package size={18} aria-hidden="true" /></button>
       <button
         type="button"
         className="usuario-action usuario-action-history"

@@ -974,6 +974,8 @@ class ActaEntrega(RegistroInmutable):
         Usuario,
         on_delete=models.PROTECT,
         related_name='actas',
+        null=True,
+        blank=True,
     )
     usuario_ti = models.ForeignKey(
         'auth.User',
@@ -1005,7 +1007,7 @@ class ActaEntrega(RegistroInmutable):
         ]
 
     def __str__(self):
-        return f"{self.folio} - {self.colaborador.nombre_completo} ({self.estado})"
+        return f"{self.folio} - {self.colaborador.nombre_completo if self.colaborador else 'Inventario TI'} ({self.estado})"
 
 
 class MovimientoActivo(RegistroInmutable):

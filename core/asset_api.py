@@ -24,20 +24,26 @@ class AccesorioSerializer(serializers.Serializer):
 
 
 class NuevoMovimientoSerializer(serializers.Serializer):
-    tipo_movimiento = serializers.ChoiceField(choices=['ASIGNACION', 'DEVOLUCION'])
+    tipo_movimiento = serializers.ChoiceField(choices=['ASIGNACION', 'DEVOLUCION', 'REASIGNACION',
+                                                      'INGRESO_REPARACION', 'SALIDA_REPARACION', 'BAJA'])
     activo_id = serializers.IntegerField(min_value=1)
     colaborador_destino_id = serializers.IntegerField(min_value=1, required=False, allow_null=True)
     colaborador_origen_id = serializers.IntegerField(min_value=1, required=False, allow_null=True)
     ubicacion_destino = serializers.CharField(max_length=100)
     estado_fisico = serializers.ChoiceField(choices=ESTADOS_FISICOS)
+    estado_operativo_resultante = serializers.ChoiceField(
+        choices=['STOCK', 'MANTENCION', 'ASIGNADO', 'BAJA'], required=False)
     accesorios_detalle = AccesorioSerializer(many=True, max_length=50)
     observaciones = serializers.CharField(max_length=2000, required=False, allow_blank=True)
 
     def validate(self, attrs):
-        if attrs['tipo_movimiento'] == 'ASIGNACION' and not attrs.get('colaborador_destino_id'):
+        kind = attrs['tipo_movimiento']
+        if kind in {'ASIGNACION', 'REASIGNACION'} and not attrs.get('colaborador_destino_id'):
             raise serializers.ValidationError({'colaborador_destino_id': 'Seleccione el colaborador que recibe.'})
-        if attrs['tipo_movimiento'] == 'DEVOLUCION' and not attrs.get('colaborador_origen_id'):
-            raise serializers.ValidationError({'colaborador_origen_id': 'Indique el colaborador que devuelve.'})
+        if kind in {'DEVOLUCION', 'REASIGNACION'} and not attrs.get('colaborador_origen_id'):
+            raise serializers.ValidationError({'colaborador_origen_id': 'Indique al custodio actual.'})
+        if kind in {'INGRESO_REPARACION', 'SALIDA_REPARACION', 'BAJA'} and not attrs.get('observaciones', '').strip():
+            raise serializers.ValidationError({'observaciones': 'Indique el motivo o trabajo realizado.'})
         if attrs['estado_fisico'] == 'DANADO' and not attrs.get('observaciones', '').strip():
             raise serializers.ValidationError({'observaciones': 'Describa los daños del activo.'})
         return attrs

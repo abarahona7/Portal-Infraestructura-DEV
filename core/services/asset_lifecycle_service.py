@@ -1,4 +1,4 @@
-"""Atomic asset assignments/returns and their immutable documentary evidence."""
+"""Atomic IT asset lifecycle movements and immutable documentary evidence."""
 
 from copy import deepcopy
 import hashlib
@@ -69,7 +69,7 @@ def _activo_snapshot(activo):
 
 def accesorios_requeridos(activo):
     """Return the issued checklist, falling back to the legacy accessory text."""
-    ultimo = activo.movimientos.filter(tipo_movimiento='ASIGNACION').first()
+    ultimo = activo.movimientos.filter(tipo_movimiento__in=['ASIGNACION', 'REASIGNACION']).first()
     if ultimo is not None:
         return [item['nombre'] for item in ultimo.accesorios_detalle if item.get('entregado')]
     return list(dict.fromkeys(
@@ -77,7 +77,7 @@ def accesorios_requeridos(activo):
     ))
 
 
-def _validar_accesorios(items, *, activo, devolucion):
+def _validar_accesorios(items, *, activo, devolucion, exigir_maestro=False):
     if items is None:
         items = []
     if not isinstance(items, list) or len(items) > 20:
@@ -98,7 +98,7 @@ def _validar_accesorios(items, *, activo, devolucion):
             raise ValidationError({'accesorios_detalle': f'Explique el accesorio faltante: {nombre}.'})
         seen.add(nombre.casefold())
         normalized.append({'nombre': nombre, 'entregado': entregado, 'nota': nota})
-    if not devolucion and not activo.movimientos.exists():
+    if exigir_maestro and not activo.movimientos.filter(tipo_movimiento__in=['ASIGNACION', 'REASIGNACION']).exists():
         missing = [name for name in re.split(r'[,;\n]+', activo.accesorios or '')
                    if _text(name) and _text(name).casefold() not in seen]
         if missing:
@@ -127,13 +127,11 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
                          ubicacion_destino, estado_fisico='USADO',
                          estado_operativo_resultante=None, accesorios_detalle=None,
                          observaciones='', request=None, qr_base_url=None):
-    """Persist a movement, current asset state, acta/PDF and audit in one commit.
-
-    The caller authorizes the operator and passes the authenticated user. Public
-    entry points must never accept that identity from request data.
-    """
-    if tipo_movimiento not in {'ASIGNACION', 'DEVOLUCION'}:
-        raise ValidationError({'tipo_movimiento': 'En esta fase solo se admiten asignaciones y devoluciones.'})
+    """Persist state, movement, numbered PDF and audit atomically after locking the asset."""
+    supported = {'ASIGNACION', 'DEVOLUCION', 'REASIGNACION',
+                 'INGRESO_REPARACION', 'SALIDA_REPARACION', 'BAJA'}
+    if tipo_movimiento not in supported:
+        raise ValidationError({'tipo_movimiento': 'Tipo de movimiento no disponible.'})
     if not getattr(usuario_ti, 'is_authenticated', False) or not usuario_ti.pk or not usuario_ti.is_active:
         raise ValidationError({'usuario_ti': 'Se requiere un operador autenticado y activo.'})
     ubicacion_destino = _text(ubicacion_destino)
@@ -144,48 +142,83 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
         raise ValidationError({'estado_fisico': 'Seleccione un estado físico válido.'})
     if len(observaciones) > 2000:
         raise ValidationError({'observaciones': 'Las observaciones no pueden exceder 2000 caracteres.'})
-    if estado_fisico == 'DANADO' and not observaciones:
-        raise ValidationError({'observaciones': 'Describa el daño observado en el activo.'})
+    if (estado_fisico == 'DANADO' or tipo_movimiento in {'INGRESO_REPARACION', 'SALIDA_REPARACION', 'BAJA'}) and not observaciones:
+        raise ValidationError({'observaciones': 'Describa el motivo o trabajo realizado.'})
 
     try:
         activo = Equipamiento.objects.select_for_update().get(pk=activo_id)
     except (Equipamiento.DoesNotExist, ValueError, TypeError):
         raise ValidationError({'activo_id': 'El activo seleccionado no existe.'})
     antes = _activo_snapshot(activo)
-    origen = None
-    destino = None
-    devolucion = tipo_movimiento == 'DEVOLUCION'
-    if not devolucion:
-        if activo.usuario_id is not None or activo.estado != 'STOCK':
-            raise MovimientoConflict('ACTIVO_NO_DISPONIBLE', 'El activo no está disponible. Registre primero su devolución.')
-        if colaborador_origen_id is not None:
-            raise ValidationError({'colaborador_origen_id': 'Una asignación no debe indicar colaborador de origen.'})
-        try:
-            destino = Usuario.objects.select_for_update().select_related('departamento', 'subarea').get(pk=colaborador_destino_id)
-        except (Usuario.DoesNotExist, ValueError, TypeError):
+    assigned = activo.usuario_id is not None
+    origen_id = colaborador_origen_id
+    destino_id = colaborador_destino_id
+    needs_origin = (tipo_movimiento in {'DEVOLUCION', 'REASIGNACION'}
+                    or (tipo_movimiento == 'INGRESO_REPARACION' and assigned))
+    needs_destination = tipo_movimiento in {'ASIGNACION', 'REASIGNACION'}
+    if needs_origin:
+        if not assigned or activo.usuario_id != origen_id:
+            raise MovimientoConflict('COLABORADOR_ORIGEN_INCORRECTO', 'Indique al custodio actual del activo.')
+    elif origen_id is not None:
+        raise ValidationError({'colaborador_origen_id': 'Este movimiento no admite colaborador de origen.'})
+    if needs_destination:
+        if destino_id is None:
+            raise ValidationError({'colaborador_destino_id': 'Seleccione el colaborador que recibe.'})
+        if origen_id == destino_id:
+            raise ValidationError({'colaborador_destino_id': 'Seleccione un colaborador distinto del custodio actual.'})
+    elif destino_id is not None:
+        raise ValidationError({'colaborador_destino_id': 'Este movimiento no admite colaborador de destino.'})
+
+    if tipo_movimiento == 'ASIGNACION':
+        if assigned or activo.estado != 'STOCK':
+            raise MovimientoConflict('ACTIVO_NO_DISPONIBLE', 'El activo no está disponible para asignación.')
+        estado_resultante = 'ASIGNADO'
+    elif tipo_movimiento == 'DEVOLUCION':
+        if activo.estado not in {'ASIGNADO', 'PRESTAMO', 'MANTENCION'}:
+            raise MovimientoConflict('ACTIVO_SIN_ASIGNACION', 'El activo no tiene una asignación vigente.')
+        estado_resultante = estado_operativo_resultante or 'STOCK'
+        if estado_resultante not in {'STOCK', 'MANTENCION'}:
+            raise ValidationError({'estado_operativo_resultante': 'La devolución debe quedar disponible o en reparación.'})
+    elif tipo_movimiento == 'REASIGNACION':
+        if activo.estado not in {'ASIGNADO', 'PRESTAMO'}:
+            raise MovimientoConflict('ACTIVO_NO_REASIGNABLE', 'El activo no tiene una asignación transferible.')
+        estado_resultante = 'ASIGNADO'
+    elif tipo_movimiento == 'INGRESO_REPARACION':
+        if activo.estado not in ({'ASIGNADO', 'PRESTAMO'} if assigned else {'STOCK'}):
+            raise MovimientoConflict('ACTIVO_NO_REPARABLE', 'El activo debe estar disponible o asignado para ingresar a reparación.')
+        estado_resultante = 'MANTENCION'
+    elif tipo_movimiento == 'SALIDA_REPARACION':
+        if assigned or activo.estado != 'MANTENCION':
+            raise MovimientoConflict('ACTIVO_NO_EN_REPARACION', 'El activo debe estar en reparación y sin custodio.')
+        estado_resultante = 'STOCK'
+    else:
+        if assigned or activo.estado != 'STOCK':
+            raise MovimientoConflict('ACTIVO_NO_DABLE_DE_BAJA', 'Devuelva el activo y cierre su reparación antes de darlo de baja.')
+        estado_resultante = 'BAJA'
+    if estado_operativo_resultante not in (None, '', estado_resultante):
+        raise ValidationError({'estado_operativo_resultante': 'El estado resultante no corresponde al movimiento.'})
+
+    people_ids = {pk for pk in (origen_id, destino_id) if pk is not None}
+    people = {person.pk: person for person in Usuario.objects.select_for_update().select_related(
+        'departamento', 'subarea').filter(pk__in=people_ids).order_by('pk')}
+    origen = people.get(origen_id)
+    destino = people.get(destino_id)
+    if needs_origin and origen is None:
+        raise ValidationError({'colaborador_origen_id': 'El custodio actual no existe.'})
+    if needs_destination:
+        if destino is None:
             raise ValidationError({'colaborador_destino_id': 'Seleccione un colaborador válido.'})
         if destino.estado != 'ACTIVO':
             raise MovimientoConflict('COLABORADOR_INACTIVO', 'Solo se pueden asignar activos a colaboradores activos.')
         if not destino.rut:
             raise ValidationError({'colaborador_destino_id': 'Complete el RUT del colaborador antes de emitir un acta.'})
-        if estado_operativo_resultante not in (None, '', 'ASIGNADO'):
-            raise ValidationError({'estado_operativo_resultante': 'Una asignación debe resultar en estado ASIGNADO.'})
-        estado_resultante = 'ASIGNADO'
-    else:
-        if activo.usuario_id is None or activo.estado not in {'ASIGNADO', 'PRESTAMO', 'MANTENCION'}:
-            raise MovimientoConflict('ACTIVO_SIN_ASIGNACION', 'El activo no tiene una asignación vigente que pueda devolverse.')
-        if colaborador_destino_id is not None:
-            raise ValidationError({'colaborador_destino_id': 'Una devolución no debe indicar colaborador de destino.'})
-        if colaborador_origen_id is None:
-            raise ValidationError({'colaborador_origen_id': 'Indique el colaborador que devuelve el activo.'})
-        if activo.usuario_id != colaborador_origen_id:
-            raise MovimientoConflict('COLABORADOR_ORIGEN_INCORRECTO', 'El activo no está asignado al colaborador indicado.')
-        origen = Usuario.objects.select_for_update().select_related('departamento', 'subarea').get(pk=activo.usuario_id)
-        estado_resultante = estado_operativo_resultante or 'STOCK'
-        if estado_resultante not in {'STOCK', 'MANTENCION'}:
-            raise ValidationError({'estado_operativo_resultante': 'Una devolución puede quedar en STOCK o MANTENCION.'})
-    accesorios = _validar_accesorios(accesorios_detalle, activo=activo, devolucion=devolucion)
-    colaborador = origen if devolucion else destino
+    accesorios = _validar_accesorios(
+        accesorios_detalle, activo=activo,
+        devolucion=tipo_movimiento in {'DEVOLUCION', 'REASIGNACION'} or
+                   (tipo_movimiento == 'INGRESO_REPARACION' and assigned),
+        exigir_maestro=tipo_movimiento == 'ASIGNACION',
+    )
+    colaborador = destino or origen
     momento = timezone.now()
     actor = usuario_ti.get_username()
     token = set_current_audit_user(usuario_ti)
@@ -194,7 +227,7 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
         activo.estado = estado_resultante
         activo.estado_fisico = estado_fisico
         activo.ubicacion_actual = ubicacion_destino
-        activo.fecha_asignacion = None if devolucion else timezone.localdate(momento)
+        activo.fecha_asignacion = timezone.localdate(momento) if destino else None
         activo.save()
     finally:
         reset_current_audit_user(token)
@@ -207,6 +240,8 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
         'fecha_emision': momento.isoformat(),
         'tipo_movimiento': tipo_movimiento,
         'colaborador': _colaborador_snapshot(colaborador),
+        'colaborador_origen': _colaborador_snapshot(origen),
+        'colaborador_destino': _colaborador_snapshot(destino),
         'usuario_ti': {'id': usuario_ti.pk, 'nombre': usuario_ti.get_full_name() or actor, 'username': actor},
         'activo': deepcopy(despues),
         'ubicacion_origen': antes['ubicacion_actual'],

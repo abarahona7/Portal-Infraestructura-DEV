@@ -1031,23 +1031,32 @@ def generar_acta_custodia_pdf(snapshot):
                              leading=12, textColor=BLUE, spaceBefore=10, spaceAfter=5)
     small = ParagraphStyle('ItamText', fontName='Helvetica', fontSize=8.5, leading=11,
                            textColor=TEXT_COLOR, wordWrap='CJK')
-    story = [Paragraph('ACTA DE ASIGNACIÓN Y CUSTODIA DE ACTIVO TI', title_style)]
+    custody = tipo in {'ASIGNACION', 'REASIGNACION'}
+    title = 'ACTA DE ASIGNACIÓN Y CUSTODIA DE ACTIVO TI' if custody else 'ACTA DE MOVIMIENTO DE ACTIVO TI'
+    story = [Paragraph(title, title_style)]
     story.append(Paragraph(f"<b>Folio:</b> {plain(snapshot.get('folio'))} &nbsp;&nbsp; "
                            f"<b>Fecha:</b> {plain(fecha)} &nbsp;&nbsp; "
                            f"<b>Movimiento:</b> {plain(tipo)}", small))
     story.append(Paragraph(f"<b>Ubicación:</b> {plain(snapshot.get('ubicacion_destino'))}", small))
-    story.append(Paragraph('DATOS DEL COLABORADOR', heading))
-    col_table = Table([
-        row('Nombre', colaborador.get('nombre_completo')),
-        row('RUT', colaborador.get('rut')),
-        row('Área / cargo', f"{colaborador.get('area') or ''} / {colaborador.get('cargo') or ''}"),
-        row('Correo', colaborador.get('correo_corp')),
-        row('Ubicación', colaborador.get('ubicacion')),
-    ], colWidths=[3.2 * cm, 14.6 * cm], hAlign='LEFT')
-    col_table.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                                   ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
-                                   ('TOPPADDING', (0, 0), (-1, -1), 2)]))
-    story.append(col_table)
+    if colaborador:
+        story.append(Paragraph('DATOS DEL COLABORADOR', heading))
+        col_rows = [
+            row('Nombre', colaborador.get('nombre_completo')),
+            row('RUT', colaborador.get('rut')),
+            row('Área / cargo', f"{colaborador.get('area') or ''} / {colaborador.get('cargo') or ''}"),
+            row('Correo', colaborador.get('correo_corp')),
+            row('Ubicación', colaborador.get('ubicacion')),
+        ]
+        if tipo == 'REASIGNACION':
+            previous = snapshot.get('colaborador_origen') or {}
+            col_rows.append(row('Custodio anterior', previous.get('nombre_completo')))
+        col_table = Table(col_rows, colWidths=[3.2 * cm, 14.6 * cm], hAlign='LEFT')
+        col_table.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                                       ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+                                       ('TOPPADDING', (0, 0), (-1, -1), 2)]))
+        story.append(col_table)
+    else:
+        story.append(Paragraph('Custodia: Inventario TI (sin colaborador asignado).', small))
     story.append(Paragraph('DATOS DEL ACTIVO', heading))
     activo_rows = [
         row('Tipo / marca / modelo', ' / '.join(str(activo.get(k) or '') for k in ('tipo', 'marca', 'modelo'))),
@@ -1069,16 +1078,32 @@ def generar_acta_custodia_pdf(snapshot):
                                      ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
                                      ('TOPPADDING', (0, 0), (-1, -1), 2)]))
     story.append(activo_table)
-    story.append(Paragraph('CONDICIÓN DE CUSTODIA', heading))
-    story.append(Paragraph(
-        'El colaborador recibe el activo y sus accesorios en el estado señalado. '
-        'Se responsabiliza de su cuidado y buen uso, y se compromete a devolverlos '
-        'cuando la organización lo solicite, ante un cambio de funciones o al '
-        'término de la relación laboral.', small))
+    if custody:
+        story.append(Paragraph('CONDICIÓN DE CUSTODIA', heading))
+        story.append(Paragraph(
+            'El colaborador recibe el activo y sus accesorios en el estado señalado. '
+            'Se responsabiliza de su cuidado y buen uso, y se compromete a devolverlos '
+            'cuando la organización lo solicite, ante un cambio de funciones o al '
+            'término de la relación laboral.', small))
+        entrega_nombre = operador.get('nombre')
+        recibe_nombre = colaborador.get('nombre_completo')
+        entrega_label, recibe_label = 'Entrega', 'Recibe'
+    elif tipo in {'DEVOLUCION', 'INGRESO_REPARACION'} and colaborador:
+        story.append(Paragraph('CONSTANCIA DEL MOVIMIENTO', heading))
+        story.append(Paragraph('Se deja constancia de la recepción del activo por Infraestructura TI en el estado y con los accesorios indicados.', small))
+        entrega_nombre = colaborador.get('nombre_completo')
+        recibe_nombre = operador.get('nombre')
+        entrega_label, recibe_label = 'Entrega', 'Recibe TI'
+    else:
+        story.append(Paragraph('CONSTANCIA DEL MOVIMIENTO', heading))
+        story.append(Paragraph('Infraestructura TI registra el cambio de estado y ubicación del activo con las observaciones indicadas.', small))
+        entrega_nombre = operador.get('nombre')
+        recibe_nombre = ''
+        entrega_label, recibe_label = 'Registra TI', 'Verifica'
     story.append(Spacer(1, 1.0 * cm))
     firmas = Table([[
-        Paragraph(f"________________________<br/><b>Entrega</b><br/>{plain(operador.get('nombre'))}", small),
-        Paragraph(f"________________________<br/><b>Recibe</b><br/>{plain(colaborador.get('nombre_completo'))}", small),
+        Paragraph(f"________________________<br/><b>{entrega_label}</b><br/>{plain(entrega_nombre)}", small),
+        Paragraph(f"________________________<br/><b>{recibe_label}</b><br/>{plain(recibe_nombre)}", small),
         Paragraph('________________________<br/><b>V°B°</b><br/>Nombre y firma', small),
     ]], colWidths=[5.95 * cm] * 3)
     firmas.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP'),
@@ -1088,7 +1113,7 @@ def generar_acta_custodia_pdf(snapshot):
     document = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=1.6 * cm,
                                  rightMargin=1.6 * cm, topMargin=3.2 * cm,
                                  bottomMargin=1.8 * cm,
-                                 title=f"Acta de Asignación y Custodia {snapshot.get('folio', '')}")
+                                 title=f"{title} {snapshot.get('folio', '')}")
     document.build(story, onFirstPage=_draw_page_background,
                    onLaterPages=_draw_page_background)
     buffer.seek(0)

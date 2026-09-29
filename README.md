@@ -44,6 +44,10 @@ VITE_API_URL=/api
 
 6. Ejecutar `npm run dev`.
 
+Para permitir pruebas desde otros equipos de la misma red, seguir
+[Desarrollo en red local](docs/DESARROLLO_RED_LOCAL.md). El perfil LAN se
+inicia con `npm run dev:lan` y mantiene la API detrás del proxy de Vite.
+
 No reutilizar una `FIELD_ENCRYPTION_KEY` distinta sobre una base que ya contenga secretos `ENC2::`; los secretos existentes solo pueden descifrarse con la clave con la que fueron cifrados.
 
 ## Producción
@@ -62,6 +66,7 @@ respaldos.
 - [Arquitectura y diagramas de flujo](docs/ARQUITECTURA_Y_FLUJOS.md)
 - [Modelo de datos y relaciones](docs/MODELO_DATOS.md)
 - [Migración verificada de SQLite a MySQL](docs/MIGRACION_MYSQL.md)
+- [Desarrollo en red local](docs/DESARROLLO_RED_LOCAL.md)
 - [Histórico de importación v1.1](docs/historico/importacion/IMPORTACION_V11.md)
 - [Histórico de rendimiento v1.1](docs/historico/rendimiento/RENDIMIENTO_V11.md)
 

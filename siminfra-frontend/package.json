@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:lan": "vite --mode lan",
     "build": "vite build",
     "start": "vite preview",
     "lint": "oxlint",

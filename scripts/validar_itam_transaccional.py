@@ -26,6 +26,20 @@ with transaction.atomic():
                               {'nombre':'Mouse','entregado':True}]}, format='json')
     assert first.status_code == 201, (first.status_code, first.data)
     assert first.data['acta']['folio'].startswith('ATI-'), first.data
+    asset.refresh_from_db()
+    qr_path = f'/api/activos/qr/{asset.token_qr}/'
+    qr_detail = client.get(qr_path)
+    assert qr_detail.status_code == 200, (qr_detail.status_code, getattr(qr_detail, 'data', None))
+    assert qr_detail.data['activo']['usuario_nombre'] == person.nombre_completo
+    assert qr_detail.data['qr_url'].endswith(f'/qr/a/{asset.token_qr}')
+    assert 'rut' not in qr_detail.data['activo']
+    qr_image = client.get(f'{qr_path}imagen/')
+    assert qr_image.status_code == 200 and qr_image['Content-Type'].startswith('image/svg+xml')
+    assert b'<svg' in qr_image.content and person.nombre_completo.encode() not in qr_image.content
+    anonymous = APIClient(SERVER_NAME='127.0.0.1', HTTP_HOST='127.0.0.1')
+    assert anonymous.get(qr_path).status_code in (401, 403)
+    assert anonymous.get(f'{qr_path}imagen/').status_code in (401, 403)
+    assert client.get(f'/api/activos/qr/{uuid.uuid4()}/').status_code == 404
     direct = client.patch(f'/api/equipos/{asset.pk}/', {'usuario': None}, format='json')
     assert direct.status_code == 400, (direct.status_code, getattr(direct, 'data', None))
     inactive = client.patch(f'/api/usuarios/{person.pk}/', {'estado': 'BAJA'}, format='json')
@@ -58,7 +72,7 @@ with transaction.atomic():
     assert MovimientoActivo.objects.filter(activo=asset).count() == 2
     assert ActaEntrega.objects.filter(movimientos__activo=asset).count() == 2
     assert SecurityAuditLog.objects.filter(module='ACTIVOS_ITAM', object_id_text=str(asset.pk)).count() == 2
-    print('ITAM transacción: asignación/devolución/folio/PDF/historial/conflicto/accesorios/auditoría OK')
+    print('ITAM transacción: asignación/devolución/folio/PDF/QR/historial/conflicto/accesorios/auditoría OK')
     print(f'Folios temporales: {first.data["acta"]["folio"]}, {returned.data["acta"]["folio"]}')
     transaction.set_rollback(True)
 assert not Equipamiento.objects.filter(numero_serie=f'ITAM-{suffix}').exists()

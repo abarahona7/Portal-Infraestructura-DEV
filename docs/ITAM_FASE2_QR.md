@@ -1,0 +1,9 @@
+# Activos TI: avance de Fase 2 — QR y ficha
+
+Cada activo conserva su UUID `token_qr` creado en la Fase 1. La pantalla de Equipos incorpora «Abrir ficha y QR», que muestra el estado, custodio y área, ubicación, accesorios, último movimiento, actas recientes y acceso al historial completo. También permite descargar una etiqueta SVG. El QR contiene únicamente la URL `/qr/a/<uuid>`; no incluye RUT, nombre ni otra información personal.
+
+La URL abre el portal y, tras iniciar sesión, carga la ficha. La API `/api/activos/qr/<uuid>/` entrega los datos acotados de la ficha; `/api/activos/qr/<uuid>/imagen/` entrega el SVG. Ambas rutas aplican el rol del portal y rechazan visitantes sin sesión. El UUID identifica el activo, pero no sustituye la autorización. Los movimientos y actas continúan bajo sus permisos existentes.
+
+En desarrollo, `PORTAL_PUBLIC_URL` usa `http://localhost:5173` por defecto, compatible con el túnel SSH actual incluso con `DJANGO_DEBUG=False`. Si los lectores usarán otro host, configure `PORTAL_PUBLIC_URL` con la dirección que puedan abrir antes de imprimir las etiquetas. En producción es obligatorio configurarla con HTTPS. La ruta `/qr/a/<uuid>` debe servir la aplicación React mediante el fallback SPA del servidor web. El enlace impreso es estable mientras se mantengan el UUID y la URL pública; un cambio posterior de dominio requiere una redirección o reimprimir las etiquetas.
+
+La comprobación reversible `python manage.py shell < scripts/validar_itam_transaccional.py` valida acceso autenticado y anónimo, respuesta de ficha, SVG, y la asignación/devolución con rollback. No se añadió ninguna migración para esta parte. Quedan para las siguientes entregas de Fase 2: transiciones de reasignación, reparación y baja, y consulta del histórico desde la ficha del colaborador.

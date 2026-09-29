@@ -182,6 +182,7 @@ LANGUAGE_CODE = 'es-cl'
 TIME_ZONE = os.getenv('DJANGO_TIME_ZONE', 'America/Santiago')
 USE_I18N = True
 USE_TZ = True
+PORTAL_PUBLIC_URL = os.getenv('PORTAL_PUBLIC_URL', 'http://localhost:5173' if not IS_PRODUCTION else '').rstrip('/')
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 

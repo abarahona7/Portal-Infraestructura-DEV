@@ -75,6 +75,7 @@ import { formatEquipmentType } from './utils/formatEquipmentType';
 import apiClient from './api/client';
 import NuevoMovimientoModal from './features/movimientos/components/NuevoMovimientoModal';
 import HistorialMovimientosModal from './features/movimientos/components/HistorialMovimientosModal';
+import FichaActivoModal from './features/movimientos/components/FichaActivoModal';
 import { getIpAssignmentHistory } from './api/ipsApi';
 import { getItemDetailsByTab } from './services/getItemService';
 
@@ -106,6 +107,7 @@ export default function App() {
   const [secretRequest, setSecretRequest] = useState(null);
   const [movimientoOpen, setMovimientoOpen] = useState(false);
   const [historialActivo, setHistorialActivo] = useState(null);
+  const [fichaQrToken, setFichaQrToken] = useState(() => window.location.pathname.match(/^\/qr\/a\/([0-9a-f-]{36})\/?$/i)?.[1] || null);
 
   const confirmResolverRef = useRef(null);
 
@@ -1233,6 +1235,7 @@ export default function App() {
                     (item) => openDetailedItem('equipos', item, setHistoryEquipo)
                   }
                   onShowAssetMovements={setHistorialActivo}
+                  onShowAssetQr={(item) => setFichaQrToken(item.token_qr)}
 
                   onShowIpHistory={openIpHistory}
 
@@ -1275,6 +1278,7 @@ export default function App() {
 
         <NuevoMovimientoModal open={movimientoOpen} onClose={() => setMovimientoOpen(false)} onCompleted={() => { refreshAllData(); showToast('Movimiento y acta generados.'); }} />
         <HistorialMovimientosModal activo={historialActivo} onClose={() => setHistorialActivo(null)} />
+        {fichaQrToken && <FichaActivoModal key={fichaQrToken} token={fichaQrToken} onHistory={setHistorialActivo} onClose={() => { setFichaQrToken(null); if (window.location.pathname.startsWith('/qr/a/')) window.history.replaceState(null, '', '/'); }} />}
 
         {/* MODALES DE DETALLE / HISTORIAL */}
         <ModuleDetailModals

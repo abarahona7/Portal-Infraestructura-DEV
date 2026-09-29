@@ -1,7 +1,8 @@
 import apiClient from './client';
 
-export const getAnexos = async (params = {}) => {
+export const getAnexos = async (params = {}, requestConfig = {}) => {
   const response = await apiClient.get('/anexos/', {
+    ...requestConfig,
     params,
   });
 

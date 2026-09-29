@@ -1,7 +1,8 @@
 import apiClient from './client';
 
-export const getUsuarios = async (params = {}) => {
+export const getUsuarios = async (params = {}, requestConfig = {}) => {
   const response = await apiClient.get('/usuarios/', {
+    ...requestConfig,
     params,
   });
 

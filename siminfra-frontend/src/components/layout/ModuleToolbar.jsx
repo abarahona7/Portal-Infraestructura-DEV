@@ -3,7 +3,9 @@ import './ModuleToolbar.css';
 import {
   Download,
   Filter,
-  Plus
+  LoaderCircle,
+  Plus,
+  Search
 } from 'lucide-react';
 
 export default function ModuleToolbar({
@@ -22,6 +24,7 @@ export default function ModuleToolbar({
   onCreate,
   onExport,
   readOnly = false,
+  searching = false,
 }) {
   const getCreateLabel = () => {
     switch (activeTab) {
@@ -233,9 +236,26 @@ export default function ModuleToolbar({
 
 
         {/* BUSCADOR */}
-        <div className="module-toolbar-search">
+        <div
+          className="module-toolbar-search"
+          aria-busy={searching}
+        >
+          {searching ? (
+            <LoaderCircle
+              className="module-toolbar-search-spinner"
+              size={18}
+              aria-label="Buscando"
+            />
+          ) : (
+            <Search
+              className="module-toolbar-search-icon"
+              size={18}
+              aria-hidden="true"
+            />
+          )}
           <input
-            type="text"
+            type="search"
+            autoComplete="off"
             aria-label={getSearchPlaceholder()}
             placeholder={
               getSearchPlaceholder()

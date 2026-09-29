@@ -275,21 +275,21 @@ export default function App() {
     invalidateReferenceData,
   } = useReferenceData(token, authUser?.role, activeModuleTab);
 
-  const hasOpenIpAssignmentForm = Boolean(newItem || editingItem) && (
+  const normalizedSearch = search.trim();
+  const isGlobalUserSearch = (
     activeModuleTab === 'usuarios'
-    || activeModuleTab === 'servidores'
-    || activeModuleTab === 'pcs-genericos'
+    && !selectedDpto
+    && Boolean(normalizedSearch)
+  );
+  const isGlobalIpSearch = (
+    activeModuleTab === 'ips'
+    && !selectedIpSegment
+    && Boolean(normalizedSearch)
   );
 
-  useEffect(() => {
-    if (hasOpenIpAssignmentForm) {
-      ensureReferenceData(['ips']);
-    }
-  }, [hasOpenIpAssignmentForm, ensureReferenceData]);
-
   const moduleDataEnabled = !(
-    (activeModuleTab === 'usuarios' && !selectedDpto)
-    || (activeModuleTab === 'ips' && !selectedIpSegment)
+    (activeModuleTab === 'usuarios' && !selectedDpto && !normalizedSearch)
+    || (activeModuleTab === 'ips' && !selectedIpSegment && !normalizedSearch)
   );
 
   const {
@@ -298,6 +298,7 @@ export default function App() {
     setPage,
     refreshData,
     getAllData,
+    isLoading,
   } = useModuleData({
     token,
     tab: activeModuleTab,
@@ -355,9 +356,14 @@ export default function App() {
       return;
     }
 
+    if (activeModuleTab === 'usuarios') {
+      invalidateReferenceData(['usuarios']);
+    }
+
     const referenceSections = {
       usuarios: ['usuarios_stats', 'ips'],
       equipos: ['usuarios'],
+      anexos: ['usuarios'],
       ips: ['ips', 'ips_stats'],
       servidores: ['ips'],
       'pcs-genericos': ['ips'],
@@ -497,10 +503,27 @@ export default function App() {
     }
   };
 
-  const handleOpenCreateModal = () => {
+  const getFormReferenceSections = () => ({
+    usuarios: ['ips'],
+    equipos: ['usuarios'],
+    anexos: ['usuarios'],
+    'pcs-genericos': ['ips'],
+    servidores: ['ips'],
+  })[activeModuleTab] || [];
+
+  const loadFormReferences = async () => {
+    const sections = getFormReferenceSections();
+    if (sections.length > 0) {
+      await ensureReferenceData(sections);
+    }
+  };
+
+  const handleOpenCreateModal = async () => {
     if (isViewer) {
       return;
     }
+
+    await loadFormReferences();
 
     const initialItem = getInitialCreateItem(activeModuleTab);
 
@@ -511,6 +534,15 @@ export default function App() {
     }
 
     setNewItem(initialItem);
+  };
+
+  const handleOpenEditModal = async (item) => {
+    if (isViewer) {
+      return;
+    }
+
+    await loadFormReferences();
+    setEditingItem(item);
   };
 
   const filteredData = data;
@@ -941,6 +973,7 @@ export default function App() {
 
             search={search}
             onSearchChange={setSearch}
+            searching={isLoading && Boolean(normalizedSearch)}
             onCreate={handleOpenCreateModal}
 
             onExport={
@@ -981,6 +1014,7 @@ export default function App() {
 
             search={search}
             onSearchChange={setSearch}
+            searching={isLoading && Boolean(normalizedSearch)}
             onCreate={handleOpenCreateModal}
             onExport={handleExportIps}
           />
@@ -1000,7 +1034,9 @@ export default function App() {
         {(
           isEquipmentModule ||
           (tab === 'usuarios' && selectedDpto) ||
+          isGlobalUserSearch ||
           (tab === 'ips' && selectedIpSegment) ||
+          isGlobalIpSearch ||
           (
             !isEquipmentModule &&
             tab !== 'usuarios' &&
@@ -1047,11 +1083,15 @@ export default function App() {
                 >
                   <div>
                     <span className="equipment-results-eyebrow">
-                      Departamento / Área seleccionada
+                      {isGlobalUserSearch
+                        ? 'Búsqueda global de usuarios'
+                        : 'Departamento / Área seleccionada'}
                     </span>
 
                     <h2>
-                      {selectedDepartmentLabel}
+                      {isGlobalUserSearch
+                        ? `Resultados para "${normalizedSearch}"`
+                        : selectedDepartmentLabel}
                     </h2>
                   </div>
 
@@ -1077,11 +1117,15 @@ export default function App() {
                 >
                   <div>
                     <span className="equipment-results-eyebrow">
-                      Segmento seleccionado
+                      {isGlobalIpSearch
+                        ? 'Búsqueda global de direcciones IP'
+                        : 'Segmento seleccionado'}
                     </span>
 
                     <h2>
-                      {selectedIpSegmentLabel}
+                      {isGlobalIpSearch
+                        ? `Resultados para "${normalizedSearch}"`
+                        : selectedIpSegmentLabel}
                     </h2>
                   </div>
 
@@ -1099,48 +1143,51 @@ export default function App() {
                 </div>
               )}
               {/* FILTROS Y ACCIONES */}
-              <ModuleToolbar
-                activeTab={activeModuleTab}
-                readOnly={isViewer}
-                departments={dptosList}
+              {!isGlobalUserSearch && !isGlobalIpSearch && (
+                <ModuleToolbar
+                  activeTab={activeModuleTab}
+                  readOnly={isViewer}
+                  departments={dptosList}
 
-                selectedDepartment={selectedDpto}
-                onDepartmentChange={setSelectedDpto}
+                  selectedDepartment={selectedDpto}
+                  onDepartmentChange={setSelectedDpto}
 
-                selectedEquipmentStatus={selectedEstadoEquipo}
-                onEquipmentStatusChange={setSelectedEstadoEquipo}
+                  selectedEquipmentStatus={selectedEstadoEquipo}
+                  onEquipmentStatusChange={setSelectedEstadoEquipo}
 
-                selectedIpStatus={selectedEstadoIP}
-                onIpStatusChange={setSelectedEstadoIP}
+                  selectedIpStatus={selectedEstadoIP}
+                  onIpStatusChange={setSelectedEstadoIP}
 
-                selectedAnexoStatus={
-                  selectedEstadoAnexo
-                }
-                onAnexoStatusChange={
-                  setSelectedEstadoAnexo
-                }
-                search={search}
-                onSearchChange={setSearch}
-                onCreate={handleOpenCreateModal}
+                  selectedAnexoStatus={
+                    selectedEstadoAnexo
+                  }
+                  onAnexoStatusChange={
+                    setSelectedEstadoAnexo
+                  }
+                  search={search}
+                  onSearchChange={setSearch}
+                  searching={isLoading && Boolean(normalizedSearch)}
+                  onCreate={handleOpenCreateModal}
 
-                onExport={
-                  tab === 'usuarios'
-                    ? handleExportUsuarios
-                    : isEquipmentModule
-                      ? handleExportEquipos
-                      : tab === 'ips'
-                        ? handleExportIps
-                        : tab === 'servidores'
-                          ? handleExportServidores
-                          : tab === 'perfiles'
-                            ? handleExportPerfiles
-                            : tab === 'anexos'
-                              ? handleExportAnexos
-                              : tab === 'pcs-genericos'
-                                ? handleExportPCsGenericos
-                                : undefined
-                }
-              />
+                  onExport={
+                    tab === 'usuarios'
+                      ? handleExportUsuarios
+                      : isEquipmentModule
+                        ? handleExportEquipos
+                        : tab === 'ips'
+                          ? handleExportIps
+                          : tab === 'servidores'
+                            ? handleExportServidores
+                            : tab === 'perfiles'
+                              ? handleExportPerfiles
+                              : tab === 'anexos'
+                                ? handleExportAnexos
+                                : tab === 'pcs-genericos'
+                                  ? handleExportPCsGenericos
+                                  : undefined
+                  }
+                />
+              )}
 
               {/* TABLA PRINCIPAL */}
               <div className="app-table-container">
@@ -1199,7 +1246,7 @@ export default function App() {
                   }
 
                   onEdit={
-                    setEditingItem
+                    handleOpenEditModal
                   }
 
                   onDelete={handleDelete}

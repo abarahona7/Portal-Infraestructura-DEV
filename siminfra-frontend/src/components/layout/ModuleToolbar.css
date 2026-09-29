@@ -135,14 +135,30 @@
 /* BUSCADOR */
 
 .module-toolbar-search {
+  position: relative;
   width: min(320px, 100%);
+}
+
+.module-toolbar-search-icon,
+.module-toolbar-search-spinner {
+  position: absolute;
+  top: 50%;
+  left: 0.85rem;
+  z-index: 1;
+  color: #64748b;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.module-toolbar-search-spinner {
+  animation: module-toolbar-spin 0.8s linear infinite;
 }
 
 .module-toolbar-search input {
   width: 100%;
   min-height: 44px;
 
-  padding: 0.7rem 1rem;
+  padding: 0.7rem 1rem 0.7rem 2.5rem;
 
   border-radius: 8px;
   border: 1px solid #cbd5e1;
@@ -156,6 +172,18 @@
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
+}
+
+@keyframes module-toolbar-spin {
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .module-toolbar-search-spinner {
+    animation: none;
+  }
 }
 
 .module-toolbar-search input:focus {

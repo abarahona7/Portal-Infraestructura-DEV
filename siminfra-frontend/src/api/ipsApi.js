@@ -1,7 +1,8 @@
 import apiClient from './client';
 
-export const getIps = async (params = {}) => {
+export const getIps = async (params = {}, requestConfig = {}) => {
   const response = await apiClient.get('/ips/', {
+    ...requestConfig,
     params,
   });
 

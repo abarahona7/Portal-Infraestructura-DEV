@@ -18,45 +18,50 @@ const buildRequestKey = (tab, params) => JSON.stringify([
 
 const fetchItemsByTab = (
   tab,
-  params = {}
+  params = {},
+  requestConfig = {}
 ) => {
   switch (tab) {
     case 'usuarios':
-      return getUsuarios(params);
+      return getUsuarios(params, requestConfig);
 
     case 'equipos':
-      return getEquipos(params);
+      return getEquipos(params, requestConfig);
 
     case 'perfiles':
-      return getPerfiles(params);
+      return getPerfiles(params, requestConfig);
 
     case 'ips':
-      return getIps(params);
+      return getIps(params, requestConfig);
 
     case 'anexos':
-      return getAnexos(params);
+      return getAnexos(params, requestConfig);
 
     case 'pcs-genericos':
-      return getPcsGenericos(params);
+      return getPcsGenericos(params, requestConfig);
 
     case 'servidores':
-      return getServidores(params);
+      return getServidores(params, requestConfig);
 
     case 'departamentos':
-      return getDepartamentos(params);
+      return getDepartamentos(params, requestConfig);
 
     default:
       return [];
   }
 };
 
-export const getItemsByTab = (tab, params = {}) => {
+export const getItemsByTab = (tab, params = {}, requestConfig = {}) => {
+  if (requestConfig.signal) {
+    return fetchItemsByTab(tab, params, requestConfig);
+  }
+
   const key = buildRequestKey(tab, params);
   if (pendingRequests.has(key)) {
     return pendingRequests.get(key);
   }
 
-  const request = Promise.resolve(fetchItemsByTab(tab, params))
+  const request = Promise.resolve(fetchItemsByTab(tab, params, requestConfig))
     .finally(() => pendingRequests.delete(key));
 
   pendingRequests.set(key, request);

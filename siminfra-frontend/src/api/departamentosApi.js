@@ -1,7 +1,10 @@
 import apiClient from './client';
 
-export const getDepartamentos = async (params = {}) => {
-  const response = await apiClient.get('/departamentos/', { params });
+export const getDepartamentos = async (params = {}, requestConfig = {}) => {
+  const response = await apiClient.get('/departamentos/', {
+    ...requestConfig,
+    params,
+  });
   return response.data;
 };
 

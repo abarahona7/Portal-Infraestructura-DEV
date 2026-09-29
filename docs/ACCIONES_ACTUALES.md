@@ -29,8 +29,9 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
 
 ### Usuarios
 
-- Seleccionar un departamento o área y consultar sus usuarios.
-- Buscar, paginar y exportar el resultado.
+- Seleccionar un departamento o área y consultar sus usuarios, o buscar por
+  nombre y otros datos en todas las áreas.
+- Buscar con actualización diferida breve, paginar y exportar el resultado.
 - Agregar, editar, eliminar con permiso administrativo y abrir la ficha.
 - Elegir primero el segmento de red y luego una IP disponible.
 - Consultar IP, hostname, teléfono, anexo, equipos y credenciales asociados.
@@ -55,7 +56,8 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
 
 ### Gestión de IP
 
-- Seleccionar un segmento y consultar sus direcciones libres o reservadas.
+- Seleccionar un segmento y consultar sus direcciones libres o reservadas, o
+  buscar una dirección en todos los segmentos.
 - Ordenar las direcciones por su último octeto numérico.
 - Buscar, filtrar, paginar y exportar.
 - Agregar, editar y consultar el historial de asignación.
@@ -116,4 +118,4 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
    seguridad.
 5. La interfaz informa el resultado y actualiza los registros afectados.
 
-Mapa contrastado con la implementación actual del repositorio al 28-09-2026.
+Mapa contrastado con la implementación actual del repositorio al 29-09-2026.

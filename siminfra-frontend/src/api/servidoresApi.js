@@ -1,9 +1,10 @@
 import apiClient from './client';
 
-export const getServidores = async (params = {}) => {
+export const getServidores = async (params = {}, requestConfig = {}) => {
   const response = await apiClient.get(
     '/servidores/',
     {
+      ...requestConfig,
       params,
     }
   );

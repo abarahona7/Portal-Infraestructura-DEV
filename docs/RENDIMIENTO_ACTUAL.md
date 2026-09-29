@@ -17,8 +17,27 @@ Mediciones locales con SQLite y cinco repeticiones:
 | Tamaño de respuesta | 80.159 bytes | 6.610 bytes | -91,8 % |
 | Consultas SQL | 3 | 3 | Sin cambio |
 
-La lista auxiliar completa continúa disponible para Equipos y Anexos, donde sí
-se necesita para seleccionar o relacionar usuarios.
+La lista auxiliar completa continúa disponible para los formularios de Equipos
+y Anexos, donde se necesita para seleccionar o relacionar usuarios.
+
+## Búsquedas interactivas y catálogos diferidos
+
+Los buscadores de todos los módulos consultan el backend después de 150 ms sin
+nuevas pulsaciones. Cuando el texto cambia, el frontend cancela la solicitud
+anterior para evitar que una respuesta antigua sustituya el resultado más
+reciente. El campo muestra un indicador mientras la consulta está pendiente.
+
+Usuarios permite buscar en todas las áreas sin seleccionar previamente un
+departamento. Gestión de IP permite buscar en todos los segmentos sin escoger
+uno primero. Los filtros de departamento, segmento y estado continúan
+combinándose con la búsqueda cuando están seleccionados.
+
+La lista auxiliar completa de usuarios dejó de descargarse al entrar a Equipos
+o Anexos. Se solicita una sola vez al abrir Agregar o Editar, se conserva en
+memoria y se invalida cuando una modificación puede cambiar sus relaciones.
+Esto elimina de la navegación de solo consulta una respuesta de 74.480 bytes y
+una consulta SQL en Anexos; en Equipos evita la carga combinada de usuarios y
+departamentos de 80.159 bytes y tres consultas SQL.
 
 ## Optimización de Departamentos y Subáreas
 

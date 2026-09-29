@@ -5,8 +5,8 @@ import { getReferenceData } from '../api/referenceApi';
 
 const REFERENCE_SECTIONS_BY_MODULE = {
   usuarios: ['usuarios_stats', 'departamentos'],
-  equipos: ['usuarios', 'departamentos'],
-  anexos: ['usuarios'],
+  equipos: [],
+  anexos: [],
   perfiles: ['perfiles', 'departamentos'],
   departamentos: [],
   'pcs-genericos': ['departamentos'],

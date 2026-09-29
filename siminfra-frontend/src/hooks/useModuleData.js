@@ -54,12 +54,18 @@ export const useModuleData = ({
   const [data, setData] = useState([]);
   const [pagination, setPagination] = useState(EMPTY_PAGINATION);
   const [pageState, setPageState] = useState({ key: '', page: 1 });
-  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const [debouncedSearch, setDebouncedSearch] = useState(search.trim());
+  const [loadedRequestKey, setLoadedRequestKey] = useState('');
+  const normalizedSearch = search.trim();
+  const searchIsDebouncing = normalizedSearch !== debouncedSearch;
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
+    const timer = window.setTimeout(
+      () => setDebouncedSearch(normalizedSearch),
+      150
+    );
     return () => window.clearTimeout(timer);
-  }, [search]);
+  }, [normalizedSearch]);
 
   const baseParams = useMemo(() => {
     const params = {};
@@ -114,24 +120,30 @@ export const useModuleData = ({
     [tab, enabled, baseParams]
   );
   const page = pageState.key === filterKey ? pageState.page : 1;
+  const requestKey = JSON.stringify([filterKey, page]);
+  const isLoading = Boolean(
+    token
+    && enabled
+    && (searchIsDebouncing || loadedRequestKey !== requestKey)
+  );
 
   const exportParams = useMemo(() => {
     const params = { ...baseParams };
-    if (search) {
-      params.search = search;
+    if (normalizedSearch) {
+      params.search = normalizedSearch;
     } else {
       delete params.search;
     }
     return params;
-  }, [baseParams, search]);
+  }, [baseParams, normalizedSearch]);
 
   const setPage = useCallback((nextPage) => {
     const normalizedPage = Math.max(Number(nextPage) || 1, 1);
     setPageState({ key: filterKey, page: normalizedPage });
   }, [filterKey]);
 
-  const loadData = useCallback(async () => {
-    if (!token || !enabled) {
+  const loadData = useCallback(async (signal) => {
+    if (!token || !enabled || searchIsDebouncing) {
       return null;
     }
 
@@ -140,9 +152,17 @@ export const useModuleData = ({
         ...baseParams,
         page,
         page_size: PAGE_SIZE,
-      });
+      }, { signal });
       return normalizeResponse(result);
     } catch (error) {
+      if (
+        error.code === 'ERR_CANCELED'
+        || error.name === 'CanceledError'
+        || error.name === 'AbortError'
+      ) {
+        return null;
+      }
+
       if (error.response?.status === 401) {
         onUnauthorized?.();
         return null;
@@ -161,6 +181,7 @@ export const useModuleData = ({
     baseParams,
     page,
     onUnauthorized,
+    searchIsDebouncing,
   ]);
 
   const applyData = useCallback((normalized) => {
@@ -210,17 +231,36 @@ export const useModuleData = ({
       return;
     }
 
-    let cancelled = false;
-    loadData().then((normalized) => {
-      if (!cancelled) {
-        applyData(normalized);
-      }
-    });
+    if (searchIsDebouncing) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    loadData(controller.signal)
+      .then((normalized) => {
+        if (!controller.signal.aborted) {
+          applyData(normalized);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoadedRequestKey(requestKey);
+        }
+      });
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
-  }, [token, enabled, loadData, applyData]);
+  }, [
+    token,
+    enabled,
+    normalizedSearch,
+    searchIsDebouncing,
+    requestKey,
+    loadData,
+    applyData,
+  ]);
 
   useEffect(() => {
     if (!token || !enabled || !autoRefreshMs) {
@@ -243,5 +283,6 @@ export const useModuleData = ({
     setPage,
     refreshData,
     getAllData,
+    isLoading,
   };
 };

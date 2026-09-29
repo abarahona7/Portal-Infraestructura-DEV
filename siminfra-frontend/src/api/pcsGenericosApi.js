@@ -1,9 +1,12 @@
 import apiClient from './client';
 
-export const getPcsGenericos = async (params = {}) => {
+export const getPcsGenericos = async (params = {}, requestConfig = {}) => {
   const response = await apiClient.get(
     '/pcs-genericos/',
-    { params }
+    {
+      ...requestConfig,
+      params,
+    }
   );
 
   return response.data;

@@ -1,7 +1,8 @@
 import apiClient from './client';
 
-export const getPerfiles = async (params = {}) => {
+export const getPerfiles = async (params = {}, requestConfig = {}) => {
   const response = await apiClient.get('/perfiles-genericos/', {
+    ...requestConfig,
     params,
   });
 

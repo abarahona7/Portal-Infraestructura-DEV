@@ -1,7 +1,8 @@
 import apiClient from './client';
 
-export const getEquipos = async (params = {}) => {
+export const getEquipos = async (params = {}, requestConfig = {}) => {
   const response = await apiClient.get('/equipos/', {
+    ...requestConfig,
     params,
   });
 

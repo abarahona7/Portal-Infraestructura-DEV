@@ -21,6 +21,9 @@ export default function Header({
     }
 
     switch (activeTab) {
+      case 'activos-resumen':
+        return 'Activos TI / Tablero';
+
       case 'usuarios':
         return 'Usuarios';
 

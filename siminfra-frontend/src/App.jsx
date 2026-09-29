@@ -76,6 +76,7 @@ import apiClient from './api/client';
 import NuevoMovimientoModal from './features/movimientos/components/NuevoMovimientoModal';
 import HistorialMovimientosModal from './features/movimientos/components/HistorialMovimientosModal';
 import FichaActivoModal from './features/movimientos/components/FichaActivoModal';
+import AssetDashboard from './features/dashboard/components/AssetDashboard';
 import HistorialColaboradorModal from './features/movimientos/components/HistorialColaboradorModal';
 import { getIpAssignmentHistory } from './api/ipsApi';
 import { getItemDetailsByTab } from './services/getItemService';
@@ -296,6 +297,7 @@ export default function App() {
   );
 
   const moduleDataEnabled = !(
+    activeModuleTab === 'activos-resumen' ||
     (activeModuleTab === 'usuarios' && !selectedDpto && !normalizedSearch)
     || (activeModuleTab === 'ips' && !selectedIpSegment && !normalizedSearch)
   );
@@ -1028,6 +1030,8 @@ export default function App() {
           />
         )}
 
+        {tab === 'activos-resumen' && <AssetDashboard onOpenHistory={setHistorialActivo} />}
+
         {tab === 'departamentos' && (
           <DepartamentosSubareasPage
             departamentos={data}
@@ -1049,7 +1053,8 @@ export default function App() {
             !isEquipmentModule &&
             tab !== 'usuarios' &&
             tab !== 'ips' &&
-            tab !== 'departamentos'
+            tab !== 'departamentos' &&
+            tab !== 'activos-resumen'
           )
         ) && (
             <>

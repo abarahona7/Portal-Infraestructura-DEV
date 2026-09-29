@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Users,
   Package,
+  BarChart3,
   Monitor,
   Laptop,
   Smartphone,
@@ -58,6 +59,11 @@ const navigationGroups = [
       label: 'Equipos',
     },
     children: [
+      {
+        id: 'activos-resumen',
+        icon: BarChart3,
+        label: 'Tablero de Activos',
+      },
       {
         id: 'pcs-genericos',
         icon: Monitor,

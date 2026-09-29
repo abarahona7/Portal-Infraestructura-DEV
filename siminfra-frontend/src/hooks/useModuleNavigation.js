@@ -6,6 +6,7 @@ const SIDEBAR_KEY = 'portal-infra-ti-chile-sidebar-collapsed';
 
 const VALID_TABS = new Set([
   'usuarios',
+  'activos-resumen',
   'pcs-genericos',
   'servidores',
   'perfiles',

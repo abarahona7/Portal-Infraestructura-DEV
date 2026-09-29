@@ -1228,6 +1228,24 @@ class PerformanceQueryTests(TestCase):
         self.assertEqual(payload['ips_stats']['172.23']['total'], 5)
         self.assertEqual(payload['ips_stats']['172.23']['reservadas'], 5)
 
+    def test_user_stats_are_aggregated_by_department(self):
+        with CaptureQueriesContext(connection) as queries:
+            response = self.client.get(
+                '/api/reference-data/?include=usuarios_stats'
+            )
+            response.content
+
+        self.assertEqual(response.status_code, 200)
+        # Una consulta valida el rol y otra calcula todos los conteos.
+        self.assertLessEqual(len(queries), 2)
+        payload = response.json()
+        self.assertEqual(set(payload), {'usuarios_stats'})
+        self.assertEqual(payload['usuarios_stats']['total'], 5)
+        self.assertEqual(
+            payload['usuarios_stats']['departamentos'],
+            [{'nombre': 'Rendimiento', 'total': 5}],
+        )
+
     def test_ip_segment_filter_orders_hosts_numerically(self):
         for host in (10, 2, 1):
             IP.objects.create(direccion_ip=f'172.24.1.{host}')

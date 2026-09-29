@@ -18,29 +18,15 @@ const getDepartmentLabel = (department) => {
 };
 
 export default function UserDepartmentCards({
-  usuarios = [],
+  stats = { departamentos: [] },
   selectedDepartment,
   onSelectDepartment,
 }) {
-  const departmentMap = usuarios.reduce((acc, usuario) => {
-    const department =
-      usuario.departamento_nombre?.trim() ||
-      usuario.dpto_area?.trim() ||
-      'Sin Departamento';
-
-    if (!acc[department]) {
-      acc[department] = 0;
-    }
-
-    acc[department] += 1;
-    return acc;
-  }, {});
-
-  const departments = Object.entries(departmentMap)
-    .map(([value, count]) => ({
-      value,
-      label: getDepartmentLabel(value),
-      count,
+  const departments = (stats.departamentos || [])
+    .map((department) => ({
+      value: department.nombre,
+      label: getDepartmentLabel(department.nombre),
+      count: department.total,
     }))
     .sort((a, b) =>
       a.label.localeCompare(b.label, 'es', { sensitivity: 'base' })

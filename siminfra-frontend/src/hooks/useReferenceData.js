@@ -4,7 +4,7 @@ import { getReferenceData } from '../api/referenceApi';
 
 
 const REFERENCE_SECTIONS_BY_MODULE = {
-  usuarios: ['usuarios', 'departamentos'],
+  usuarios: ['usuarios_stats', 'departamentos'],
   equipos: ['usuarios', 'departamentos'],
   anexos: ['usuarios'],
   perfiles: ['perfiles', 'departamentos'],
@@ -16,6 +16,10 @@ const REFERENCE_SECTIONS_BY_MODULE = {
 
 export const useReferenceData = (token, role, activeModule) => {
   const [usuariosList, setUsuariosList] = useState([]);
+  const [usuariosStats, setUsuariosStats] = useState({
+    total: 0,
+    departamentos: [],
+  });
   const [ipsList, setIpsList] = useState([]);
   const [departamentosList, setDepartamentosList] = useState([]);
   const [perfilesList, setPerfilesList] = useState([]);
@@ -31,7 +35,14 @@ export const useReferenceData = (token, role, activeModule) => {
     const requestedSections = sections.length
       ? [...new Set(sections)]
       : force
-        ? ['usuarios', 'ips', 'departamentos', 'perfiles', 'ips_stats']
+        ? [
+          'usuarios',
+          'usuarios_stats',
+          'ips',
+          'departamentos',
+          'perfiles',
+          'ips_stats',
+        ]
         : [];
     const pendingSections = force
       ? requestedSections
@@ -48,6 +59,9 @@ export const useReferenceData = (token, role, activeModule) => {
 
       if (Object.prototype.hasOwnProperty.call(result, 'usuarios')) {
         setUsuariosList(result.usuarios);
+      }
+      if (Object.prototype.hasOwnProperty.call(result, 'usuarios_stats')) {
+        setUsuariosStats(result.usuarios_stats);
       }
       if (Object.prototype.hasOwnProperty.call(result, 'ips')) {
         setIpsList(result.ips);
@@ -111,6 +125,9 @@ export const useReferenceData = (token, role, activeModule) => {
   return {
     dptosList: canLoadReferenceData ? dptosList : [],
     usuariosList: canLoadReferenceData ? usuariosList : [],
+    usuariosStats: canLoadReferenceData
+      ? usuariosStats
+      : { total: 0, departamentos: [] },
     ipsList: canLoadReferenceData ? ipsList : [],
     departamentosList: canLoadReferenceData ? departamentosList : [],
     perfilesList: canLoadReferenceData ? perfilesList : [],

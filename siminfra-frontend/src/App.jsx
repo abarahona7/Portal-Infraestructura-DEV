@@ -265,6 +265,7 @@ export default function App() {
   const {
     dptosList,
     usuariosList,
+    usuariosStats,
     ipsList,
     departamentosList,
     perfilesList,
@@ -343,13 +344,18 @@ export default function App() {
 
   const refreshAllData = async () => {
     const referenceSections = {
-      usuarios: ['usuarios', 'ips'],
+      usuarios: ['usuarios_stats', 'ips'],
       equipos: ['usuarios'],
       ips: ['ips', 'ips_stats'],
       servidores: ['ips'],
       'pcs-genericos': ['ips'],
       perfiles: ['perfiles'],
-      departamentos: ['departamentos', 'usuarios', 'perfiles'],
+      departamentos: [
+        'departamentos',
+        'usuarios',
+        'usuarios_stats',
+        'perfiles',
+      ],
     }[activeModuleTab] || [];
 
     const refreshTasks = [refreshData()];
@@ -510,7 +516,7 @@ export default function App() {
   const sidebarActiveCount = tab === 'departamentos'
     ? data.length
     : tab === 'usuarios' && !selectedDpto
-      ? usuariosList.length
+      ? usuariosStats.total
       : tab === 'ips' && !selectedIpSegment
         ? totalManagedIps
         : pagination.count;
@@ -892,7 +898,7 @@ export default function App() {
         {/* ÁREAS DE USUARIOS */}
         {tab === 'usuarios' && (
           <UserDepartmentCards
-            usuarios={usuariosList}
+            stats={usuariosStats}
             selectedDepartment={selectedDpto}
             onSelectDepartment={setSelectedDpto}
           />

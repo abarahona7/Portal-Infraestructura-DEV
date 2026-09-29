@@ -1,6 +1,6 @@
 from django.http import HttpResponse
 from django.db import transaction
-from django.db.models import Prefetch, Q
+from django.db.models import Count, Prefetch, Q
 from django.db.models.functions import Length
 from rest_framework.decorators import action
 
@@ -711,6 +711,37 @@ class ReferenceDataView(APIView):
                 users,
                 many=True,
             ).data
+
+        if 'usuarios_stats' in sections:
+            department_counts = {}
+            total_users = 0
+            rows = Usuario.objects.values(
+                'departamento__nombre',
+                'dpto_area',
+            ).annotate(total=Count('id'))
+
+            for row in rows:
+                department_name = (
+                    row['departamento__nombre']
+                    or row['dpto_area']
+                    or 'Sin Departamento'
+                ).strip() or 'Sin Departamento'
+                row_total = row['total']
+                department_counts[department_name] = (
+                    department_counts.get(department_name, 0) + row_total
+                )
+                total_users += row_total
+
+            payload['usuarios_stats'] = {
+                'total': total_users,
+                'departamentos': [
+                    {
+                        'nombre': name,
+                        'total': count,
+                    }
+                    for name, count in department_counts.items()
+                ],
+            }
 
         if 'ips' in sections:
             ips = IP.objects.only(

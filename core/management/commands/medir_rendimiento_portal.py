@@ -21,7 +21,7 @@ ENDPOINTS = {
     'departamentos': '/api/departamentos/',
     'datos_referencia': '/api/reference-data/',
     'referencia_inicio_usuarios': (
-        '/api/reference-data/?include=usuarios,departamentos'
+        '/api/reference-data/?include=usuarios_stats,departamentos'
     ),
 }
 

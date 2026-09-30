@@ -1,12 +1,16 @@
 """Ejecutar con `python manage.py shell < scripts/validar_busqueda_acta_folio_itam.py`."""
+import csv
+import io
 import uuid
+from datetime import timedelta
 
 from django.contrib.auth.models import Group, User
 from django.db import transaction
+from django.utils import timezone
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
-from core.models import ActaEntrega, MovimientoActivo
+from core.models import ActaEntrega, ActaEstadoEvento, MovimientoActivo
 
 suffix = uuid.uuid4().hex[:10]
 with transaction.atomic():
@@ -29,6 +33,17 @@ with transaction.atomic():
     assert found.data['results'][0]['folio'] == folio
     assert found.data['results'][0]['estado'] == 'GENERADA'
     assert found['Cache-Control'] == 'no-store, private'
+    issue_date = timezone.localdate(acta.fecha_emision)
+    by_date = client.get('/api/actas/', {
+        'folio': folio, 'desde': issue_date.isoformat(), 'hasta': issue_date.isoformat(),
+    })
+    assert by_date.status_code == 200 and by_date.data['count'] == 1
+    later = client.get('/api/actas/', {'folio': folio, 'desde': (issue_date + timedelta(days=1)).isoformat()})
+    assert later.status_code == 200 and later.data['count'] == 0
+    assert client.get('/api/actas/', {'desde': 'ayer'}).status_code == 400
+    assert client.get('/api/actas/', {
+        'desde': issue_date.isoformat(), 'hasta': (issue_date - timedelta(days=1)).isoformat(),
+    }).status_code == 400
     original = client.get(f'/api/actas/{acta.pk}/pdf/')
     assert original.status_code == 200 and original.content.startswith(b'%PDF-')
     pending = client.post(f'/api/actas/{acta.pk}/estado/', {'estado_nuevo': 'PENDIENTE_FIRMA'}, format='json')
@@ -59,6 +74,21 @@ with transaction.atomic():
     assert archive_closed.data['results'][0]['tiene_copia_firmada'] is True
     assert client.get('/api/actas/', {'folio': folio, 'estado': 'FIRMADA'}).data['count'] == 0
     assert client.get(f'/api/actas/{acta.pk}/firmada/').status_code == 200
+    report = client.get('/api/actas/reporte/', {
+        'folio': folio, 'estado': 'CERRADA', 'tipo_movimiento': 'ALTA',
+        'desde': issue_date.isoformat(), 'hasta': issue_date.isoformat(),
+    })
+    assert report.status_code == 200 and report['Cache-Control'] == 'no-store, private'
+    assert report['X-Content-Type-Options'] == 'nosniff'
+    content = b''.join(report.streaming_content).decode('utf-8-sig')
+    rows = list(csv.reader(io.StringIO(content), delimiter=';'))
+    assert len(rows) == 2 and rows[1][1] == folio and rows[1][4] == 'CERRADA'
+    assert rows[1][5] == acta.hash_verificacion
+    signed_event = ActaEstadoEvento.objects.get(acta=acta, estado_nuevo='FIRMADA')
+    assert rows[1][6] == signed_event.hash_copia_firmada
+    assert 'snapshot' not in content.lower() and '%PDF-' not in content
+    empty_report = client.get('/api/actas/reporte/', {'folio': folio, 'estado': 'GENERADA'})
+    assert len(list(csv.reader(io.StringIO(b''.join(empty_report.streaming_content).decode('utf-8-sig')), delimiter=';'))) == 1
     invalid = client.get('/api/actas/', {'folio': 'ATI-invalido'})
     assert invalid.status_code == 400 and 'folio' in invalid.data
     empty = client.get('/api/actas/', {'folio': 'ATI-2000-000000'})
@@ -67,8 +97,10 @@ with transaction.atomic():
     viewer.groups.add(Group.objects.get_or_create(name='Visualizador')[0])
     client.force_authenticate(user=viewer)
     assert client.get('/api/actas/', {'folio': folio}).status_code == 403
+    assert client.get('/api/actas/reporte/').status_code == 403
     anonymous = APIClient(SERVER_NAME='127.0.0.1', HTTP_HOST='127.0.0.1')
     assert anonymous.get('/api/actas/', {'folio': folio}).status_code in (401, 403)
+    assert anonymous.get('/api/actas/reporte/').status_code in (401, 403)
     transaction.set_rollback(True)
 assert not ActaEntrega.objects.filter(folio=folio).exists()
-print('Archivo ITAM: folio, filtros de estado vigente/tipo, PDF y permisos OK; rollback confirmado')
+print('Archivo ITAM: folio, fechas, estado vigente, CSV, PDF y permisos OK; rollback confirmado')

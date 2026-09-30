@@ -34,6 +34,18 @@ export const downloadReporteMovimientos = async (params = {}) => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
+export const downloadReporteActas = async (params = {}) => {
+  const { data } = await apiClient.get('/actas/reporte/', { params, responseType: 'blob' });
+  const url = URL.createObjectURL(data);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `actas-itam-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
 export const movimientoError = (error) => {
   const detail = error.response?.data;
   if (!detail || detail instanceof Blob) return 'No se pudo completar la operación. Intenta nuevamente.';

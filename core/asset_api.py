@@ -311,6 +311,41 @@ class MovimientoActivoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         }, status=status.HTTP_201_CREATED)
 
 
+class ActaArchiveFiltersSerializer(serializers.Serializer):
+    desde = serializers.DateField(required=False)
+    hasta = serializers.DateField(required=False)
+    estado = serializers.ChoiceField(choices=ESTADOS_ACTA, required=False)
+    tipo_movimiento = serializers.ChoiceField(choices=TIPOS_MOVIMIENTO, required=False)
+
+    def validate(self, attrs):
+        if attrs.get('desde') and attrs.get('hasta') and attrs['desde'] > attrs['hasta']:
+            raise serializers.ValidationError({'hasta': 'La fecha final debe ser igual o posterior a la inicial.'})
+        return attrs
+
+
+def _actas_con_estado_vigente(queryset):
+    ultimo = ActaEstadoEvento.objects.filter(acta_id=OuterRef('pk')).order_by('-pk').values('estado_nuevo')[:1]
+    return queryset.annotate(estado_actual=Coalesce(Subquery(ultimo), F('estado')))
+
+
+def _reporte_actas_rows(queryset):
+    writer = csv.writer(_CsvBuffer(), delimiter=';')
+    yield '\ufeff'
+    yield writer.writerow(['ID acta', 'Folio', 'Fecha emisión', 'Tipo movimiento', 'Estado vigente',
+                           'SHA-256 original', 'SHA-256 copia firmada'])
+    firma = ActaEstadoEvento.objects.filter(acta_id=OuterRef('pk'), estado_nuevo='FIRMADA').order_by(
+        '-pk').values('hash_copia_firmada')[:1]
+    queryset = _actas_con_estado_vigente(queryset).annotate(hash_firmada=Subquery(firma)).order_by(
+        '-fecha_emision', '-pk')
+    fields = ('id', 'folio', 'fecha_emision', 'tipo_movimiento', 'estado_actual',
+              'hash_verificacion', 'hash_firmada')
+    for acta_id, folio, issued, kind, state, original_hash, signed_hash in queryset.values_list(
+            *fields).iterator(chunk_size=1000):
+        values = (acta_id, folio, timezone.localtime(issued).strftime('%Y-%m-%d %H:%M:%S'),
+                  kind, state, original_hash, signed_hash)
+        yield writer.writerow([_csv_cell(value) for value in values])
+
+
 class ActaEntregaViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [PortalRolePermission]
     pagination_class = PortalPageNumberPagination
@@ -318,9 +353,7 @@ class ActaEntregaViewSet(viewsets.ReadOnlyModelViewSet):
     http_method_names = ['get', 'post', 'head', 'options']
 
     def get_queryset(self):
-        queryset = ActaEntrega.objects.defer('documento_pdf', 'snapshot_documento').prefetch_related(
-            Prefetch('estado_eventos', queryset=ActaEstadoEvento.objects.select_related('usuario').defer('copia_firmada_pdf'),
-                     to_attr='_eventos_estado'))
+        queryset = ActaEntrega.objects.all()
         colaborador_id = _filter_id(self.request, 'colaborador_id')
         if colaborador_id:
             queryset = queryset.filter(colaborador_id=colaborador_id)
@@ -329,22 +362,41 @@ class ActaEntregaViewSet(viewsets.ReadOnlyModelViewSet):
             if not re.fullmatch(r'ATI-[0-9]{4}-[0-9]{6}', folio):
                 raise serializers.ValidationError({'folio': 'Indique un folio con formato ATI-AAAA-######.'})
             queryset = queryset.filter(folio=folio)
-        if 'tipo_movimiento' in self.request.query_params:
-            kind = self.request.query_params['tipo_movimiento'].strip().upper()
-            if kind not in dict(TIPOS_MOVIMIENTO):
-                raise serializers.ValidationError({'tipo_movimiento': 'Seleccione un tipo de movimiento válido.'})
-            queryset = queryset.filter(tipo_movimiento=kind)
-        if 'estado' in self.request.query_params:
-            state = self.request.query_params['estado'].strip().upper()
-            if state not in dict(ESTADOS_ACTA):
-                raise serializers.ValidationError({'estado': 'Seleccione un estado de acta válido.'})
-            latest = ActaEstadoEvento.objects.filter(acta_id=OuterRef('pk')).order_by('-pk').values('estado_nuevo')[:1]
-            queryset = queryset.annotate(estado_actual=Coalesce(Subquery(latest), F('estado'))).filter(estado_actual=state)
+        input_data = self.request.query_params.copy()
+        for name in ('estado', 'tipo_movimiento'):
+            if name in input_data:
+                input_data[name] = input_data[name].strip().upper()
+        filters = ActaArchiveFiltersSerializer(data=input_data)
+        filters.is_valid(raise_exception=True)
+        params = filters.validated_data
+        if params.get('tipo_movimiento'):
+            queryset = queryset.filter(tipo_movimiento=params['tipo_movimiento'])
+        if params.get('desde'):
+            start = timezone.make_aware(datetime.combine(params['desde'], time.min))
+            queryset = queryset.filter(fecha_emision__gte=start)
+        if params.get('hasta'):
+            end = timezone.make_aware(datetime.combine(params['hasta'], time.max))
+            queryset = queryset.filter(fecha_emision__lte=end)
+        if params.get('estado'):
+            queryset = _actas_con_estado_vigente(queryset).filter(estado_actual=params['estado'])
+        if self.action != 'reporte':
+            queryset = queryset.defer('documento_pdf', 'snapshot_documento').prefetch_related(
+                Prefetch('estado_eventos', queryset=ActaEstadoEvento.objects.select_related('usuario').defer('copia_firmada_pdf'),
+                         to_attr='_eventos_estado'))
         return queryset
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
         response['Cache-Control'] = 'no-store, private'
+        return response
+
+    @action(detail=False, methods=['get'])
+    def reporte(self, request):
+        response = StreamingHttpResponse(_reporte_actas_rows(self.get_queryset()),
+                                         content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="actas-itam-{timezone.localdate():%Y%m%d}.csv"'
+        response['Cache-Control'] = 'no-store, private'
+        response['X-Content-Type-Options'] = 'nosniff'
         return response
 
     @action(detail=False, methods=['get'])

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../../api/client';
-import { downloadActa, downloadActaFirmada, movimientoError } from '../../../api/movimientosApi';
+import { downloadActa, downloadActaFirmada, downloadReporteActas, movimientoError } from '../../../api/movimientosApi';
 import ActaGestionModal from '../../movimientos/components/ActaGestionModal';
 
 const movementTypes = [
@@ -15,12 +15,13 @@ const actaStates = [
 ];
 
 export default function ActaArchivoPanel({ role, onUpdated }) {
-  const [filters, setFilters] = useState({ estado: '', tipo_movimiento: '' });
+  const [filters, setFilters] = useState({ estado: '', tipo_movimiento: '', desde: '', hasta: '' });
   const [query, setQuery] = useState(null);
   const [page, setPage] = useState(1);
   const [revision, setRevision] = useState(0);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
   const [gestionActa, setGestionActa] = useState(null);
 
@@ -43,11 +44,22 @@ export default function ActaArchivoPanel({ role, onUpdated }) {
 
   const search = (event) => {
     event.preventDefault();
+    if (filters.desde && filters.hasta && filters.desde > filters.hasta) {
+      setError('La fecha final debe ser igual o posterior a la inicial.');
+      return;
+    }
     setData(null);
     setError('');
     setLoading(true);
     setPage(1);
-    setQuery({ ...filters });
+    setQuery(Object.fromEntries(Object.entries(filters).filter(([, value]) => value)));
+  };
+  const exportReport = async () => {
+    setExporting(true);
+    setError('');
+    try { await downloadReporteActas(query); }
+    catch (err) { setError(movimientoError(err)); }
+    finally { setExporting(false); }
   };
   const changePage = (nextPage) => { setData(null); setLoading(true); setPage(nextPage); };
 
@@ -61,12 +73,15 @@ export default function ActaArchivoPanel({ role, onUpdated }) {
       <label>Tipo de movimiento<select value={filters.tipo_movimiento} onChange={(event) => changeFilter('tipo_movimiento', event.target.value)}>
         <option value="">Todos</option>{movementTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </select></label>
+      <label>Emitida desde<input type="date" value={filters.desde} onChange={(event) => changeFilter('desde', event.target.value)} /></label>
+      <label>Emitida hasta<input type="date" value={filters.hasta} onChange={(event) => changeFilter('hasta', event.target.value)} /></label>
       <button type="submit" disabled={loading}>{loading ? 'Consultando...' : 'Consultar'}</button>
     </form>
     {loading && <p role="status">Cargando actas...</p>}
     {error && <p className="itam-dashboard-error" role="alert">{error}</p>}
     {data && <>
       <p className="itam-dashboard-empty">{data.count.toLocaleString('es-CL')} actas encontradas.</p>
+      <div className="itam-dashboard-actions"><button type="button" disabled={exporting} onClick={exportReport}>{exporting ? 'Preparando CSV...' : 'Descargar CSV de la consulta'}</button></div>
       <div className="itam-dashboard-recent">
         {data.results.map((acta) => <article key={acta.id}>
           <div><strong>{acta.folio}</strong><span>{acta.tipo_movimiento.replaceAll('_', ' ')} · {acta.estado.replaceAll('_', ' ')}</span></div>

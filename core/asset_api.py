@@ -4,13 +4,14 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, OperationalError
 from django.db.models import Prefetch, Q
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 
-from .models import ActaEntrega, ActaEstadoEvento, ESTADOS_FISICOS, MovimientoActivo
+from .models import ActaEntrega, ActaEstadoEvento, ESTADOS_FISICOS, MovimientoActivo, Usuario
 from .pagination import PortalPageNumberPagination
 from .permissions import PortalRolePermission
 from .services.acta_estado_service import estado_vigente, registrar_estado_acta
@@ -196,6 +197,15 @@ class MovimientoActivoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                     'detail': 'Otra operación está modificando estos datos. Actualice y vuelva a intentar.'}) from exc
             raise
         return Response(MovimientoSerializer(movimiento).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['get'])
+    def custodias(self, request):
+        from .services.colaborador_custodia_service import periodos_custodia
+        colaborador_id = _filter_id(request, 'colaborador_id')
+        if colaborador_id is None:
+            raise serializers.ValidationError({'colaborador_id': 'Indique el colaborador.'})
+        get_object_or_404(Usuario.objects.only('id'), pk=colaborador_id)
+        return Response(periodos_custodia(colaborador_id))
 
     @action(detail=False, methods=['post'], url_path='cambio')
     def cambio(self, request):

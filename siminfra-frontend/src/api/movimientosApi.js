@@ -58,3 +58,10 @@ export const downloadActaFirmada = async (acta) => {
   anchor.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
+
+export const getCustodiasColaborador = async (colaboradorId, signal) => {
+  const { data } = await apiClient.get('/movimientos/custodias/', {
+    params: { colaborador_id: colaboradorId }, signal,
+  });
+  return data;
+};

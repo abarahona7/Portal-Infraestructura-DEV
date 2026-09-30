@@ -1,3 +1,4 @@
+import ipaddress
 from contextvars import ContextVar
 
 
@@ -25,3 +26,14 @@ def get_current_audit_username():
         return None
 
     return user.get_username()
+
+
+def get_request_ip(request):
+    """Use the server-provided address, never an untrusted forwarded header."""
+    if request is None:
+        return None
+    raw = request.META.get('REMOTE_ADDR')
+    try:
+        return str(ipaddress.ip_address(raw)) if raw else None
+    except ValueError:
+        return None

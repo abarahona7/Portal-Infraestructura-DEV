@@ -103,9 +103,14 @@ class ActaSerializer(serializers.ModelSerializer):
 
 
 class ActaEstadoEventoSerializer(serializers.ModelSerializer):
+    usuario_nombre = serializers.SerializerMethodField()
+
+    def get_usuario_nombre(self, obj):
+        return obj.usuario.get_full_name() or obj.usuario.get_username()
+
     class Meta:
         model = ActaEstadoEvento
-        fields = ['id', 'estado_anterior', 'estado_nuevo', 'fecha', 'usuario_id',
+        fields = ['id', 'estado_anterior', 'estado_nuevo', 'fecha', 'usuario_id', 'usuario_nombre',
                   'motivo', 'hash_copia_firmada']
         read_only_fields = fields
 
@@ -243,7 +248,7 @@ class ActaEntregaViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         queryset = ActaEntrega.objects.defer('documento_pdf').prefetch_related(
-            Prefetch('estado_eventos', queryset=ActaEstadoEvento.objects.defer('copia_firmada_pdf'),
+            Prefetch('estado_eventos', queryset=ActaEstadoEvento.objects.select_related('usuario').defer('copia_firmada_pdf'),
                      to_attr='_eventos_estado'))
         colaborador_id = _filter_id(self.request, 'colaborador_id')
         if colaborador_id:
@@ -272,7 +277,7 @@ class ActaEntregaViewSet(viewsets.ReadOnlyModelViewSet):
         acta = self.get_object()
         serializer = CambioEstadoActaSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        registrar_estado_acta(acta_id=acta.pk, usuario=request.user, **serializer.validated_data)
+        registrar_estado_acta(acta_id=acta.pk, usuario=request.user, request=request, **serializer.validated_data)
         acta = self.get_queryset().get(pk=acta.pk)
         return Response(ActaSerializer(acta).data)
 

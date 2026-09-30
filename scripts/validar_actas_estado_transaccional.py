@@ -1,13 +1,16 @@
 """Ejecutar con `.venv/bin/python manage.py shell < scripts/validar_actas_estado_transaccional.py`."""
 import hashlib
+import json
 import uuid
+from unittest.mock import patch
 
 from django.contrib.auth.models import Group, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 from rest_framework.test import APIClient
 
-from core.models import ActaEntrega, ActaEstadoEvento, Departamento, Equipamiento, Usuario
+from core.models import ActaEntrega, ActaEstadoEvento, Departamento, Equipamiento, SecurityAuditLog, Usuario
+from core.services.acta_estado_service import registrar_estado_acta
 
 suffix = uuid.uuid4().hex[:10]
 with transaction.atomic():
@@ -29,6 +32,8 @@ with transaction.atomic():
     }, format='json')
     assert issued.status_code == 201, (issued.status_code, issued.data)
     acta_id = issued.data['acta']['id']
+    movimiento_audit = SecurityAuditLog.objects.get(module='ACTIVOS_ITAM', object_id_text=str(asset.pk))
+    assert movimiento_audit.ip_address == '127.0.0.1'
     original = client.get(f'/api/actas/{acta_id}/pdf/')
     assert original.status_code == 200
     original_bytes = original.content
@@ -37,6 +42,14 @@ with transaction.atomic():
     endpoint = f'/api/actas/{acta_id}/estado/'
     assert client.post(endpoint, {'estado_nuevo': 'CERRADA'}, format='json').status_code == 400
     assert client.post(endpoint, {'estado_nuevo': 'ANULADA', 'motivo': 'Prueba'}, format='json').status_code == 403
+    try:
+        with patch('core.services.acta_estado_service.SecurityAuditLog.objects.create', side_effect=RuntimeError('audit unavailable')):
+            registrar_estado_acta(acta_id=acta_id, estado_nuevo='PENDIENTE_FIRMA', usuario=operator)
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError('La falta de auditoría debe revertir la transición.')
+    assert not ActaEstadoEvento.objects.filter(acta_id=acta_id).exists()
     pending = client.post(endpoint, {'estado_nuevo': 'PENDIENTE_FIRMA'}, format='json')
     assert pending.status_code == 200 and pending.data['estado'] == 'PENDIENTE_FIRMA', pending.data
     assert client.post(endpoint, {'estado_nuevo': 'PENDIENTE_FIRMA'}, format='json').status_code == 400
@@ -53,6 +66,7 @@ with transaction.atomic():
     history = client.get(f'/api/actas/{acta_id}/eventos/')
     assert history.status_code == 200 and [event['estado_nuevo'] for event in history.data] == ['CERRADA', 'FIRMADA', 'PENDIENTE_FIRMA']
     assert history.data[1]['hash_copia_firmada'] == original_hash
+    assert history.data[0]['usuario_nombre'] == operator.username
     assert client.get(f'/api/movimientos/{issued.data["id"]}/').data['acta']['estado'] == 'CERRADA'
     assert client.get(f'/api/actas/{acta_id}/pdf/').content == original_bytes
     client.force_authenticate(user=admin)
@@ -66,6 +80,17 @@ with transaction.atomic():
     stored = ActaEntrega.objects.get(pk=acta_id)
     assert stored.estado == 'GENERADA' and stored.hash_verificacion == original_hash
     assert ActaEstadoEvento.objects.filter(acta_id=acta_id).count() == 4
+    audits = list(SecurityAuditLog.objects.filter(module='ACTIVOS_ITAM', object_id_text=stored.folio).order_by('pk'))
+    assert len(audits) == 4
+    assert [entry.event for entry in audits] == [
+        'ESTADO_ACTA_PENDIENTE_FIRMA', 'ESTADO_ACTA_FIRMADA',
+        'ESTADO_ACTA_CERRADA', 'ESTADO_ACTA_ANULADA',
+    ]
+    assert all(entry.ip_address == '127.0.0.1' and json.loads(entry.detail)['origen'] == 'API_ACTAS_ESTADO'
+               for entry in audits)
+    assert audits[-1].actor == admin.username
+    assert json.loads(audits[-1].detail)['motivo'] == 'Acta invalidada en prueba'
+    assert json.loads(audits[1].detail)['hash_copia_firmada'] == original_hash
     transaction.set_rollback(True)
 assert not Equipamiento.objects.filter(numero_serie=f'ACTAS-{suffix}').exists()
 print('Actas: transiciones, permisos, copia firmada, PDF original e historial inmutable OK; rollback completo')

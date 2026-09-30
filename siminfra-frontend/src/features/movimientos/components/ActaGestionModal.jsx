@@ -47,7 +47,7 @@ export default function ActaGestionModal({ initialActa, role, onClose, onUpdated
     {eventos.length === 0 && <p className="movimiento-note">Acta generada; todavía no hay transiciones.</p>}
     {eventos.map((item) => <article className="movimiento-entry" key={item.id}>
       <strong>{item.estado_anterior.replaceAll('_', ' ')} → {item.estado_nuevo.replaceAll('_', ' ')}</strong>
-      <span>{new Date(item.fecha).toLocaleString('es-CL')} · Usuario #{item.usuario_id}</span>
+      <span>{new Date(item.fecha).toLocaleString('es-CL')} · {item.usuario_nombre || `Usuario #${item.usuario_id}`}</span>
       {item.motivo && <span>Motivo: {item.motivo}</span>}
       {item.hash_copia_firmada && <span>Huella SHA-256 de la copia: {item.hash_copia_firmada}</span>}
     </article>)}

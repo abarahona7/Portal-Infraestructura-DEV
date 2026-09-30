@@ -2,7 +2,6 @@
 
 from copy import deepcopy
 import hashlib
-import ipaddress
 import json
 import re
 
@@ -10,7 +9,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from core.audit import reset_current_audit_user, set_current_audit_user
+from core.audit import get_request_ip, reset_current_audit_user, set_current_audit_user
 from core.models import (
     ActaEntrega, Equipamiento, ESTADOS_FISICOS, MovimientoActivo,
     SecurityAuditLog, Usuario,
@@ -108,17 +107,6 @@ def _validar_accesorios(items, *, activo, devolucion, exigir_maestro=False):
         if missing:
             raise ValidationError({'accesorios_detalle': 'Revise todos los accesorios entregados: ' + ', '.join(missing) + '.'})
     return normalized
-
-
-def _client_ip(request):
-    if request is None:
-        return None
-    # REMOTE_ADDR is supplied by the server. Do not trust arbitrary forwarded headers.
-    raw = request.META.get('REMOTE_ADDR')
-    try:
-        return str(ipaddress.ip_address(raw)) if raw else None
-    except ValueError:
-        return None
 
 
 @transaction.atomic
@@ -288,7 +276,7 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
     )
     SecurityAuditLog.objects.create(
         event=f'{tipo_movimiento}_ACTIVO', actor=actor, module='ACTIVOS_ITAM',
-        object_id_text=str(activo.pk), success=True, ip_address=_client_ip(request),
+        object_id_text=str(activo.pk), success=True, ip_address=get_request_ip(request),
         detail=json.dumps({'movimiento_id': movimiento.pk, 'folio': folio, **snapshot}, ensure_ascii=False),
     )
     return movimiento

@@ -1,10 +1,12 @@
 """Transiciones de actas sin modificar el documento originalmente emitido."""
 import hashlib
+import json
 
 from django.db import transaction
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
-from core.models import ActaEntrega, ActaEstadoEvento
+from core.audit import get_request_ip
+from core.models import ActaEntrega, ActaEstadoEvento, SecurityAuditLog
 from core.permissions import is_admin
 
 MAX_COPIA_FIRMADA = 10 * 1024 * 1024
@@ -26,7 +28,7 @@ def estado_vigente(acta):
 
 
 @transaction.atomic
-def registrar_estado_acta(*, acta_id, estado_nuevo, usuario, motivo='', archivo_firmado=None):
+def registrar_estado_acta(*, acta_id, estado_nuevo, usuario, motivo='', archivo_firmado=None, request=None):
     # El bloqueo del acta serializa las transiciones concurrentes de un mismo folio.
     acta = ActaEntrega.objects.select_for_update().get(pk=acta_id)
     anterior = estado_vigente(acta)
@@ -57,8 +59,20 @@ def registrar_estado_acta(*, acta_id, estado_nuevo, usuario, motivo='', archivo_
     elif archivo_firmado:
         raise ValidationError({'archivo_firmado': 'La copia firmada solo se admite al marcar el acta como FIRMADA.'})
 
-    return ActaEstadoEvento.objects.create(
+    evento = ActaEstadoEvento.objects.create(
         acta=acta, estado_anterior=anterior, estado_nuevo=estado_nuevo,
         usuario=usuario, motivo=motivo, copia_firmada_pdf=pdf,
         hash_copia_firmada=hashlib.sha256(pdf).hexdigest() if pdf else '',
     )
+    SecurityAuditLog.objects.create(
+        event=f'ESTADO_ACTA_{estado_nuevo}', actor=usuario.get_username(),
+        module='ACTIVOS_ITAM', object_id_text=acta.folio, success=True,
+        ip_address=get_request_ip(request),
+        detail=json.dumps({
+            'origen': 'API_ACTAS_ESTADO' if request is not None else 'SERVICIO_INTERNO',
+            'acta_id': acta.pk, 'evento_id': evento.pk,
+            'estado_anterior': anterior, 'estado_nuevo': estado_nuevo,
+            'motivo': motivo, 'hash_copia_firmada': evento.hash_copia_firmada,
+        }, ensure_ascii=False),
+    )
+    return evento

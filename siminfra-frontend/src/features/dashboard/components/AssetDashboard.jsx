@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Download, RefreshCw } from 'lucide-react';
 import apiClient from '../../../api/client';
 import { downloadActa, movimientoError } from '../../../api/movimientosApi';
+import ActaGestionModal from '../../movimientos/components/ActaGestionModal';
 import './AssetDashboard.css';
 
 const cards = [
@@ -28,7 +29,7 @@ function Distribution({ title, items, empty }) {
   </section>;
 }
 
-export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
+export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,12 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
   const [pendingData, setPendingData] = useState(null);
   const [pendingLoading, setPendingLoading] = useState(false);
   const [pendingError, setPendingError] = useState('');
+  const [showAllActas, setShowAllActas] = useState(false);
+  const [actaPage, setActaPage] = useState(1);
+  const [actaData, setActaData] = useState(null);
+  const [actaLoading, setActaLoading] = useState(false);
+  const [actaError, setActaError] = useState('');
+  const [gestionActa, setGestionActa] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -57,13 +64,31 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
     return () => controller.abort();
   }, [showAllPending, pendingPage, reloadKey]);
 
+  useEffect(() => {
+    if (!showAllActas) return undefined;
+    const controller = new AbortController();
+    apiClient.get('/actas/pendientes/', {
+      params: { page: actaPage, page_size: 20 }, signal: controller.signal,
+    }).then(({ data: response }) => { setActaData(response); setActaError(''); setActaLoading(false); })
+      .catch((err) => { if (err.code !== 'ERR_CANCELED') { setActaError(movimientoError(err)); setActaLoading(false); } });
+    return () => controller.abort();
+  }, [showAllActas, actaPage, reloadKey]);
+
+  const refreshDashboard = () => {
+    setLoading(true);
+    if (showAllPending) { setPendingPage(1); setPendingData(null); setPendingLoading(true); }
+    if (showAllActas) { setActaPage(1); setActaData(null); setActaLoading(true); }
+    setReloadKey((value) => value + 1);
+  };
+  const changeActaPage = (nextPage) => { setActaData(null); setActaLoading(true); setActaPage(nextPage); };
   const changePendingPage = (nextPage) => { setPendingData(null); setPendingLoading(true); setPendingPage(nextPage); };
   const pendingRows = showAllPending ? (pendingData?.results || []) : (data?.pendientes_tecnicos || []);
+  const actaRows = showAllActas ? (actaData?.results || []) : (data?.actas_pendientes_recientes || []);
 
-  return <div className="itam-dashboard">
+  return <><div className="itam-dashboard">
     <div className="itam-dashboard-heading">
       <div><span className="itam-dashboard-eyebrow">Inventario TI</span><h2>Resumen de activos</h2><p>Estado actual del maestro de equipos y movimientos registrados en el nuevo módulo.</p></div>
-      <button type="button" className="itam-dashboard-refresh" disabled={loading} onClick={() => { setLoading(true); if (showAllPending) { setPendingPage(1); setPendingData(null); setPendingLoading(true); } setReloadKey((value) => value + 1); }}><RefreshCw size={17} />Actualizar</button>
+      <button type="button" className="itam-dashboard-refresh" disabled={loading} onClick={refreshDashboard}><RefreshCw size={17} />Actualizar</button>
     </div>
     {loading && !data && <p role="status">Cargando indicadores...</p>}
     {error && <p className="itam-dashboard-error" role="alert">{error}</p>}
@@ -111,6 +136,31 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
           <button type="button" disabled={pendingLoading || pendingPage >= pendingData.total_pages} onClick={() => changePendingPage(pendingPage + 1)}>Siguiente</button>
         </div>}
       </section>
+      <section className="itam-dashboard-panel">
+        <h3>Actas por firmar ({data.actas_pendientes_firma.toLocaleString('es-CL')})</h3>
+        {!data.actas_pendientes_firma && <p className="itam-dashboard-empty">No hay actas pendientes de firma.</p>}
+        {(data.actas_pendientes_firma > 0 || showAllActas) && <div className="itam-dashboard-pending-heading">
+          <p className="itam-dashboard-empty">Incluye actas generadas y enviadas a firma.</p>
+          <button type="button" onClick={() => {
+            if (showAllActas) { setShowAllActas(false); setActaData(null); }
+            else { setActaPage(1); setActaLoading(true); setShowAllActas(true); }
+          }}>{showAllActas ? 'Mostrar recientes' : `Ver todas (${data.actas_pendientes_firma})`}</button>
+        </div>}
+        {showAllActas && actaLoading && <p role="status">Cargando actas pendientes...</p>}
+        {showAllActas && actaError && <p className="itam-dashboard-error" role="alert">{actaError}</p>}
+        <div className="itam-dashboard-recent">
+          {actaRows.map((acta) => <article key={acta.id}>
+            <div><strong>{acta.folio}</strong><span>{acta.tipo_movimiento.replaceAll('_', ' ')} · {acta.estado.replaceAll('_', ' ')}</span></div>
+            <time>{new Date(acta.fecha_emision).toLocaleString('es-CL')}</time>
+            <div className="itam-dashboard-actions"><button type="button" onClick={() => setGestionActa(acta)}>Gestionar acta</button></div>
+          </article>)}
+        </div>
+        {showAllActas && actaData && actaData.total_pages > 1 && <div className="itam-dashboard-pager">
+          <button type="button" disabled={actaLoading || actaPage <= 1} onClick={() => changeActaPage(actaPage - 1)}>Anterior</button>
+          <span>Página {actaData.page} de {actaData.total_pages}</span>
+          <button type="button" disabled={actaLoading || actaPage >= actaData.total_pages} onClick={() => changeActaPage(actaPage + 1)}>Siguiente</button>
+        </div>}
+      </section>
       <div className="itam-dashboard-distributions">
         <Distribution title="Por tipo" items={data.por_tipo} empty="Todavía no hay activos." />
         <Distribution title="Por ubicación" items={data.por_ubicacion} empty="Todavía no hay ubicaciones." />
@@ -131,5 +181,5 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
         </div>
       </section>
     </>}
-  </div>;
+  </div>{gestionActa && <ActaGestionModal initialActa={gestionActa} role={role} onClose={() => setGestionActa(null)} onUpdated={refreshDashboard} />}</>;
 }

@@ -14,7 +14,9 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from .models import ActaEntrega, ActaEstadoEvento, ESTADOS_FISICOS, MovimientoActivo, Usuario
 from .pagination import PortalPageNumberPagination
 from .permissions import PortalRolePermission
-from .services.acta_estado_service import estado_vigente, registrar_estado_acta
+from .services.acta_estado_service import (
+    actas_pendientes_firma, estado_vigente, registrar_estado_acta, resumen_acta_pendiente,
+)
 
 
 class MovimientoConflictResponse(APIException):
@@ -254,6 +256,13 @@ class ActaEntregaViewSet(viewsets.ReadOnlyModelViewSet):
         if colaborador_id:
             queryset = queryset.filter(colaborador_id=colaborador_id)
         return queryset
+
+    @action(detail=False, methods=['get'])
+    def pendientes(self, request):
+        page = self.paginate_queryset(actas_pendientes_firma())
+        response = self.get_paginated_response([resumen_acta_pendiente(acta) for acta in page])
+        response['Cache-Control'] = 'no-store, private'
+        return response
 
     @action(detail=True, methods=['get'])
     def pdf(self, request, pk=None):

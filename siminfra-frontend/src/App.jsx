@@ -1047,7 +1047,7 @@ export default function App() {
           />
         )}
 
-        {tab === 'activos-resumen' && <React.Suspense fallback={<p role="status">Cargando tablero de activos...</p>}><AssetDashboard onOpenHistory={setHistorialActivo} onEditAsset={openIncompleteAsset} /></React.Suspense>}
+        {tab === 'activos-resumen' && <React.Suspense fallback={<p role="status">Cargando tablero de activos...</p>}><AssetDashboard onOpenHistory={setHistorialActivo} onEditAsset={openIncompleteAsset} role={authUser?.role} /></React.Suspense>}
 
         {tab === 'departamentos' && (
           <DepartamentosSubareasPage

@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from .models import Equipamiento, MovimientoActivo
 from .pagination import PortalPageNumberPagination
 from .permissions import PortalRolePermission
+from .services.acta_estado_service import actas_pendientes_firma, resumen_acta_pendiente
 
 
 def _technical_missing_rules():
@@ -88,6 +89,7 @@ class AssetDashboardView(APIView):
             return entries
 
         pendientes = [_serialize_pending(asset) for asset in _pending_assets(assets.filter(ficha_incompleta))[:10]]
+        actas_pendientes = actas_pendientes_firma()
 
         recent = MovimientoActivo.objects.select_related('activo', 'acta').defer('acta__documento_pdf')[:8]
         movements = [{
@@ -102,6 +104,8 @@ class AssetDashboardView(APIView):
         response = Response({
             'conteos': counts,
             'pendientes_tecnicos': pendientes,
+            'actas_pendientes_firma': actas_pendientes.count(),
+            'actas_pendientes_recientes': [resumen_acta_pendiente(acta) for acta in actas_pendientes[:8]],
             'por_tipo': distribution(assets, 'tipo'),
             'por_ubicacion': distribution(assets, 'ubicacion_actual'),
             'por_area': distribution(assets.filter(usuario__isnull=False), 'usuario__dpto_area'),

@@ -3,6 +3,8 @@ import hashlib
 import json
 
 from django.db import transaction
+from django.db.models import F, OuterRef, Subquery
+from django.db.models.functions import Coalesce
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from core.audit import get_request_ip
@@ -17,6 +19,29 @@ TRANSICIONES = {
     'CERRADA': set(),
     'ANULADA': set(),
 }
+
+
+def actas_pendientes_firma():
+    """Actas cuyo último evento todavía permite iniciar o completar la firma."""
+    ultimo_estado = (
+        ActaEstadoEvento.objects.filter(acta_id=OuterRef('pk'))
+        .order_by('-pk').values('estado_nuevo')[:1]
+    )
+    return ActaEntrega.objects.annotate(
+        estado_actual=Coalesce(Subquery(ultimo_estado), F('estado')),
+    ).filter(estado_actual__in=['GENERADA', 'PENDIENTE_FIRMA']).only(
+        'id', 'folio', 'tipo_movimiento', 'fecha_emision', 'estado',
+    ).order_by('-fecha_emision', '-pk')
+
+
+def resumen_acta_pendiente(acta):
+    return {
+        'id': acta.pk, 'folio': acta.folio,
+        'tipo_movimiento': acta.tipo_movimiento,
+        'fecha_emision': acta.fecha_emision,
+        'estado': acta.estado_actual,
+        'tiene_copia_firmada': False,
+    }
 
 
 def estado_vigente(acta):

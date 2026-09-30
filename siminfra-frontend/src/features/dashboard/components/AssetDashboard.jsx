@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Download, RefreshCw } from 'lucide-react';
 import apiClient from '../../../api/client';
-import { downloadActa, downloadReporteMovimientos, movimientoError } from '../../../api/movimientosApi';
+import { downloadActa, downloadActaFirmada, downloadReporteMovimientos, movimientoError } from '../../../api/movimientosApi';
 import ActaGestionModal from '../../movimientos/components/ActaGestionModal';
 import './AssetDashboard.css';
 
@@ -70,6 +70,11 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
   const [reportType, setReportType] = useState('');
   const [reportBusy, setReportBusy] = useState(false);
   const [reportError, setReportError] = useState('');
+  const [folioInput, setFolioInput] = useState('');
+  const [folioResult, setFolioResult] = useState(null);
+  const [folioSearched, setFolioSearched] = useState(false);
+  const [folioBusy, setFolioBusy] = useState(false);
+  const [folioError, setFolioError] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -137,6 +142,29 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
       setReportError(movimientoError(err));
     } finally {
       setReportBusy(false);
+    }
+  };
+
+  const lookupActa = async (folioText) => {
+    const folio = folioText.trim().toUpperCase();
+    if (!/^ATI-[0-9]{4}-[0-9]{6}$/.test(folio)) {
+      setFolioResult(null);
+      setFolioSearched(false);
+      setFolioError('Indica un folio con formato ATI-AAAA-######.');
+      return;
+    }
+    setFolioBusy(true);
+    setFolioError('');
+    try {
+      const { data: response } = await apiClient.get('/actas/', { params: { folio, page_size: 1 } });
+      setFolioResult(response.results?.[0] || null);
+      setFolioSearched(true);
+    } catch (err) {
+      setFolioResult(null);
+      setFolioSearched(false);
+      setFolioError(movimientoError(err));
+    } finally {
+      setFolioBusy(false);
     }
   };
 
@@ -293,6 +321,25 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
           <button type="button" disabled={actaLoading || actaPage >= actaData.total_pages} onClick={() => changeActaPage(actaPage + 1)}>Siguiente</button>
         </div>}
       </section>
+      <section className="itam-dashboard-panel">
+        <h3>Buscar acta por folio</h3>
+        <p className="itam-dashboard-empty">Consulta un acta emitida, incluso si ya fue firmada, cerrada o anulada.</p>
+        <form className="itam-dashboard-report-form" onSubmit={(event) => { event.preventDefault(); lookupActa(folioInput); }}>
+          <label>Folio<input type="text" value={folioInput} maxLength={15} placeholder="ATI-2026-000001" disabled={folioBusy} onChange={(event) => { setFolioInput(event.target.value.toUpperCase()); setFolioResult(null); setFolioSearched(false); setFolioError(''); }} /></label>
+          <button type="submit" disabled={folioBusy}>{folioBusy ? 'Buscando...' : 'Buscar acta'}</button>
+        </form>
+        {folioError && <p className="itam-dashboard-error" role="alert">{folioError}</p>}
+        {folioSearched && !folioResult && <p className="itam-dashboard-empty" role="status">No se encontró un acta con ese folio.</p>}
+        {folioResult && <div className="itam-dashboard-recent"><article>
+          <div><strong>{folioResult.folio}</strong><span>{folioResult.tipo_movimiento.replaceAll('_', ' ')} · {folioResult.estado.replaceAll('_', ' ')}</span></div>
+          <time>{new Date(folioResult.fecha_emision).toLocaleString('es-CL')}</time>
+          <div className="itam-dashboard-actions">
+            <button type="button" onClick={() => downloadActa(folioResult).catch((err) => setFolioError(movimientoError(err)))}>Descargar original</button>
+            {folioResult.tiene_copia_firmada && <button type="button" onClick={() => downloadActaFirmada(folioResult).catch((err) => setFolioError(movimientoError(err)))}>Copia firmada</button>}
+            <button type="button" onClick={() => setGestionActa(folioResult)}>Gestionar acta</button>
+          </div>
+        </article></div>}
+      </section>
       <div className="itam-dashboard-distributions">
         <Distribution title="Por tipo" items={data.por_tipo} empty="Todavía no hay activos." />
         <Distribution title="Por ubicación" items={data.por_ubicacion} empty="Todavía no hay ubicaciones." />
@@ -335,5 +382,5 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
         </div>
       </section>
     </>}
-  </div>{gestionActa && <ActaGestionModal initialActa={gestionActa} role={role} onClose={() => setGestionActa(null)} onUpdated={refreshDashboard} />}</>;
+  </div>{gestionActa && <ActaGestionModal initialActa={gestionActa} role={role} onClose={() => setGestionActa(null)} onUpdated={() => { refreshDashboard(); if (folioSearched) lookupActa(folioInput); }} />}</>;
 }

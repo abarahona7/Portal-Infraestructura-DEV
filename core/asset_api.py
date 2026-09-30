@@ -1,5 +1,6 @@
 """API de movimientos y documentos persistidos del inventario TI."""
 import csv
+import re
 import uuid
 from datetime import datetime, time
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -316,13 +317,23 @@ class ActaEntregaViewSet(viewsets.ReadOnlyModelViewSet):
     http_method_names = ['get', 'post', 'head', 'options']
 
     def get_queryset(self):
-        queryset = ActaEntrega.objects.defer('documento_pdf').prefetch_related(
+        queryset = ActaEntrega.objects.defer('documento_pdf', 'snapshot_documento').prefetch_related(
             Prefetch('estado_eventos', queryset=ActaEstadoEvento.objects.select_related('usuario').defer('copia_firmada_pdf'),
                      to_attr='_eventos_estado'))
         colaborador_id = _filter_id(self.request, 'colaborador_id')
         if colaborador_id:
             queryset = queryset.filter(colaborador_id=colaborador_id)
+        if 'folio' in self.request.query_params:
+            folio = self.request.query_params['folio'].strip().upper()
+            if not re.fullmatch(r'ATI-[0-9]{4}-[0-9]{6}', folio):
+                raise serializers.ValidationError({'folio': 'Indique un folio con formato ATI-AAAA-######.'})
+            queryset = queryset.filter(folio=folio)
         return queryset
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        response['Cache-Control'] = 'no-store, private'
+        return response
 
     @action(detail=False, methods=['get'])
     def pendientes(self, request):

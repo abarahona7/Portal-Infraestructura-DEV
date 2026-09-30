@@ -28,7 +28,7 @@ function Distribution({ title, items, empty }) {
   </section>;
 }
 
-export default function AssetDashboard({ onOpenHistory }) {
+export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -62,7 +62,23 @@ export default function AssetDashboard({ onOpenHistory }) {
         <div><span>Sin número de serie</span><strong>{data.conteos.sin_serie.toLocaleString('es-CL')}</strong></div>
         <div><span>Sin activo fijo</span><strong>{data.conteos.sin_activo_fijo.toLocaleString('es-CL')}</strong></div>
         <div><span>Asignados a colaboradores no activos</span><strong>{data.conteos.con_custodio_inactivo.toLocaleString('es-CL')}</strong></div>
+        <div><span>Celulares sin IMEI</span><strong>{data.conteos.sin_imei_celular.toLocaleString('es-CL')}</strong></div>
+        <div><span>Notebook o Mac sin Hostname</span><strong>{data.conteos.sin_hostname_computador.toLocaleString('es-CL')}</strong></div>
+        <div><span>Notebook o Mac sin MAC</span><strong>{data.conteos.sin_mac_computador.toLocaleString('es-CL')}</strong></div>
+        <p><strong>{data.conteos.fichas_tecnicas_incompletas.toLocaleString('es-CL')}</strong> fichas técnicas incompletas en total, sin contar dos veces un equipo al que le falten varios datos. Se excluyen los dados de baja.</p>
         <p>Los activos sin custodio incluyen equipos disponibles, en reparación y dados de baja: {data.conteos.sin_custodio.toLocaleString('es-CL')}.</p>
+      </section>
+      <section className="itam-dashboard-panel">
+        <h3>Fichas técnicas por completar</h3>
+        {!data.pendientes_tecnicos.length && <p className="itam-dashboard-empty">No hay fichas técnicas pendientes en activos vigentes.</p>}
+        {data.pendientes_tecnicos.length > 0 && <p className="itam-dashboard-empty">Se muestran los diez registros más recientes. El total anterior incluye todos los pendientes.</p>}
+        <div className="itam-dashboard-recent">
+          {data.pendientes_tecnicos.map((item) => <article key={item.id}>
+            <div><strong>{item.tipo} {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'N/I'} · AF: {item.af || 'N/I'} · ID: {item.id}</span><span>Falta: {item.faltantes.join(', ')}</span></div>
+            <span>{item.estado}</span>
+            <div className="itam-dashboard-actions"><button type="button" onClick={() => onEditAsset(item)}>Editar ficha</button></div>
+          </article>)}
+        </div>
       </section>
       <div className="itam-dashboard-distributions">
         <Distribution title="Por tipo" items={data.por_tipo} empty="Todavía no hay activos." />

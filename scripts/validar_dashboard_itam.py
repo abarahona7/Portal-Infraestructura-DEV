@@ -25,6 +25,21 @@ with transaction.atomic():
     assert available.data['conteos']['disponibles'] == original['disponibles'] + 1
     assert available.data['conteos']['sin_serie'] == original['sin_serie'] + 1
     assert available.data['conteos']['sin_activo_fijo'] == original['sin_activo_fijo'] + 1
+    assert available.data['conteos']['sin_hostname_computador'] == original['sin_hostname_computador'] + 1
+    assert available.data['conteos']['sin_mac_computador'] == original['sin_mac_computador'] + 1
+    assert available.data['conteos']['fichas_tecnicas_incompletas'] == original['fichas_tecnicas_incompletas'] + 1
+    assert available.data['pendientes_tecnicos'][0]['id'] == asset.pk
+    assert available.data['pendientes_tecnicos'][0]['faltantes'] == ['Hostname', 'MAC Address']
+    celular = Equipamiento.objects.create(tipo='Celular', marca='Prueba', modelo='Sin IMEI',
+        numero_serie=f'DASH-CEL-{suffix}', estado='STOCK')
+    baja = Equipamiento.objects.create(tipo='Notebook', marca='Prueba', modelo='Baja',
+        numero_serie=f'DASH-BAJA-{suffix}', estado='BAJA')
+    quality = client.get('/api/activos/resumen/')
+    assert quality.status_code == 200, (quality.status_code, quality.data)
+    assert quality.data['conteos']['sin_imei_celular'] == original['sin_imei_celular'] + 1
+    assert quality.data['conteos']['fichas_tecnicas_incompletas'] == original['fichas_tecnicas_incompletas'] + 2
+    assert quality.data['pendientes_tecnicos'][0]['id'] == celular.pk
+    assert not any(item['id'] == baja.pk for item in quality.data['pendientes_tecnicos'])
     assert any(row['nombre'] == 'Bodega tablero' for row in available.data['por_ubicacion'])
     movement = client.post('/api/movimientos/', {'tipo_movimiento': 'ASIGNACION', 'activo_id': asset.pk,
         'colaborador_destino_id': person.pk, 'ubicacion_destino': 'Oficina tablero',
@@ -32,8 +47,9 @@ with transaction.atomic():
     assert movement.status_code == 201, (movement.status_code, movement.data)
     assigned = client.get('/api/activos/resumen/')
     assert assigned.status_code == 200, (assigned.status_code, assigned.data)
-    assert assigned.data['conteos']['disponibles'] == original['disponibles']
+    assert assigned.data['conteos']['disponibles'] == original['disponibles'] + 1
     assert assigned.data['conteos']['asignados'] == original['asignados'] + 1
+    assert assigned.data['conteos']['fichas_tecnicas_incompletas'] == original['fichas_tecnicas_incompletas'] + 2
     assert assigned.data['movimientos_30_dias'] == baseline.data['movimientos_30_dias'] + 1
     assert sum(row['total'] for row in assigned.data['por_area']) == sum(row['total'] for row in baseline.data['por_area']) + 1
     assert assigned.data['ultimos_movimientos'][0]['folio'] == movement.data['acta']['folio']

@@ -557,6 +557,20 @@ export default function App() {
     setEditingItem(item);
   };
 
+  const openIncompleteAsset = async (asset) => {
+    const equipmentTab = {
+      Celular: 'equipos-celular', Notebook: 'equipos-notebook', Mac: 'equipos-mac',
+    }[asset.tipo];
+    if (!equipmentTab) return;
+    try {
+      const detail = await getItemDetailsByTab('equipos', asset.id);
+      selectTab(equipmentTab);
+      await handleOpenEditModal(detail);
+    } catch {
+      showToast('No se pudo abrir la ficha del equipo. Inténtalo nuevamente.', 'error');
+    }
+  };
+
   const filteredData = data;
 
   const totalManagedIps = Object.values(ipSegmentStats).reduce(
@@ -1032,7 +1046,7 @@ export default function App() {
           />
         )}
 
-        {tab === 'activos-resumen' && <AssetDashboard onOpenHistory={setHistorialActivo} />}
+        {tab === 'activos-resumen' && <AssetDashboard onOpenHistory={setHistorialActivo} onEditAsset={openIncompleteAsset} />}
 
         {tab === 'departamentos' && (
           <DepartamentosSubareasPage

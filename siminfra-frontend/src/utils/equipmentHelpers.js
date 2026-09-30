@@ -95,6 +95,11 @@ export const normalizeEquipmentFieldsByType = (
 
   if (!equipmentUsesHostname(newType)) {
     nextState.hostname = '';
+    nextState.mac_address = '';
+  }
+
+  if (normalizeEquipmentType(newType) !== 'celular') {
+    nextState.imei = '';
   }
 
   if (!equipmentUsesMobileLine(newType)) {

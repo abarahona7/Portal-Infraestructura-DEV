@@ -293,11 +293,12 @@ export default function EquipoCreateForm({
                   color: '#166534',
                 }}
               >
-                IMEI
+                IMEI *
               </label>
 
               <input
                 aria-label="IMEI"
+                required
                 type="text"
                 value={equipo.imei || ''}
                 onChange={(e) =>
@@ -475,11 +476,12 @@ export default function EquipoCreateForm({
           >
             Hostname
             {' '}
-            (identificador del equipo)
+            (identificador del equipo) *
           </label>
 
           <input
             aria-label="Hostname"
+            required
             type="text"
             value={equipo.hostname || ''}
             onChange={(e) =>
@@ -526,7 +528,7 @@ export default function EquipoCreateForm({
 
       <div><label style={labelStyle}>Estado físico</label><select aria-label="Estado físico" value={equipo.estado_fisico || 'USADO'} onChange={(e) => updateField('estado_fisico', e.target.value)} style={inputStyle}><option value="NUEVO">Nuevo</option><option value="SEMINUEVO">Seminuevo</option><option value="USADO">Usado</option><option value="DANADO">Dañado</option></select></div>
       <div><label style={labelStyle}>Ubicación inicial</label><input aria-label="Ubicación inicial" value={equipo.ubicacion_actual || ''} maxLength={100} onChange={(e) => updateField('ubicacion_actual', e.target.value)} style={inputStyle} /></div>
-      {usaHostname && <div><label style={labelStyle}>MAC Address</label><input aria-label="MAC Address" value={equipo.mac_address || ''} maxLength={30} onChange={(e) => updateField('mac_address', e.target.value)} style={inputStyle} placeholder="AA:BB:CC:DD:EE:FF" /></div>}
+      {usaHostname && <div><label style={labelStyle}>MAC Address *</label><input aria-label="MAC Address" required value={equipo.mac_address || ''} maxLength={30} onChange={(e) => updateField('mac_address', e.target.value)} style={inputStyle} placeholder="AA:BB:CC:DD:EE:FF" /></div>}
 
       {/* =========================
           ACCESORIOS

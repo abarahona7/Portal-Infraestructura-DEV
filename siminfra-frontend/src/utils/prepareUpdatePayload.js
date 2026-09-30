@@ -89,7 +89,7 @@ export const prepareUpdatePayload = (
     delete payload.accesorios_requeridos;
     delete payload.token_qr;
     delete payload.fecha_alta;
-    ['marca', 'modelo', 'numero_serie', 'hostname', 'af', 'numero_telefono', 'imei', 'icloud_cuenta', 'accesorios'].forEach((field) => {
+    ['marca', 'modelo', 'numero_serie', 'hostname', 'af', 'numero_telefono', 'imei', 'mac_address', 'icloud_cuenta', 'accesorios'].forEach((field) => {
       if (typeof payload[field] === 'string') {
         payload[field] = payload[field].trim();
       }

@@ -196,6 +196,16 @@ export const validateItem = (tab, item, data = []) => {
     const af = normalize(item.af);
     const telefono = normalize(item.numero_telefono);
     const hostname = normalize(item.hostname);
+    const original = item.id ? data.find((equipo) => equipo.id === item.id) : null;
+    const exigeFichaTecnica = !item.id || (original && original.tipo !== item.tipo);
+
+    if (exigeFichaTecnica && item.tipo === 'Celular' && !normalize(item.imei)) {
+      return { valid: false, message: 'Indique el IMEI del celular.' };
+    }
+    if (exigeFichaTecnica && ['Notebook', 'Mac'].includes(item.tipo)) {
+      if (!hostname) return { valid: false, message: 'Indique el Hostname del equipo.' };
+      if (!normalize(item.mac_address)) return { valid: false, message: 'Indique la MAC Address del equipo.' };
+    }
 
     if (!marca) return { valid: false, message: 'Debe ingresar la Marca del equipo.' };
     if (marca.length > 50) return { valid: false, message: 'La Marca puede tener como máximo 50 caracteres.' };

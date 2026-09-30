@@ -617,7 +617,7 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
             getattr(instance, 'numero_telefono', None)
         )
 
-        for field in ('marca', 'modelo', 'numero_serie', 'hostname', 'af', 'accesorios', 'imei', 'icloud_cuenta'):
+        for field in ('marca', 'modelo', 'numero_serie', 'hostname', 'af', 'accesorios', 'imei', 'mac_address', 'icloud_cuenta'):
             if field in attrs and isinstance(attrs[field], str):
                 cleaned = (
                     _normalize_spaces(attrs[field])
@@ -642,6 +642,24 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
             raise serializers.ValidationError({'marca': 'Debe ingresar la Marca del equipo.'})
         if not modelo_resultante:
             raise serializers.ValidationError({'modelo': 'Debe ingresar el Modelo del equipo.'})
+
+        # Exigir datos técnicos al ingresar un equipo o cambiarlo a otro tipo.
+        # Los activos legados incompletos pueden seguir editándose sin perder datos.
+        exige_ficha_tecnica = instance is None or ('tipo' in attrs and tipo != instance.tipo)
+        if tipo == 'Celular':
+            imei_resultante = attrs.get('imei', getattr(instance, 'imei', None))
+            if not imei_resultante and (exige_ficha_tecnica or
+                    (instance is not None and 'imei' in attrs and instance.imei)):
+                raise serializers.ValidationError({'imei': 'Indique el IMEI del celular.'})
+        if tipo in {'Notebook', 'Mac'}:
+            hostname_resultante = hostname or (usuario.hostname if usuario else None)
+            if not hostname_resultante and (exige_ficha_tecnica or
+                    (instance is not None and 'hostname' in attrs and instance.hostname)):
+                raise serializers.ValidationError({'hostname': 'Indique el Hostname del equipo.'})
+            mac_resultante = attrs.get('mac_address', getattr(instance, 'mac_address', None))
+            if not mac_resultante and (exige_ficha_tecnica or
+                    (instance is not None and 'mac_address' in attrs and instance.mac_address)):
+                raise serializers.ValidationError({'mac_address': 'Indique la MAC Address del equipo.'})
 
         if serie and len(serie) > 20:
             raise serializers.ValidationError({

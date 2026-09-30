@@ -22,6 +22,18 @@ export const downloadActa = async (acta) => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
+export const downloadReporteMovimientos = async (params = {}) => {
+  const { data } = await apiClient.get('/movimientos/reporte/', { params, responseType: 'blob' });
+  const url = URL.createObjectURL(data);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `movimientos-itam-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
 export const movimientoError = (error) => {
   const detail = error.response?.data;
   if (!detail || detail instanceof Blob) return 'No se pudo completar la operación. Intenta nuevamente.';

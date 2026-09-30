@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Download, RefreshCw } from 'lucide-react';
 import apiClient from '../../../api/client';
-import { downloadActa, movimientoError } from '../../../api/movimientosApi';
+import { downloadActa, downloadReporteMovimientos, movimientoError } from '../../../api/movimientosApi';
 import ActaGestionModal from '../../movimientos/components/ActaGestionModal';
 import './AssetDashboard.css';
 
@@ -50,6 +50,11 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
   const [custodyData, setCustodyData] = useState(null);
   const [custodyLoading, setCustodyLoading] = useState(false);
   const [custodyError, setCustodyError] = useState('');
+  const [reportFrom, setReportFrom] = useState('');
+  const [reportTo, setReportTo] = useState('');
+  const [reportType, setReportType] = useState('');
+  const [reportBusy, setReportBusy] = useState(false);
+  const [reportError, setReportError] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -88,6 +93,27 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
       .catch((err) => { if (err.code !== 'ERR_CANCELED') { setCustodyError(movimientoError(err)); setCustodyLoading(false); } });
     return () => controller.abort();
   }, [showAllCustody, custodyPage, reloadKey]);
+
+  const exportReport = async (event) => {
+    event.preventDefault();
+    if (reportFrom && reportTo && reportFrom > reportTo) {
+      setReportError('La fecha final debe ser igual o posterior a la inicial.');
+      return;
+    }
+    setReportBusy(true);
+    setReportError('');
+    try {
+      await downloadReporteMovimientos({
+        ...(reportFrom && { desde: reportFrom }),
+        ...(reportTo && { hasta: reportTo }),
+        ...(reportType && { tipo_movimiento: reportType }),
+      });
+    } catch (err) {
+      setReportError(movimientoError(err));
+    } finally {
+      setReportBusy(false);
+    }
+  };
 
   const refreshDashboard = () => {
     setLoading(true);
@@ -209,6 +235,28 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
         <Distribution title="Por ubicación" items={data.por_ubicacion} empty="Todavía no hay ubicaciones." />
         <Distribution title="Por área asignada" items={data.por_area} empty="Todavía no hay activos asignados." />
       </div>
+      <section className="itam-dashboard-panel">
+        <h3>Reporte de movimientos</h3>
+        <p className="itam-dashboard-empty">Descarga el historial ITAM en CSV. Si dejas los filtros vacíos, se incluyen todos los movimientos.</p>
+        <form className="itam-dashboard-report-form" onSubmit={exportReport}>
+          <label>Desde<input type="date" value={reportFrom} onChange={(event) => setReportFrom(event.target.value)} /></label>
+          <label>Hasta<input type="date" value={reportTo} onChange={(event) => setReportTo(event.target.value)} /></label>
+          <label>Tipo de movimiento<select value={reportType} onChange={(event) => setReportType(event.target.value)}>
+            <option value="">Todos</option>
+            <option value="ALTA">Alta</option>
+            <option value="ASIGNACION">Asignación</option>
+            <option value="REASIGNACION">Reasignación</option>
+            <option value="DEVOLUCION">Devolución</option>
+            <option value="CAMBIO">Cambio de equipo</option>
+            <option value="PRESTAMO">Préstamo</option>
+            <option value="INGRESO_REPARACION">Ingreso a reparación</option>
+            <option value="SALIDA_REPARACION">Salida de reparación</option>
+            <option value="BAJA">Baja</option>
+          </select></label>
+          <button type="submit" disabled={reportBusy}><Download size={16} />{reportBusy ? 'Preparando CSV...' : 'Descargar CSV'}</button>
+        </form>
+        {reportError && <p className="itam-dashboard-error" role="alert">{reportError}</p>}
+      </section>
       <section className="itam-dashboard-panel">
         <h3>Últimos movimientos</h3>
         {!data.ultimos_movimientos.length && <p className="itam-dashboard-empty">Aún no hay movimientos en la nueva trazabilidad.</p>}

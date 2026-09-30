@@ -1,17 +1,20 @@
 """API de movimientos y documentos persistidos del inventario TI."""
+import csv
 import uuid
+from datetime import datetime, time
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, OperationalError
 from django.db.models import Prefetch, Q
-from django.http import HttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 
-from .models import ActaEntrega, ActaEstadoEvento, ESTADOS_FISICOS, MovimientoActivo, Usuario
+from .models import ActaEntrega, ActaEstadoEvento, ESTADOS_FISICOS, MovimientoActivo, TIPOS_MOVIMIENTO, Usuario
 from .pagination import PortalPageNumberPagination
 from .permissions import PortalRolePermission
 from .services.acta_estado_service import (
@@ -157,6 +160,50 @@ def _filter_id(request, name):
         raise serializers.ValidationError({name: 'Debe ser un identificador entero positivo.'})
 
 
+class ReporteMovimientosSerializer(serializers.Serializer):
+    desde = serializers.DateField(required=False)
+    hasta = serializers.DateField(required=False)
+    tipo_movimiento = serializers.ChoiceField(choices=TIPOS_MOVIMIENTO, required=False)
+
+    def validate(self, attrs):
+        if attrs.get('desde') and attrs.get('hasta') and attrs['desde'] > attrs['hasta']:
+            raise serializers.ValidationError({'hasta': 'La fecha final debe ser igual o posterior a la inicial.'})
+        return attrs
+
+
+class _CsvBuffer:
+    def write(self, value):
+        return value
+
+
+def _csv_cell(value):
+    """Evita fórmulas al abrir campos editables por usuarios en una planilla."""
+    value = '' if value is None else str(value)
+    if value.lstrip().startswith(('=', '+', '-', '@')) or value.startswith(('\t', '\r', '\n')):
+        return "'" + value
+    return value
+
+
+def _reporte_movimientos_rows(queryset):
+    writer = csv.writer(_CsvBuffer(), delimiter=';')
+    yield '\ufeff'
+    yield writer.writerow(['ID movimiento', 'Fecha y hora', 'Tipo', 'ID activo', 'Equipo actual', 'Serie actual',
+                           'Activo fijo actual', 'Custodio origen', 'Custodio destino', 'Ubicación origen',
+                           'Ubicación destino', 'Estado resultante', 'Folio', 'Ejecutado por'])
+    fields = ('id', 'fecha_movimiento', 'tipo_movimiento', 'activo_id', 'activo__tipo',
+              'activo__marca', 'activo__modelo', 'activo__numero_serie', 'activo__af',
+              'colaborador_origen__nombre_completo', 'colaborador_destino__nombre_completo',
+              'ubicacion_origen', 'ubicacion_destino', 'estado_operativo_resultante',
+              'acta__folio', 'ejecutado_por')
+    for row in queryset.values_list(*fields).iterator(chunk_size=1000):
+        (movement_id, date, kind, asset_id, asset_type, brand, model, serial, af,
+         origin, destination, origin_place, destination_place, state, folio, actor) = row
+        values = (movement_id, timezone.localtime(date).strftime('%Y-%m-%d %H:%M:%S'), kind,
+                  asset_id, ' '.join(part for part in (asset_type, brand, model) if part), serial,
+                  af, origin, destination, origin_place, destination_place, state, folio, actor)
+        yield writer.writerow([_csv_cell(value) for value in values])
+
+
 class MovimientoActivoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                               mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     permission_classes = [PortalRolePermission]
@@ -213,6 +260,26 @@ class MovimientoActivoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             raise serializers.ValidationError({'colaborador_id': 'Indique el colaborador.'})
         get_object_or_404(Usuario.objects.only('id'), pk=colaborador_id)
         return Response(periodos_custodia(colaborador_id))
+
+    @action(detail=False, methods=['get'])
+    def reporte(self, request):
+        filters = ReporteMovimientosSerializer(data=request.query_params)
+        filters.is_valid(raise_exception=True)
+        queryset = MovimientoActivo.objects.all().order_by('-fecha_movimiento', '-pk')
+        params = filters.validated_data
+        if params.get('desde'):
+            start = timezone.make_aware(datetime.combine(params['desde'], time.min))
+            queryset = queryset.filter(fecha_movimiento__gte=start)
+        if params.get('hasta'):
+            end = timezone.make_aware(datetime.combine(params['hasta'], time.max))
+            queryset = queryset.filter(fecha_movimiento__lte=end)
+        if params.get('tipo_movimiento'):
+            queryset = queryset.filter(tipo_movimiento=params['tipo_movimiento'])
+        response = StreamingHttpResponse(_reporte_movimientos_rows(queryset), content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="movimientos-itam-{timezone.localdate():%Y%m%d}.csv"'
+        response['Cache-Control'] = 'no-store, private'
+        response['X-Content-Type-Options'] = 'nosniff'
+        return response
 
     @action(detail=False, methods=['post'], url_path='cambio')
     def cambio(self, request):

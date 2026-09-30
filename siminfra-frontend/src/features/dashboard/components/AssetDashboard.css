@@ -38,3 +38,9 @@
 .itam-dashboard-pending-heading button, .itam-dashboard-pager button { border: 1px solid #bfdbfe; border-radius: 6px; background: #fff; color: #1d4ed8; padding: .5rem .7rem; font-weight: 600; cursor: pointer; }
 .itam-dashboard-pager { margin: .9rem 0 0; font-size: .85rem; color: #475569; }
 .itam-dashboard-pager button:disabled { opacity: .5; cursor: default; }
+
+.itam-dashboard-report-form { display: flex; align-items: end; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+.itam-dashboard-report-form label { display: grid; gap: .35rem; color: #475569; font-size: .85rem; font-weight: 600; }
+.itam-dashboard-report-form input, .itam-dashboard-report-form select { min-height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: .4rem .55rem; background: #fff; color: #0f172a; }
+.itam-dashboard-report-form button { display: inline-flex; align-items: center; gap: .4rem; min-height: 38px; border: 1px solid #1d4ed8; border-radius: 6px; padding: .45rem .7rem; background: #1d4ed8; color: #fff; font-weight: 600; cursor: pointer; }
+.itam-dashboard-report-form button:disabled { opacity: .6; cursor: wait; }

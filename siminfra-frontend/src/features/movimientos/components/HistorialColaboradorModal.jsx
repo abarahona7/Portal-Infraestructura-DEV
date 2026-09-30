@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react';
 import { downloadActa, getMovimientos, movimientoError } from '../../../api/movimientosApi';
 import MovimientoShell from './MovimientoShell';
 import CambioResumen from './CambioResumen';
+import ActaGestionModal from './ActaGestionModal';
 
 const assetLabel = (asset) => [asset.tipo, asset.marca, asset.modelo].filter(Boolean).join(' ') || `Activo #${asset.id}`;
 
-export default function HistorialColaboradorModal({ colaborador, onClose, onOpenAsset }) {
+export default function HistorialColaboradorModal({ colaborador, onClose, onOpenAsset, role }) {
   const [page, setPage] = useState(1);
+  const [gestionActa, setGestionActa] = useState(null);
+  const [revision, setRevision] = useState(0);
   const [data, setData] = useState({ results: [], count: 0, total_pages: 1 });
   const [error, setError] = useState('');
   const [operacionId, setOperacionId] = useState(null);
@@ -18,10 +21,10 @@ export default function HistorialColaboradorModal({ colaborador, onClose, onOpen
       .then((result) => { setData(result); setLoading(false); })
       .catch((err) => { if (err.code !== 'ERR_CANCELED') { setError(movimientoError(err)); setLoading(false); } });
     return () => controller.abort();
-  }, [colaborador.id, page]);
+  }, [colaborador.id, page, revision]);
 
   const current = colaborador.equipos || [];
-  return <MovimientoShell title={`Activos de ${colaborador.nombre_completo}`} onClose={onClose} footer={<button type="button" className="movimiento-button" onClick={onClose}>Cerrar</button>}>
+  return <>{!gestionActa && <MovimientoShell title={`Activos de ${colaborador.nombre_completo}`} onClose={onClose} footer={<button type="button" className="movimiento-button" onClick={onClose}>Cerrar</button>}>
     <h4>Activos actualmente asignados</h4>
     {!current.length && <p className="movimiento-note">Este colaborador no tiene equipos asignados actualmente.</p>}
     {current.map((asset) => <article className="movimiento-entry" key={asset.id}>
@@ -46,5 +49,5 @@ export default function HistorialColaboradorModal({ colaborador, onClose, onOpen
       </article>;
     })}
     {data.total_pages > 1 && <div className="movimiento-pager"><button type="button" className="movimiento-button" disabled={page <= 1} onClick={() => setPage(page - 1)}>Anterior</button><span>Página {page} de {data.total_pages}</span><button type="button" className="movimiento-button" disabled={page >= data.total_pages} onClick={() => setPage(page + 1)}>Siguiente</button></div>}
-  </MovimientoShell>;
+  </MovimientoShell>}{gestionActa && <ActaGestionModal initialActa={gestionActa} role={role} onClose={() => setGestionActa(null)} onUpdated={() => setRevision((value) => value + 1)} />}</>;
 }

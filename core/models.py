@@ -1010,6 +1010,22 @@ class ActaEntrega(RegistroInmutable):
         return f"{self.folio} - {self.colaborador.nombre_completo if self.colaborador else 'Inventario TI'} ({self.estado})"
 
 
+class ActaEstadoEvento(RegistroInmutable):
+    """Transición y evidencia inmutables; el acta emitida nunca se reescribe."""
+    acta = models.ForeignKey(ActaEntrega, on_delete=models.PROTECT, related_name='estado_eventos')
+    estado_anterior = models.CharField(max_length=20, choices=ESTADOS_ACTA)
+    estado_nuevo = models.CharField(max_length=20, choices=ESTADOS_ACTA)
+    fecha = models.DateTimeField(default=timezone.now, editable=False)
+    usuario = models.ForeignKey('auth.User', on_delete=models.PROTECT, related_name='eventos_estado_acta')
+    motivo = models.TextField(blank=True, default='')
+    copia_firmada_pdf = models.BinaryField(null=True, editable=False)
+    hash_copia_firmada = models.CharField(max_length=64, blank=True, default='', editable=False)
+
+    class Meta:
+        ordering = ['-pk']
+        indexes = [models.Index(fields=['acta', '-id'], name='idx_acta_estado_evento')]
+
+
 class MovimientoActivo(RegistroInmutable):
     activo = models.ForeignKey(
         Equipamiento,

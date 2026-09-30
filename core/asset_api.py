@@ -2,16 +2,18 @@
 import uuid
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, OperationalError
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.http import HttpResponse
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException
 from rest_framework.response import Response
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 
-from .models import ActaEntrega, ESTADOS_FISICOS, MovimientoActivo
+from .models import ActaEntrega, ActaEstadoEvento, ESTADOS_FISICOS, MovimientoActivo
 from .pagination import PortalPageNumberPagination
 from .permissions import PortalRolePermission
+from .services.acta_estado_service import estado_vigente, registrar_estado_acta
 
 
 class MovimientoConflictResponse(APIException):
@@ -72,11 +74,45 @@ class CambioEquipoSerializer(serializers.Serializer):
 
 
 class ActaSerializer(serializers.ModelSerializer):
+    estado = serializers.SerializerMethodField()
+    fecha_cierre = serializers.SerializerMethodField()
+    tiene_copia_firmada = serializers.SerializerMethodField()
+
     class Meta:
         model = ActaEntrega
         fields = ['id', 'folio', 'tipo_movimiento', 'estado', 'fecha_emision',
-                  'fecha_cierre', 'colaborador_id', 'usuario_ti_id', 'hash_verificacion']
+                  'fecha_cierre', 'colaborador_id', 'usuario_ti_id', 'hash_verificacion',
+                  'tiene_copia_firmada']
         read_only_fields = fields
+
+    def get_estado(self, obj):
+        return estado_vigente(obj)
+
+    def get_fecha_cierre(self, obj):
+        eventos = getattr(obj, '_eventos_estado', None)
+        if eventos is None:
+            eventos = obj.estado_eventos.all()
+        return next((evento.fecha for evento in eventos if evento.estado_nuevo == 'CERRADA'), obj.fecha_cierre)
+
+    def get_tiene_copia_firmada(self, obj):
+        eventos = getattr(obj, '_eventos_estado', None)
+        if eventos is None:
+            eventos = obj.estado_eventos.all()
+        return any(evento.hash_copia_firmada for evento in eventos)
+
+
+class ActaEstadoEventoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ActaEstadoEvento
+        fields = ['id', 'estado_anterior', 'estado_nuevo', 'fecha', 'usuario_id',
+                  'motivo', 'hash_copia_firmada']
+        read_only_fields = fields
+
+
+class CambioEstadoActaSerializer(serializers.Serializer):
+    estado_nuevo = serializers.ChoiceField(choices=['PENDIENTE_FIRMA', 'FIRMADA', 'CERRADA', 'ANULADA'])
+    motivo = serializers.CharField(max_length=2000, required=False, allow_blank=True)
+    archivo_firmado = serializers.FileField(required=False)
 
 
 class MovimientoSerializer(serializers.ModelSerializer):
@@ -121,7 +157,9 @@ class MovimientoActivoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
     http_method_names = ['get', 'post', 'head', 'options']
 
     def get_queryset(self):
-        queryset = MovimientoActivo.objects.select_related('acta').defer('acta__documento_pdf')
+        queryset = MovimientoActivo.objects.select_related('acta').defer('acta__documento_pdf').prefetch_related(
+            Prefetch('acta__estado_eventos', queryset=ActaEstadoEvento.objects.defer('copia_firmada_pdf'),
+                     to_attr='_eventos_estado'))
         activo_id = _filter_id(self.request, 'activo_id')
         colaborador_id = _filter_id(self.request, 'colaborador_id')
         if activo_id:
@@ -191,10 +229,12 @@ class ActaEntregaViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [PortalRolePermission]
     pagination_class = PortalPageNumberPagination
     serializer_class = ActaSerializer
-    http_method_names = ['get', 'head', 'options']
+    http_method_names = ['get', 'post', 'head', 'options']
 
     def get_queryset(self):
-        queryset = ActaEntrega.objects.defer('documento_pdf')
+        queryset = ActaEntrega.objects.defer('documento_pdf').prefetch_related(
+            Prefetch('estado_eventos', queryset=ActaEstadoEvento.objects.defer('copia_firmada_pdf'),
+                     to_attr='_eventos_estado'))
         colaborador_id = _filter_id(self.request, 'colaborador_id')
         if colaborador_id:
             queryset = queryset.filter(colaborador_id=colaborador_id)
@@ -207,6 +247,33 @@ class ActaEntregaViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({'detail': 'Esta acta no tiene un documento persistido.'}, status=409)
         response = HttpResponse(bytes(acta.documento_pdf), content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="{acta.folio}.pdf"'
+        response['Cache-Control'] = 'no-store, private'
+        response['X-Content-Type-Options'] = 'nosniff'
+        return response
+
+
+    @action(detail=True, methods=['get'])
+    def eventos(self, request, pk=None):
+        acta = self.get_object()
+        return Response(ActaEstadoEventoSerializer(acta._eventos_estado, many=True).data)
+
+    @action(detail=True, methods=['post'], parser_classes=[JSONParser, FormParser, MultiPartParser])
+    def estado(self, request, pk=None):
+        acta = self.get_object()
+        serializer = CambioEstadoActaSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        registrar_estado_acta(acta_id=acta.pk, usuario=request.user, **serializer.validated_data)
+        acta = self.get_queryset().get(pk=acta.pk)
+        return Response(ActaSerializer(acta).data)
+
+    @action(detail=True, methods=['get'])
+    def firmada(self, request, pk=None):
+        acta = self.get_object()
+        evento = acta.estado_eventos.filter(estado_nuevo='FIRMADA').first()
+        if not evento or not evento.copia_firmada_pdf:
+            return Response({'detail': 'Esta acta no tiene una copia firmada cargada.'}, status=404)
+        response = HttpResponse(bytes(evento.copia_firmada_pdf), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{acta.folio}-copia-firmada.pdf"'
         response['Cache-Control'] = 'no-store, private'
         response['X-Content-Type-Options'] = 'nosniff'
         return response

@@ -1288,8 +1288,8 @@ export default function App() {
 
         <NuevoMovimientoModal open={movimientoOpen} onClose={() => setMovimientoOpen(false)} onCompleted={() => { refreshAllData(); showToast('Movimiento y acta generados.'); }} />
         <CambioEquipoModal open={cambioEquipoOpen} onClose={() => setCambioEquipoOpen(false)} onCompleted={() => { refreshAllData(); showToast('Cambio de equipo y dos actas generados.'); }} />
-        <HistorialMovimientosModal activo={historialActivo} onClose={() => setHistorialActivo(null)} />
-        {historialColaborador && <HistorialColaboradorModal colaborador={historialColaborador} onClose={() => setHistorialColaborador(null)} onOpenAsset={setHistorialActivo} />}
+        <HistorialMovimientosModal role={authUser?.role} activo={historialActivo} onClose={() => setHistorialActivo(null)} />
+        {historialColaborador && <HistorialColaboradorModal role={authUser?.role} colaborador={historialColaborador} onClose={() => setHistorialColaborador(null)} onOpenAsset={setHistorialActivo} />}
         {fichaQrToken && <FichaActivoModal key={fichaQrToken} token={fichaQrToken} onHistory={setHistorialActivo} onClose={() => { setFichaQrToken(null); if (window.location.pathname.startsWith('/qr/a/')) window.history.replaceState(null, '', '/'); }} />}
 
         {/* MODALES DE DETALLE / HISTORIAL */}

@@ -33,3 +33,8 @@
 .itam-dashboard-actions button { display: inline-flex; align-items: center; gap: .25rem; background: #fff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 6px; padding: .4rem .55rem; cursor: pointer; }
 .itam-dashboard-error { padding: .75rem; border-radius: 8px; background: #fef2f2; color: #991b1b; }
 @media (max-width: 560px) { .itam-dashboard { padding: 1rem; } .itam-dashboard-heading { flex-direction: column; } .itam-dashboard-refresh { align-self: stretch; justify-content: center; } }
+
+.itam-dashboard-pending-heading, .itam-dashboard-pager { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; margin: .25rem 0 .75rem; }
+.itam-dashboard-pending-heading button, .itam-dashboard-pager button { border: 1px solid #bfdbfe; border-radius: 6px; background: #fff; color: #1d4ed8; padding: .5rem .7rem; font-weight: 600; cursor: pointer; }
+.itam-dashboard-pager { margin: .9rem 0 0; font-size: .85rem; color: #475569; }
+.itam-dashboard-pager button:disabled { opacity: .5; cursor: default; }

@@ -7,7 +7,52 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Equipamiento, MovimientoActivo
+from .pagination import PortalPageNumberPagination
 from .permissions import PortalRolePermission
+
+
+def _technical_missing_rules():
+    vigente = ~Q(estado='BAJA')
+    sin_imei = Q(tipo='Celular') & (Q(imei__isnull=True) | Q(imei=''))
+    sin_hostname = Q(tipo__in=['Notebook', 'Mac']) & (Q(hostname__isnull=True) | Q(hostname=''))
+    sin_mac = Q(tipo__in=['Notebook', 'Mac']) & (Q(mac_address__isnull=True) | Q(mac_address=''))
+    return vigente, sin_imei, sin_hostname, sin_mac, vigente & (sin_imei | sin_hostname | sin_mac)
+
+
+def _pending_assets(queryset):
+    return queryset.only(
+        'id', 'tipo', 'marca', 'modelo', 'numero_serie', 'af', 'estado',
+        'imei', 'hostname', 'mac_address',
+    ).order_by('-pk')
+
+
+def _serialize_pending(asset):
+    faltantes = []
+    if asset.tipo == 'Celular' and not asset.imei:
+        faltantes.append('IMEI')
+    if asset.tipo in {'Notebook', 'Mac'}:
+        if not asset.hostname:
+            faltantes.append('Hostname')
+        if not asset.mac_address:
+            faltantes.append('MAC Address')
+    return {
+        'id': asset.pk, 'tipo': asset.tipo, 'marca': asset.marca,
+        'modelo': asset.modelo, 'numero_serie': asset.numero_serie,
+        'af': asset.af, 'estado': asset.estado, 'faltantes': faltantes,
+    }
+
+
+class AssetTechnicalPendingView(APIView):
+    permission_classes = [PortalRolePermission]
+
+    def get(self, request):
+        ficha_incompleta = _technical_missing_rules()[-1]
+        paginator = PortalPageNumberPagination()
+        queryset = _pending_assets(Equipamiento.objects.filter(ficha_incompleta))
+        page = paginator.paginate_queryset(queryset, request, view=self)
+        response = paginator.get_paginated_response([_serialize_pending(asset) for asset in page])
+        response['Cache-Control'] = 'no-store, private'
+        return response
 
 
 class AssetDashboardView(APIView):
@@ -15,11 +60,8 @@ class AssetDashboardView(APIView):
 
     def get(self, request):
         assets = Equipamiento.objects.all()
-        activos_vigentes = ~Q(estado='BAJA')
-        sin_imei_celular = Q(tipo='Celular') & (Q(imei__isnull=True) | Q(imei=''))
-        sin_hostname_computador = Q(tipo__in=['Notebook', 'Mac']) & (Q(hostname__isnull=True) | Q(hostname=''))
-        sin_mac_computador = Q(tipo__in=['Notebook', 'Mac']) & (Q(mac_address__isnull=True) | Q(mac_address=''))
-        ficha_incompleta = activos_vigentes & (sin_imei_celular | sin_hostname_computador | sin_mac_computador)
+        (activos_vigentes, sin_imei_celular, sin_hostname_computador,
+         sin_mac_computador, ficha_incompleta) = _technical_missing_rules()
         counts = assets.aggregate(
             total=Count('pk'),
             disponibles=Count('pk', filter=Q(estado='STOCK')),
@@ -45,24 +87,7 @@ class AssetDashboardView(APIView):
                 entries.append({'nombre': 'Otros', 'total': remaining})
             return entries
 
-        pendientes = []
-        for asset in assets.filter(ficha_incompleta).only(
-            'id', 'tipo', 'marca', 'modelo', 'numero_serie', 'af', 'estado',
-            'imei', 'hostname', 'mac_address',
-        ).order_by('-pk')[:10]:
-            faltantes = []
-            if asset.tipo == 'Celular' and not asset.imei:
-                faltantes.append('IMEI')
-            if asset.tipo in {'Notebook', 'Mac'}:
-                if not asset.hostname:
-                    faltantes.append('Hostname')
-                if not asset.mac_address:
-                    faltantes.append('MAC Address')
-            pendientes.append({
-                'id': asset.pk, 'tipo': asset.tipo, 'marca': asset.marca,
-                'modelo': asset.modelo, 'numero_serie': asset.numero_serie,
-                'af': asset.af, 'estado': asset.estado, 'faltantes': faltantes,
-            })
+        pendientes = [_serialize_pending(asset) for asset in _pending_assets(assets.filter(ficha_incompleta))[:10]]
 
         recent = MovimientoActivo.objects.select_related('activo', 'acta').defer('acta__documento_pdf')[:8]
         movements = [{

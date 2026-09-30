@@ -77,7 +77,6 @@ import NuevoMovimientoModal from './features/movimientos/components/NuevoMovimie
 import CambioEquipoModal from './features/movimientos/components/CambioEquipoModal';
 import HistorialMovimientosModal from './features/movimientos/components/HistorialMovimientosModal';
 import FichaActivoModal from './features/movimientos/components/FichaActivoModal';
-import AssetDashboard from './features/dashboard/components/AssetDashboard';
 import HistorialColaboradorModal from './features/movimientos/components/HistorialColaboradorModal';
 import { getIpAssignmentHistory } from './api/ipsApi';
 import { getItemDetailsByTab } from './services/getItemService';
@@ -88,6 +87,8 @@ import {
   renderIpStatusBadge,
   renderAnexoStatusBadge,
 } from './components/common/badgeRenderers';
+
+const AssetDashboard = React.lazy(() => import('./features/dashboard/components/AssetDashboard'));
 
 export default function App() {
   const [username, setUsername] = useState('');
@@ -1046,7 +1047,7 @@ export default function App() {
           />
         )}
 
-        {tab === 'activos-resumen' && <AssetDashboard onOpenHistory={setHistorialActivo} onEditAsset={openIncompleteAsset} />}
+        {tab === 'activos-resumen' && <React.Suspense fallback={<p role="status">Cargando tablero de activos...</p>}><AssetDashboard onOpenHistory={setHistorialActivo} onEditAsset={openIncompleteAsset} /></React.Suspense>}
 
         {tab === 'departamentos' && (
           <DepartamentosSubareasPage

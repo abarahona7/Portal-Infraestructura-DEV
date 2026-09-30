@@ -33,6 +33,11 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
+  const [showAllPending, setShowAllPending] = useState(false);
+  const [pendingPage, setPendingPage] = useState(1);
+  const [pendingData, setPendingData] = useState(null);
+  const [pendingLoading, setPendingLoading] = useState(false);
+  const [pendingError, setPendingError] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -42,10 +47,23 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
     return () => controller.abort();
   }, [reloadKey]);
 
+  useEffect(() => {
+    if (!showAllPending) return undefined;
+    const controller = new AbortController();
+    apiClient.get('/activos/pendientes-tecnicos/', {
+      params: { page: pendingPage, page_size: 20 }, signal: controller.signal,
+    }).then(({ data: response }) => { setPendingData(response); setPendingError(''); setPendingLoading(false); })
+      .catch((err) => { if (err.code !== 'ERR_CANCELED') { setPendingError(movimientoError(err)); setPendingLoading(false); } });
+    return () => controller.abort();
+  }, [showAllPending, pendingPage, reloadKey]);
+
+  const changePendingPage = (nextPage) => { setPendingData(null); setPendingLoading(true); setPendingPage(nextPage); };
+  const pendingRows = showAllPending ? (pendingData?.results || []) : (data?.pendientes_tecnicos || []);
+
   return <div className="itam-dashboard">
     <div className="itam-dashboard-heading">
       <div><span className="itam-dashboard-eyebrow">Inventario TI</span><h2>Resumen de activos</h2><p>Estado actual del maestro de equipos y movimientos registrados en el nuevo módulo.</p></div>
-      <button type="button" className="itam-dashboard-refresh" disabled={loading} onClick={() => { setLoading(true); setReloadKey((value) => value + 1); }}><RefreshCw size={17} />Actualizar</button>
+      <button type="button" className="itam-dashboard-refresh" disabled={loading} onClick={() => { setLoading(true); if (showAllPending) { setPendingPage(1); setPendingData(null); setPendingLoading(true); } setReloadKey((value) => value + 1); }}><RefreshCw size={17} />Actualizar</button>
     </div>
     {loading && !data && <p role="status">Cargando indicadores...</p>}
     {error && <p className="itam-dashboard-error" role="alert">{error}</p>}
@@ -70,15 +88,28 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
       </section>
       <section className="itam-dashboard-panel">
         <h3>Fichas técnicas por completar</h3>
-        {!data.pendientes_tecnicos.length && <p className="itam-dashboard-empty">No hay fichas técnicas pendientes en activos vigentes.</p>}
-        {data.pendientes_tecnicos.length > 0 && <p className="itam-dashboard-empty">Se muestran los diez registros más recientes. El total anterior incluye todos los pendientes.</p>}
+        {!data.conteos.fichas_tecnicas_incompletas && <p className="itam-dashboard-empty">No hay fichas técnicas pendientes en activos vigentes.</p>}
+        {(data.conteos.fichas_tecnicas_incompletas > 0 || showAllPending) && <div className="itam-dashboard-pending-heading">
+          <p className="itam-dashboard-empty">{showAllPending ? 'Todos los pendientes, ordenados por registro más reciente.' : 'Diez registros recientes; el total incluye todos los pendientes.'}</p>
+          <button type="button" onClick={() => {
+            if (showAllPending) { setShowAllPending(false); setPendingData(null); }
+            else { setPendingPage(1); setPendingLoading(true); setShowAllPending(true); }
+          }}>{showAllPending ? 'Mostrar recientes' : `Ver todos (${data.conteos.fichas_tecnicas_incompletas})`}</button>
+        </div>}
+        {showAllPending && pendingLoading && <p role="status">Cargando fichas pendientes...</p>}
+        {showAllPending && pendingError && <p className="itam-dashboard-error" role="alert">{pendingError}</p>}
         <div className="itam-dashboard-recent">
-          {data.pendientes_tecnicos.map((item) => <article key={item.id}>
+          {pendingRows.map((item) => <article key={item.id}>
             <div><strong>{item.tipo} {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'N/I'} · AF: {item.af || 'N/I'} · ID: {item.id}</span><span>Falta: {item.faltantes.join(', ')}</span></div>
             <span>{item.estado}</span>
             <div className="itam-dashboard-actions"><button type="button" onClick={() => onEditAsset(item)}>Editar ficha</button></div>
           </article>)}
         </div>
+        {showAllPending && pendingData && pendingData.total_pages > 1 && <div className="itam-dashboard-pager">
+          <button type="button" disabled={pendingLoading || pendingPage <= 1} onClick={() => changePendingPage(pendingPage - 1)}>Anterior</button>
+          <span>Página {pendingData.page} de {pendingData.total_pages}</span>
+          <button type="button" disabled={pendingLoading || pendingPage >= pendingData.total_pages} onClick={() => changePendingPage(pendingPage + 1)}>Siguiente</button>
+        </div>}
       </section>
       <div className="itam-dashboard-distributions">
         <Distribution title="Por tipo" items={data.por_tipo} empty="Todavía no hay activos." />

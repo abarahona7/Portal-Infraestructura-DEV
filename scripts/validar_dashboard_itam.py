@@ -40,6 +40,15 @@ with transaction.atomic():
     assert quality.data['conteos']['fichas_tecnicas_incompletas'] == original['fichas_tecnicas_incompletas'] + 2
     assert quality.data['pendientes_tecnicos'][0]['id'] == celular.pk
     assert not any(item['id'] == baja.pk for item in quality.data['pendientes_tecnicos'])
+    paged = client.get('/api/activos/pendientes-tecnicos/?page=1&page_size=2')
+    assert paged.status_code == 200, (paged.status_code, paged.data)
+    assert paged.data['count'] == quality.data['conteos']['fichas_tecnicas_incompletas']
+    assert paged.data['page_size'] == 2 and len(paged.data['results']) == 2
+    assert [item['id'] for item in paged.data['results']] == [celular.pk, asset.pk]
+    assert paged['Cache-Control'] == 'no-store, private'
+    next_page = client.get('/api/activos/pendientes-tecnicos/?page=2&page_size=2')
+    assert next_page.status_code == 200 and next_page.data['page'] == 2
+    assert next_page.data['results'][0]['id'] != celular.pk
     assert any(row['nombre'] == 'Bodega tablero' for row in available.data['por_ubicacion'])
     movement = client.post('/api/movimientos/', {'tipo_movimiento': 'ASIGNACION', 'activo_id': asset.pk,
         'colaborador_destino_id': person.pk, 'ubicacion_destino': 'Oficina tablero',
@@ -56,10 +65,12 @@ with transaction.atomic():
     assert 'rut' not in str(assigned.data).lower()
     anonymous = APIClient(SERVER_NAME='127.0.0.1', HTTP_HOST='127.0.0.1')
     assert anonymous.get('/api/activos/resumen/').status_code in (401, 403)
+    assert anonymous.get('/api/activos/pendientes-tecnicos/').status_code in (401, 403)
     viewer = User.objects.create_user(username=f'dashboard_view_{suffix}', password='temporary-only')
     viewer.groups.add(Group.objects.get_or_create(name='Visualizador')[0])
     client.force_authenticate(user=viewer)
     assert client.get('/api/activos/resumen/').status_code == 403
+    assert client.get('/api/activos/pendientes-tecnicos/').status_code == 403
     transaction.set_rollback(True)
 assert not Usuario.objects.filter(usuario_red=f'dash.{suffix}').exists()
 print('Dashboard ITAM: conteos, distribución, movimientos y permisos OK; rollback confirmado')

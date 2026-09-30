@@ -44,6 +44,11 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
+  const [identifierField, setIdentifierField] = useState(null);
+  const [identifierPage, setIdentifierPage] = useState(1);
+  const [identifierData, setIdentifierData] = useState(null);
+  const [identifierLoading, setIdentifierLoading] = useState(false);
+  const [identifierError, setIdentifierError] = useState('');
   const [showAllPending, setShowAllPending] = useState(false);
   const [pendingPage, setPendingPage] = useState(1);
   const [pendingData, setPendingData] = useState(null);
@@ -84,6 +89,16 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
       .catch((err) => { if (err.code !== 'ERR_CANCELED') { setError(movimientoError(err)); setLoading(false); } });
     return () => controller.abort();
   }, [reloadKey]);
+
+  useEffect(() => {
+    if (!identifierField) return undefined;
+    const controller = new AbortController();
+    apiClient.get('/activos/identificadores-faltantes/', {
+      params: { campo: identifierField, page: identifierPage, page_size: 20 }, signal: controller.signal,
+    }).then(({ data: response }) => { setIdentifierData(response); setIdentifierError(''); setIdentifierLoading(false); })
+      .catch((err) => { if (err.code !== 'ERR_CANCELED') { setIdentifierError(movimientoError(err)); setIdentifierLoading(false); } });
+    return () => controller.abort();
+  }, [identifierField, identifierPage, reloadKey]);
 
   useEffect(() => {
     if (!showAllPending) return undefined;
@@ -171,12 +186,21 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
 
   const refreshDashboard = () => {
     setLoading(true);
+    if (identifierField) { setIdentifierPage(1); setIdentifierData(null); setIdentifierLoading(true); }
     if (showAllPending) { setPendingPage(1); setPendingData(null); setPendingLoading(true); }
     if (showAllActas) { setActaPage(1); setActaData(null); setActaLoading(true); }
     if (showAllCustody) { setCustodyPage(1); setCustodyData(null); setCustodyLoading(true); }
     if (showAllWarranty) { setWarrantyPage(1); setWarrantyData(null); setWarrantyLoading(true); }
     setReloadKey((value) => value + 1);
   };
+  const selectIdentifier = (field) => {
+    setIdentifierField((current) => current === field ? null : field);
+    setIdentifierPage(1);
+    setIdentifierData(null);
+    setIdentifierError('');
+    setIdentifierLoading(identifierField !== field);
+  };
+  const changeIdentifierPage = (nextPage) => { setIdentifierData(null); setIdentifierLoading(true); setIdentifierPage(nextPage); };
   const changeActaPage = (nextPage) => { setActaData(null); setActaLoading(true); setActaPage(nextPage); };
   const changeCustodyPage = (nextPage) => { setCustodyData(null); setCustodyLoading(true); setCustodyPage(nextPage); };
   const changePendingPage = (nextPage) => { setPendingData(null); setPendingLoading(true); setPendingPage(nextPage); };
@@ -204,8 +228,8 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
       </div>
       <section className="itam-dashboard-panel itam-dashboard-review">
         <h3>Datos que requieren revisión</h3>
-        <div><span>Sin número de serie</span><strong>{data.conteos.sin_serie.toLocaleString('es-CL')}</strong></div>
-        <div><span>Sin activo fijo</span><strong>{data.conteos.sin_activo_fijo.toLocaleString('es-CL')}</strong></div>
+        <div><span>Sin número de serie</span><span className="itam-dashboard-review-action"><strong>{data.conteos.sin_serie.toLocaleString('es-CL')}</strong><button type="button" aria-pressed={identifierField === 'serie'} onClick={() => selectIdentifier('serie')}>Revisar equipos</button></span></div>
+        <div><span>Sin activo fijo</span><span className="itam-dashboard-review-action"><strong>{data.conteos.sin_activo_fijo.toLocaleString('es-CL')}</strong><button type="button" aria-pressed={identifierField === 'activo_fijo'} onClick={() => selectIdentifier('activo_fijo')}>Revisar equipos</button></span></div>
         <div><span>Asignados a colaboradores no activos</span><strong>{data.conteos.con_custodio_inactivo.toLocaleString('es-CL')}</strong></div>
         <div><span>Celulares sin IMEI</span><strong>{data.conteos.sin_imei_celular.toLocaleString('es-CL')}</strong></div>
         <div><span>Notebook o Mac sin Hostname</span><strong>{data.conteos.sin_hostname_computador.toLocaleString('es-CL')}</strong></div>
@@ -213,6 +237,27 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
         <p><strong>{data.conteos.fichas_tecnicas_incompletas.toLocaleString('es-CL')}</strong> fichas técnicas incompletas en total, sin contar dos veces un equipo al que le falten varios datos. Se excluyen los dados de baja.</p>
         <p>Los activos sin custodio incluyen equipos disponibles, en reparación y dados de baja: {data.conteos.sin_custodio.toLocaleString('es-CL')}.</p>
       </section>
+      {identifierField && <section className="itam-dashboard-panel">
+        <h3>{identifierField === 'serie' ? 'Equipos sin número de serie' : 'Equipos sin activo fijo'}</h3>
+        <p className="itam-dashboard-empty">Incluye todo el maestro, incluso los equipos dados de baja. Revise la ficha antes de completar el identificador.</p>
+        {identifierLoading && <p role="status">Cargando equipos...</p>}
+        {identifierError && <p className="itam-dashboard-error" role="alert">{identifierError}</p>}
+        {identifierData && <>
+          <p className="itam-dashboard-empty">{identifierData.count.toLocaleString('es-CL')} equipos encontrados.</p>
+          <div className="itam-dashboard-recent">
+            {identifierData.results.map((item) => <article key={item.id}>
+              <div><strong>{item.tipo} {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'N/I'} · AF: {item.af || 'N/I'} · ID: {item.id}</span><span>Ubicación: {item.ubicacion_actual}</span></div>
+              <span>{item.estado}</span>
+              <div className="itam-dashboard-actions"><button type="button" onClick={() => onEditAsset(item)}>Editar ficha</button><button type="button" onClick={() => onOpenHistory(item)}>Historial</button></div>
+            </article>)}
+          </div>
+          {identifierData.total_pages > 1 && <div className="itam-dashboard-pager">
+            <button type="button" disabled={identifierLoading || identifierPage <= 1} onClick={() => changeIdentifierPage(identifierPage - 1)}>Anterior</button>
+            <span>Página {identifierData.page} de {identifierData.total_pages}</span>
+            <button type="button" disabled={identifierLoading || identifierPage >= identifierData.total_pages} onClick={() => changeIdentifierPage(identifierPage + 1)}>Siguiente</button>
+          </div>}
+        </>}
+      </section>}
       <section className="itam-dashboard-panel">
         <h3>Garantías de activos vigentes</h3>
         <p className="itam-dashboard-empty">Próximas: vence entre hoy y los siguientes {data.ventana_garantia_dias} días. Los equipos dados de baja se excluyen.</p>

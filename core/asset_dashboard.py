@@ -130,6 +130,29 @@ def _serialize_pending(asset):
     }
 
 
+class AssetMissingIdentifierView(APIView):
+    permission_classes = [PortalRolePermission]
+
+    def get(self, request):
+        field = request.query_params.get('campo')
+        if field not in {'serie', 'activo_fijo'}:
+            raise ValidationError({'campo': 'Indique serie o activo_fijo.'})
+        column = 'numero_serie' if field == 'serie' else 'af'
+        condition = Q(**{f'{column}__isnull': True}) | Q(**{column: ''})
+        queryset = Equipamiento.objects.filter(condition).only(
+            'id', 'tipo', 'marca', 'modelo', 'numero_serie', 'af', 'estado', 'ubicacion_actual',
+        ).order_by('-pk')
+        paginator = PortalPageNumberPagination()
+        page = paginator.paginate_queryset(queryset, request, view=self)
+        response = paginator.get_paginated_response([{
+            'id': asset.pk, 'tipo': asset.tipo, 'marca': asset.marca, 'modelo': asset.modelo,
+            'numero_serie': asset.numero_serie, 'af': asset.af,
+            'estado': asset.estado, 'ubicacion_actual': asset.ubicacion_actual,
+        } for asset in page])
+        response['Cache-Control'] = 'no-store, private'
+        return response
+
+
 class AssetTechnicalPendingView(APIView):
     permission_classes = [PortalRolePermission]
 

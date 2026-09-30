@@ -50,6 +50,12 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
   const [custodyData, setCustodyData] = useState(null);
   const [custodyLoading, setCustodyLoading] = useState(false);
   const [custodyError, setCustodyError] = useState('');
+  const [warrantyStatus, setWarrantyStatus] = useState('proximas');
+  const [showAllWarranty, setShowAllWarranty] = useState(false);
+  const [warrantyPage, setWarrantyPage] = useState(1);
+  const [warrantyData, setWarrantyData] = useState(null);
+  const [warrantyLoading, setWarrantyLoading] = useState(false);
+  const [warrantyError, setWarrantyError] = useState('');
   const [reportFrom, setReportFrom] = useState('');
   const [reportTo, setReportTo] = useState('');
   const [reportType, setReportType] = useState('');
@@ -94,6 +100,16 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
     return () => controller.abort();
   }, [showAllCustody, custodyPage, reloadKey]);
 
+  useEffect(() => {
+    if (!showAllWarranty) return undefined;
+    const controller = new AbortController();
+    apiClient.get('/activos/garantias/', {
+      params: { estado: warrantyStatus, page: warrantyPage, page_size: 20 }, signal: controller.signal,
+    }).then(({ data: response }) => { setWarrantyData(response); setWarrantyError(''); setWarrantyLoading(false); })
+      .catch((err) => { if (err.code !== 'ERR_CANCELED') { setWarrantyError(movimientoError(err)); setWarrantyLoading(false); } });
+    return () => controller.abort();
+  }, [showAllWarranty, warrantyStatus, warrantyPage, reloadKey]);
+
   const exportReport = async (event) => {
     event.preventDefault();
     if (reportFrom && reportTo && reportFrom > reportTo) {
@@ -120,11 +136,15 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
     if (showAllPending) { setPendingPage(1); setPendingData(null); setPendingLoading(true); }
     if (showAllActas) { setActaPage(1); setActaData(null); setActaLoading(true); }
     if (showAllCustody) { setCustodyPage(1); setCustodyData(null); setCustodyLoading(true); }
+    if (showAllWarranty) { setWarrantyPage(1); setWarrantyData(null); setWarrantyLoading(true); }
     setReloadKey((value) => value + 1);
   };
   const changeActaPage = (nextPage) => { setActaData(null); setActaLoading(true); setActaPage(nextPage); };
   const changeCustodyPage = (nextPage) => { setCustodyData(null); setCustodyLoading(true); setCustodyPage(nextPage); };
   const changePendingPage = (nextPage) => { setPendingData(null); setPendingLoading(true); setPendingPage(nextPage); };
+  const warrantyCount = data?.conteos[warrantyStatus === 'proximas' ? 'garantias_proximas' : 'garantias_vencidas'] || 0;
+  const warrantyRows = showAllWarranty ? (warrantyData?.results || []) :
+    (data?.[warrantyStatus === 'proximas' ? 'garantias_proximas_recientes' : 'garantias_vencidas_recientes'] || []);
   const pendingRows = showAllPending ? (pendingData?.results || []) : (data?.pendientes_tecnicos || []);
   const actaRows = showAllActas ? (actaData?.results || []) : (data?.actas_pendientes_recientes || []);
   const custodyRows = showAllCustody ? (custodyData?.results || []) : (data?.custodios_no_activos_recientes || []);
@@ -154,6 +174,41 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
         <div><span>Notebook o Mac sin MAC</span><strong>{data.conteos.sin_mac_computador.toLocaleString('es-CL')}</strong></div>
         <p><strong>{data.conteos.fichas_tecnicas_incompletas.toLocaleString('es-CL')}</strong> fichas técnicas incompletas en total, sin contar dos veces un equipo al que le falten varios datos. Se excluyen los dados de baja.</p>
         <p>Los activos sin custodio incluyen equipos disponibles, en reparación y dados de baja: {data.conteos.sin_custodio.toLocaleString('es-CL')}.</p>
+      </section>
+      <section className="itam-dashboard-panel">
+        <h3>Garantías de activos vigentes</h3>
+        <p className="itam-dashboard-empty">Próximas: vence entre hoy y los siguientes {data.ventana_garantia_dias} días. Los equipos dados de baja se excluyen.</p>
+        <div className="itam-dashboard-warranty-summary">
+          <span><strong>{data.conteos.garantias_proximas.toLocaleString('es-CL')}</strong> próximas a vencer</span>
+          <span><strong>{data.conteos.garantias_vencidas.toLocaleString('es-CL')}</strong> vencidas</span>
+          <span><strong>{data.conteos.garantias_sin_fecha.toLocaleString('es-CL')}</strong> sin fecha registrada</span>
+        </div>
+        <div className="itam-dashboard-warranty-controls" role="group" aria-label="Estado de garantía">
+          <button type="button" aria-pressed={warrantyStatus === 'proximas'} onClick={() => { setWarrantyStatus('proximas'); setWarrantyPage(1); setWarrantyData(null); if (showAllWarranty) setWarrantyLoading(true); }}>Próximas</button>
+          <button type="button" aria-pressed={warrantyStatus === 'vencidas'} onClick={() => { setWarrantyStatus('vencidas'); setWarrantyPage(1); setWarrantyData(null); if (showAllWarranty) setWarrantyLoading(true); }}>Vencidas</button>
+        </div>
+        {!warrantyCount && <p className="itam-dashboard-empty">No hay garantías {warrantyStatus === 'proximas' ? 'próximas a vencer' : 'vencidas'} con fecha registrada.</p>}
+        {(warrantyCount > 0 || showAllWarranty) && <div className="itam-dashboard-pending-heading">
+          <p className="itam-dashboard-empty">{showAllWarranty ? 'Lista completa, ordenada por fecha de vencimiento.' : 'Hasta ocho activos por revisar.'}</p>
+          <button type="button" onClick={() => {
+            if (showAllWarranty) { setShowAllWarranty(false); setWarrantyData(null); }
+            else { setWarrantyPage(1); setWarrantyLoading(true); setShowAllWarranty(true); }
+          }}>{showAllWarranty ? 'Mostrar recientes' : `Ver todos (${warrantyCount})`}</button>
+        </div>}
+        {showAllWarranty && warrantyLoading && <p role="status">Cargando garantías...</p>}
+        {showAllWarranty && warrantyError && <p className="itam-dashboard-error" role="alert">{warrantyError}</p>}
+        <div className="itam-dashboard-recent">
+          {warrantyRows.map((item) => <article key={item.id}>
+            <div><strong>{item.tipo} {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'N/I'} · AF: {item.af || 'N/I'}</span><span>Vencimiento: {item.fecha_vencimiento_garantia} · {item.dias_para_vencer < 0 ? `${Math.abs(item.dias_para_vencer)} días vencida` : item.dias_para_vencer === 0 ? 'Vence hoy' : `${item.dias_para_vencer} días restantes`}</span></div>
+            <span>{item.estado}</span>
+            <div className="itam-dashboard-actions"><button type="button" onClick={() => onEditAsset(item)}>Editar ficha</button><button type="button" onClick={() => onOpenHistory(item)}>Historial</button></div>
+          </article>)}
+        </div>
+        {showAllWarranty && warrantyData && warrantyData.total_pages > 1 && <div className="itam-dashboard-pager">
+          <button type="button" disabled={warrantyLoading || warrantyPage <= 1} onClick={() => { setWarrantyData(null); setWarrantyLoading(true); setWarrantyPage(warrantyPage - 1); }}>Anterior</button>
+          <span>Página {warrantyData.page} de {warrantyData.total_pages}</span>
+          <button type="button" disabled={warrantyLoading || warrantyPage >= warrantyData.total_pages} onClick={() => { setWarrantyData(null); setWarrantyLoading(true); setWarrantyPage(warrantyPage + 1); }}>Siguiente</button>
+        </div>}
       </section>
       <section className="itam-dashboard-panel">
         <h3>Equipos con custodio no activo ({data.conteos.con_custodio_inactivo.toLocaleString('es-CL')})</h3>

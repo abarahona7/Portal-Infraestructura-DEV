@@ -44,3 +44,9 @@
 .itam-dashboard-report-form input, .itam-dashboard-report-form select { min-height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: .4rem .55rem; background: #fff; color: #0f172a; }
 .itam-dashboard-report-form button { display: inline-flex; align-items: center; gap: .4rem; min-height: 38px; border: 1px solid #1d4ed8; border-radius: 6px; padding: .45rem .7rem; background: #1d4ed8; color: #fff; font-weight: 600; cursor: pointer; }
 .itam-dashboard-report-form button:disabled { opacity: .6; cursor: wait; }
+
+.itam-dashboard-warranty-summary { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0; color: #475569; font-size: .9rem; }
+.itam-dashboard-warranty-summary strong { color: #0f172a; }
+.itam-dashboard-warranty-controls { display: flex; gap: .5rem; margin: .5rem 0 .85rem; }
+.itam-dashboard-warranty-controls button { border: 1px solid #bfdbfe; border-radius: 6px; padding: .45rem .7rem; background: #fff; color: #1d4ed8; cursor: pointer; }
+.itam-dashboard-warranty-controls button[aria-pressed="true"] { background: #dbeafe; border-color: #60a5fa; font-weight: 700; }

@@ -6,7 +6,7 @@ from core.auth_views import ActivityView, CsrfTokenView, LoginView, RefreshCooki
 from core.security_views import RevealSecretView
 from core.asset_api import ActaEntregaViewSet, MovimientoActivoViewSet
 from core.asset_qr import AssetQrImageView, AssetQrView
-from core.asset_dashboard import AssetDashboardView, AssetInactiveCustodianView, AssetTechnicalPendingView
+from core.asset_dashboard import AssetDashboardView, AssetInactiveCustodianView, AssetTechnicalPendingView, AssetWarrantyView
 
 router = DefaultRouter()
 router.register(r'movimientos', MovimientoActivoViewSet, basename='movimiento')
@@ -34,6 +34,7 @@ urlpatterns = [
     path('api/activos/resumen/', AssetDashboardView.as_view(), name='activos-resumen'),
     path('api/activos/pendientes-tecnicos/', AssetTechnicalPendingView.as_view(), name='activos-pendientes-tecnicos'),
     path('api/activos/custodios-no-activos/', AssetInactiveCustodianView.as_view(), name='activos-custodios-no-activos'),
+    path('api/activos/garantias/', AssetWarrantyView.as_view(), name='activos-garantias'),
     path('api/activos/qr/<uuid:token>/', AssetQrView.as_view(), name='activo-qr'),
     path('api/activos/qr/<uuid:token>/imagen/', AssetQrImageView.as_view(), name='activo-qr-imagen'),
     path('api/', include(router.urls)),

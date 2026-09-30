@@ -102,6 +102,7 @@ export const prepareUpdatePayload = (
     if (!payload.imei) payload.imei = null;
     if (!payload.icloud_cuenta) payload.icloud_cuenta = null;
     if (!payload.accesorios) payload.accesorios = null;
+    if (!payload.fecha_vencimiento_garantia) payload.fecha_vencimiento_garantia = null;
     if (payload.icloud_cuenta) payload.icloud_cuenta = payload.icloud_cuenta.toLowerCase();
 
   }

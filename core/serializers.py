@@ -1502,7 +1502,7 @@ class EquipamientoListSerializer(serializers.ModelSerializer):
             'fecha_asignacion', 'estado', 'numero_telefono', 'imei',
             'icloud_cuenta', 'icloud_password_configured', 'pin_configured',
             'ip_asignada', 'estado_fisico', 'mac_address', 'ubicacion_actual',
-            'accesorios_requeridos', 'fecha_alta', 'token_qr',
+            'accesorios_requeridos', 'fecha_alta', 'fecha_vencimiento_garantia', 'token_qr',
         ]
 
     def get_icloud_password_configured(self, obj):

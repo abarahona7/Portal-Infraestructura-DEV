@@ -741,6 +741,10 @@ class Equipamiento(models.Model):
     fecha_alta = models.DateTimeField(
         default=timezone.now,
     )
+    fecha_vencimiento_garantia = models.DateField(
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         indexes = [
@@ -756,6 +760,7 @@ class Equipamiento(models.Model):
                 fields=['token_qr'],
                 name='idx_equipo_token_qr',
             ),
+            models.Index(fields=['fecha_vencimiento_garantia'], name='idx_equipo_garantia'),
         ]
         constraints = [
             models.CheckConstraint(
@@ -2032,6 +2037,12 @@ def track_historial_equipo(sender, instance, **kwargs):
         "AF",
         equipo_previo.af,
         instance.af
+    )
+
+    add_cambio(
+        "Vencimiento Garantía",
+        equipo_previo.fecha_vencimiento_garantia,
+        instance.fecha_vencimiento_garantia
     )
 
     add_cambio(

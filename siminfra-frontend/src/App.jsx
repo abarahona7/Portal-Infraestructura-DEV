@@ -558,11 +558,11 @@ export default function App() {
     setEditingItem(item);
   };
 
-  const openIncompleteAsset = async (asset) => {
+  const openDashboardAssetForEdit = async (asset) => {
     const equipmentTab = {
       Celular: 'equipos-celular', Notebook: 'equipos-notebook', Mac: 'equipos-mac',
-    }[asset.tipo];
-    if (!equipmentTab) return;
+      Tablet: 'equipos-tablet', 'BAM / Router': 'equipos-bam-router',
+    }[asset.tipo] || 'equipos-perifericos';
     try {
       const detail = await getItemDetailsByTab('equipos', asset.id);
       selectTab(equipmentTab);
@@ -1047,7 +1047,7 @@ export default function App() {
           />
         )}
 
-        {tab === 'activos-resumen' && <React.Suspense fallback={<p role="status">Cargando tablero de activos...</p>}><AssetDashboard onOpenHistory={setHistorialActivo} onEditAsset={openIncompleteAsset} role={authUser?.role} /></React.Suspense>}
+        {tab === 'activos-resumen' && <React.Suspense fallback={<p role="status">Cargando tablero de activos...</p>}><AssetDashboard onOpenHistory={setHistorialActivo} onEditAsset={openDashboardAssetForEdit} role={authUser?.role} /></React.Suspense>}
 
         {tab === 'departamentos' && (
           <DepartamentosSubareasPage

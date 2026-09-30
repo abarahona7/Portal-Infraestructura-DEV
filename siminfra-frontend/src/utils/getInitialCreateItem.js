@@ -36,6 +36,7 @@ export const getInitialCreateItem = (tab) => {
         estado: 'STOCK',
         estado_fisico: 'USADO',
         ubicacion_actual: 'Bodega TI',
+        fecha_vencimiento_garantia: '',
         mac_address: '',
       };
 

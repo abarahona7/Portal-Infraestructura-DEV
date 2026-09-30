@@ -21,7 +21,7 @@ class AssetQrSerializer(serializers.ModelSerializer):
     class Meta:
         model = Equipamiento
         fields = ('id', 'tipo', 'marca', 'modelo', 'numero_serie', 'af', 'estado',
-                  'estado_fisico', 'ubicacion_actual', 'accesorios',
+                  'estado_fisico', 'ubicacion_actual', 'accesorios', 'fecha_vencimiento_garantia',
                   'usuario_nombre', 'usuario_departamento')
 
 

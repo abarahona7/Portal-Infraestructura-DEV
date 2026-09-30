@@ -61,7 +61,7 @@ def build_checks():
             Equipamiento.objects.filter(
                 Q(estado__isnull=True)
                 | Q(estado='')
-                | ~Q(estado__in=['ASIGNADO', 'STOCK', 'MANTENCION', 'BAJA'])
+                | ~Q(estado__in=['ASIGNADO', 'STOCK', 'PRESTAMO', 'MANTENCION', 'BAJA'])
             ),
         ),
         IntegrityCheck(

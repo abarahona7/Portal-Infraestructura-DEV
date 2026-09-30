@@ -63,14 +63,36 @@ with transaction.atomic():
     assert sum(row['total'] for row in assigned.data['por_area']) == sum(row['total'] for row in baseline.data['por_area']) + 1
     assert assigned.data['ultimos_movimientos'][0]['folio'] == movement.data['acta']['folio']
     assert 'rut' not in str(assigned.data).lower()
+    licencia = Usuario.objects.create(nombre_completo='Persona en licencia', usuario_red=f'lic.{suffix}',
+        correo_corp=f'lic.{suffix}@example.com', departamento=department, estado='LICENCIA')
+    en_revision = [Equipamiento.objects.create(tipo='Monitor', marca='Prueba', modelo='Custodia',
+        numero_serie=f'LIC-{suffix}-{index}', estado='ASIGNADO', usuario=licencia)
+        for index in range(2)]
+    custody_summary = client.get('/api/activos/resumen/')
+    assert custody_summary.status_code == 200, (custody_summary.status_code, custody_summary.data)
+    assert custody_summary.data['conteos']['con_custodio_inactivo'] == original['con_custodio_inactivo'] + 2
+    assert [row['id'] for row in custody_summary.data['custodios_no_activos_recientes'][:2]] == [
+        en_revision[1].pk, en_revision[0].pk,
+    ]
+    assert custody_summary.data['custodios_no_activos_recientes'][0]['colaborador']['estado'] == 'LICENCIA'
+    custody_page = client.get('/api/activos/custodios-no-activos/?page=1&page_size=1')
+    assert custody_page.status_code == 200, (custody_page.status_code, custody_page.data)
+    assert custody_page.data['count'] == custody_summary.data['conteos']['con_custodio_inactivo']
+    assert custody_page.data['results'][0]['id'] == en_revision[1].pk
+    assert custody_page['Cache-Control'] == 'no-store, private'
+    assert 'rut' not in str(custody_page.data).lower() and 'correo_corp' not in str(custody_page.data).lower()
+    custody_next = client.get('/api/activos/custodios-no-activos/?page=2&page_size=1')
+    assert custody_next.status_code == 200 and custody_next.data['results'][0]['id'] == en_revision[0].pk
     anonymous = APIClient(SERVER_NAME='127.0.0.1', HTTP_HOST='127.0.0.1')
     assert anonymous.get('/api/activos/resumen/').status_code in (401, 403)
     assert anonymous.get('/api/activos/pendientes-tecnicos/').status_code in (401, 403)
+    assert anonymous.get('/api/activos/custodios-no-activos/').status_code in (401, 403)
     viewer = User.objects.create_user(username=f'dashboard_view_{suffix}', password='temporary-only')
     viewer.groups.add(Group.objects.get_or_create(name='Visualizador')[0])
     client.force_authenticate(user=viewer)
     assert client.get('/api/activos/resumen/').status_code == 403
     assert client.get('/api/activos/pendientes-tecnicos/').status_code == 403
+    assert client.get('/api/activos/custodios-no-activos/').status_code == 403
     transaction.set_rollback(True)
 assert not Usuario.objects.filter(usuario_red=f'dash.{suffix}').exists()
 print('Dashboard ITAM: conteos, distribución, movimientos y permisos OK; rollback confirmado')

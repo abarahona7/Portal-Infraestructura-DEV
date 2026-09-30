@@ -12,6 +12,42 @@ from .permissions import PortalRolePermission
 from .services.acta_estado_service import actas_pendientes_firma, resumen_acta_pendiente
 
 
+CUSTODIO_NO_ACTIVO = Q(usuario__isnull=False) & ~Q(usuario__estado='ACTIVO')
+
+
+def _inactive_custody_assets(queryset):
+    return queryset.filter(CUSTODIO_NO_ACTIVO).select_related('usuario').only(
+        'id', 'tipo', 'marca', 'modelo', 'numero_serie', 'af', 'estado',
+        'ubicacion_actual', 'usuario', 'usuario__nombre_completo', 'usuario__estado',
+    ).order_by('-pk')
+
+
+def _serialize_inactive_custody(asset):
+    return {
+        'id': asset.pk, 'tipo': asset.tipo, 'marca': asset.marca,
+        'modelo': asset.modelo, 'numero_serie': asset.numero_serie,
+        'af': asset.af, 'estado': asset.estado,
+        'ubicacion_actual': asset.ubicacion_actual,
+        'colaborador': {
+            'id': asset.usuario_id,
+            'nombre_completo': asset.usuario.nombre_completo,
+            'estado': asset.usuario.estado or 'SIN_ESTADO',
+        },
+    }
+
+
+class AssetInactiveCustodianView(APIView):
+    permission_classes = [PortalRolePermission]
+
+    def get(self, request):
+        paginator = PortalPageNumberPagination()
+        queryset = _inactive_custody_assets(Equipamiento.objects.all())
+        page = paginator.paginate_queryset(queryset, request, view=self)
+        response = paginator.get_paginated_response([_serialize_inactive_custody(asset) for asset in page])
+        response['Cache-Control'] = 'no-store, private'
+        return response
+
+
 def _technical_missing_rules():
     vigente = ~Q(estado='BAJA')
     sin_imei = Q(tipo='Celular') & (Q(imei__isnull=True) | Q(imei=''))
@@ -73,7 +109,7 @@ class AssetDashboardView(APIView):
             sin_serie=Count('pk', filter=Q(numero_serie__isnull=True) | Q(numero_serie='')),
             sin_activo_fijo=Count('pk', filter=Q(af__isnull=True) | Q(af='')),
             sin_custodio=Count('pk', filter=Q(usuario__isnull=True)),
-            con_custodio_inactivo=Count('pk', filter=Q(usuario__isnull=False) & ~Q(usuario__estado='ACTIVO')),
+            con_custodio_inactivo=Count('pk', filter=CUSTODIO_NO_ACTIVO),
             sin_imei_celular=Count('pk', filter=activos_vigentes & sin_imei_celular),
             sin_hostname_computador=Count('pk', filter=activos_vigentes & sin_hostname_computador),
             sin_mac_computador=Count('pk', filter=activos_vigentes & sin_mac_computador),
@@ -90,6 +126,7 @@ class AssetDashboardView(APIView):
 
         pendientes = [_serialize_pending(asset) for asset in _pending_assets(assets.filter(ficha_incompleta))[:10]]
         actas_pendientes = actas_pendientes_firma()
+        custodios_no_activos = _inactive_custody_assets(assets)
 
         recent = MovimientoActivo.objects.select_related('activo', 'acta').defer('acta__documento_pdf')[:8]
         movements = [{
@@ -104,6 +141,9 @@ class AssetDashboardView(APIView):
         response = Response({
             'conteos': counts,
             'pendientes_tecnicos': pendientes,
+            'custodios_no_activos_recientes': [
+                _serialize_inactive_custody(asset) for asset in custodios_no_activos[:8]
+            ],
             'actas_pendientes_firma': actas_pendientes.count(),
             'actas_pendientes_recientes': [resumen_acta_pendiente(acta) for acta in actas_pendientes[:8]],
             'por_tipo': distribution(assets, 'tipo'),

@@ -45,6 +45,11 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
   const [actaLoading, setActaLoading] = useState(false);
   const [actaError, setActaError] = useState('');
   const [gestionActa, setGestionActa] = useState(null);
+  const [showAllCustody, setShowAllCustody] = useState(false);
+  const [custodyPage, setCustodyPage] = useState(1);
+  const [custodyData, setCustodyData] = useState(null);
+  const [custodyLoading, setCustodyLoading] = useState(false);
+  const [custodyError, setCustodyError] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -74,16 +79,29 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
     return () => controller.abort();
   }, [showAllActas, actaPage, reloadKey]);
 
+  useEffect(() => {
+    if (!showAllCustody) return undefined;
+    const controller = new AbortController();
+    apiClient.get('/activos/custodios-no-activos/', {
+      params: { page: custodyPage, page_size: 20 }, signal: controller.signal,
+    }).then(({ data: response }) => { setCustodyData(response); setCustodyError(''); setCustodyLoading(false); })
+      .catch((err) => { if (err.code !== 'ERR_CANCELED') { setCustodyError(movimientoError(err)); setCustodyLoading(false); } });
+    return () => controller.abort();
+  }, [showAllCustody, custodyPage, reloadKey]);
+
   const refreshDashboard = () => {
     setLoading(true);
     if (showAllPending) { setPendingPage(1); setPendingData(null); setPendingLoading(true); }
     if (showAllActas) { setActaPage(1); setActaData(null); setActaLoading(true); }
+    if (showAllCustody) { setCustodyPage(1); setCustodyData(null); setCustodyLoading(true); }
     setReloadKey((value) => value + 1);
   };
   const changeActaPage = (nextPage) => { setActaData(null); setActaLoading(true); setActaPage(nextPage); };
+  const changeCustodyPage = (nextPage) => { setCustodyData(null); setCustodyLoading(true); setCustodyPage(nextPage); };
   const changePendingPage = (nextPage) => { setPendingData(null); setPendingLoading(true); setPendingPage(nextPage); };
   const pendingRows = showAllPending ? (pendingData?.results || []) : (data?.pendientes_tecnicos || []);
   const actaRows = showAllActas ? (actaData?.results || []) : (data?.actas_pendientes_recientes || []);
+  const custodyRows = showAllCustody ? (custodyData?.results || []) : (data?.custodios_no_activos_recientes || []);
 
   return <><div className="itam-dashboard">
     <div className="itam-dashboard-heading">
@@ -110,6 +128,31 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
         <div><span>Notebook o Mac sin MAC</span><strong>{data.conteos.sin_mac_computador.toLocaleString('es-CL')}</strong></div>
         <p><strong>{data.conteos.fichas_tecnicas_incompletas.toLocaleString('es-CL')}</strong> fichas técnicas incompletas en total, sin contar dos veces un equipo al que le falten varios datos. Se excluyen los dados de baja.</p>
         <p>Los activos sin custodio incluyen equipos disponibles, en reparación y dados de baja: {data.conteos.sin_custodio.toLocaleString('es-CL')}.</p>
+      </section>
+      <section className="itam-dashboard-panel">
+        <h3>Equipos con custodio no activo ({data.conteos.con_custodio_inactivo.toLocaleString('es-CL')})</h3>
+        {!data.conteos.con_custodio_inactivo && <p className="itam-dashboard-empty">No hay equipos en esta condición.</p>}
+        {(data.conteos.con_custodio_inactivo > 0 || showAllCustody) && <div className="itam-dashboard-pending-heading">
+          <p className="itam-dashboard-empty">Incluye colaboradores en licencia, de baja o sin estado registrado. Revise cada caso antes de decidir un movimiento.</p>
+          <button type="button" onClick={() => {
+            if (showAllCustody) { setShowAllCustody(false); setCustodyData(null); }
+            else { setCustodyPage(1); setCustodyLoading(true); setShowAllCustody(true); }
+          }}>{showAllCustody ? 'Mostrar recientes' : `Ver todos (${data.conteos.con_custodio_inactivo})`}</button>
+        </div>}
+        {showAllCustody && custodyLoading && <p role="status">Cargando equipos por revisar...</p>}
+        {showAllCustody && custodyError && <p className="itam-dashboard-error" role="alert">{custodyError}</p>}
+        <div className="itam-dashboard-recent">
+          {custodyRows.map((item) => <article key={item.id}>
+            <div><strong>{item.tipo} {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'N/I'} · AF: {item.af || 'N/I'}</span><span>Custodio: {item.colaborador.nombre_completo} · Estado: {item.colaborador.estado}</span></div>
+            <span>{item.estado} · {item.ubicacion_actual}</span>
+            <div className="itam-dashboard-actions"><button type="button" onClick={() => onOpenHistory(item)}>Revisar historial</button></div>
+          </article>)}
+        </div>
+        {showAllCustody && custodyData && custodyData.total_pages > 1 && <div className="itam-dashboard-pager">
+          <button type="button" disabled={custodyLoading || custodyPage <= 1} onClick={() => changeCustodyPage(custodyPage - 1)}>Anterior</button>
+          <span>Página {custodyData.page} de {custodyData.total_pages}</span>
+          <button type="button" disabled={custodyLoading || custodyPage >= custodyData.total_pages} onClick={() => changeCustodyPage(custodyPage + 1)}>Siguiente</button>
+        </div>}
       </section>
       <section className="itam-dashboard-panel">
         <h3>Fichas técnicas por completar</h3>

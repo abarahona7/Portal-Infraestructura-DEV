@@ -17,11 +17,12 @@ CUSTODIO_NO_ACTIVO = Q(usuario__isnull=False) & ~Q(usuario__estado='ACTIVO')
 GARANTIA_VENTANA_DIAS = 30
 
 
-def _warranty_assets(queryset, condition):
-    return queryset.filter(condition).only(
+def _warranty_assets(queryset, condition, *, missing=False):
+    assets = queryset.filter(condition).only(
         'id', 'tipo', 'marca', 'modelo', 'numero_serie', 'af',
         'estado', 'fecha_vencimiento_garantia',
-    ).order_by('fecha_vencimiento_garantia', 'pk')
+    )
+    return assets.order_by('-pk') if missing else assets.order_by('fecha_vencimiento_garantia', 'pk')
 
 
 def _serialize_warranty(asset, today):
@@ -30,7 +31,8 @@ def _serialize_warranty(asset, today):
         'modelo': asset.modelo, 'numero_serie': asset.numero_serie,
         'af': asset.af, 'estado': asset.estado,
         'fecha_vencimiento_garantia': asset.fecha_vencimiento_garantia,
-        'dias_para_vencer': (asset.fecha_vencimiento_garantia - today).days,
+        'dias_para_vencer': ((asset.fecha_vencimiento_garantia - today).days
+                            if asset.fecha_vencimiento_garantia else None),
     }
 
 
@@ -40,7 +42,8 @@ def _warranty_conditions(today):
     proximas = vigente & con_fecha & Q(fecha_vencimiento_garantia__gte=today) & Q(
         fecha_vencimiento_garantia__lte=today + timedelta(days=GARANTIA_VENTANA_DIAS))
     vencidas = vigente & con_fecha & Q(fecha_vencimiento_garantia__lt=today)
-    return proximas, vencidas
+    sin_fecha = vigente & Q(fecha_vencimiento_garantia__isnull=True)
+    return proximas, vencidas, sin_fecha
 
 
 class AssetWarrantyView(APIView):
@@ -48,13 +51,16 @@ class AssetWarrantyView(APIView):
 
     def get(self, request):
         state = request.query_params.get('estado', 'proximas')
-        if state not in {'proximas', 'vencidas'}:
-            raise ValidationError({'estado': 'Indique proximas o vencidas.'})
+        if state not in {'proximas', 'vencidas', 'sin_fecha'}:
+            raise ValidationError({'estado': 'Indique proximas, vencidas o sin_fecha.'})
         today = timezone.localdate()
-        upcoming, expired = _warranty_conditions(today)
-        condition = upcoming if state == 'proximas' else expired
+        upcoming, expired, missing = _warranty_conditions(today)
+        condition = {'proximas': upcoming, 'vencidas': expired, 'sin_fecha': missing}[state]
         paginator = PortalPageNumberPagination()
-        page = paginator.paginate_queryset(_warranty_assets(Equipamiento.objects.all(), condition), request, view=self)
+        page = paginator.paginate_queryset(
+            _warranty_assets(Equipamiento.objects.all(), condition, missing=state == 'sin_fecha'),
+            request, view=self,
+        )
         response = paginator.get_paginated_response([_serialize_warranty(asset, today) for asset in page])
         response['Cache-Control'] = 'no-store, private'
         return response
@@ -145,7 +151,7 @@ class AssetDashboardView(APIView):
         (activos_vigentes, sin_imei_celular, sin_hostname_computador,
          sin_mac_computador, ficha_incompleta) = _technical_missing_rules()
         today = timezone.localdate()
-        garantias_proximas, garantias_vencidas = _warranty_conditions(today)
+        garantias_proximas, garantias_vencidas, garantias_sin_fecha = _warranty_conditions(today)
         counts = assets.aggregate(
             total=Count('pk'),
             disponibles=Count('pk', filter=Q(estado='STOCK')),
@@ -159,7 +165,7 @@ class AssetDashboardView(APIView):
             con_custodio_inactivo=Count('pk', filter=CUSTODIO_NO_ACTIVO),
             garantias_proximas=Count('pk', filter=garantias_proximas),
             garantias_vencidas=Count('pk', filter=garantias_vencidas),
-            garantias_sin_fecha=Count('pk', filter=~Q(estado='BAJA') & Q(fecha_vencimiento_garantia__isnull=True)),
+            garantias_sin_fecha=Count('pk', filter=garantias_sin_fecha),
             sin_imei_celular=Count('pk', filter=activos_vigentes & sin_imei_celular),
             sin_hostname_computador=Count('pk', filter=activos_vigentes & sin_hostname_computador),
             sin_mac_computador=Count('pk', filter=activos_vigentes & sin_mac_computador),
@@ -197,6 +203,10 @@ class AssetDashboardView(APIView):
             ],
             'garantias_vencidas_recientes': [
                 _serialize_warranty(asset, today) for asset in _warranty_assets(assets, garantias_vencidas)[:8]
+            ],
+            'garantias_sin_fecha_recientes': [
+                _serialize_warranty(asset, today) for asset in _warranty_assets(
+                    assets, garantias_sin_fecha, missing=True)[:8]
             ],
             'custodios_no_activos_recientes': [
                 _serialize_inactive_custody(asset) for asset in custodios_no_activos[:8]

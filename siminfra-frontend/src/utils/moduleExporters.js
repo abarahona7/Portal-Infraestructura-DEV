@@ -310,6 +310,11 @@ export const exportEquiposExcel = ({
           equipo.fecha_asignacion || 'N/A',
       },
       {
+        key: 'fecha_vencimiento_garantia',
+        header: 'Garantía hasta',
+        value: (equipo) => equipo.fecha_vencimiento_garantia || 'Sin fecha',
+      },
+      {
         key: 'estado',
         header: 'Estado',
         value: (equipo) =>

@@ -40,6 +40,8 @@ with transaction.atomic():
     assert counts['garantias_proximas'] == before['garantias_proximas'] + 3
     assert counts['garantias_vencidas'] == before['garantias_vencidas'] + 1
     assert counts['garantias_sin_fecha'] == before['garantias_sin_fecha'] + 1
+    assert summary.data['garantias_sin_fecha_recientes'][0]['id'] == undated.pk
+    assert summary.data['garantias_sin_fecha_recientes'][0]['dias_para_vencer'] is None
     assert {due_today.pk, near.pk, boundary.pk}.issubset({row['id'] for row in summary.data['garantias_proximas_recientes']})
     assert next(row for row in summary.data['garantias_proximas_recientes'] if row['id'] == due_today.pk)['dias_para_vencer'] == 0
     assert expired.pk in {row['id'] for row in summary.data['garantias_vencidas_recientes']}
@@ -52,6 +54,11 @@ with transaction.atomic():
     expired_list = client.get('/api/activos/garantias/?estado=vencidas&page_size=20')
     assert expired_list.status_code == 200 and expired_list.data['count'] == counts['garantias_vencidas']
     assert any(row['id'] == expired.pk and row['dias_para_vencer'] == -1 for row in expired_list.data['results'])
+    missing = client.get('/api/activos/garantias/?estado=sin_fecha&page_size=1')
+    assert missing.status_code == 200 and missing.data['count'] == counts['garantias_sin_fecha']
+    assert missing.data['results'][0]['id'] == undated.pk
+    assert missing.data['results'][0]['fecha_vencimiento_garantia'] is None
+    assert missing.data['results'][0]['dias_para_vencer'] is None
     assert client.get('/api/activos/garantias/?estado=otro').status_code == 400
     assert 'rut' not in str(expired_list.data).lower() and 'correo' not in str(expired_list.data).lower()
 
@@ -66,6 +73,9 @@ with transaction.atomic():
     assert cleared.status_code == 200, (cleared.status_code, cleared.data)
     future.refresh_from_db()
     assert future.fecha_vencimiento_garantia is None
+    refreshed_missing = client.get('/api/activos/garantias/?estado=sin_fecha&page_size=20')
+    assert refreshed_missing.data['count'] == before['garantias_sin_fecha'] + 2
+    assert future.pk in {row['id'] for row in refreshed_missing.data['results']}
     history = HistorialEquipo.objects.filter(equipo=future).order_by('-pk').first()
     assert history and 'Vencimiento Garantía' in history.observacion
     assert history.modificado_por == operator.username

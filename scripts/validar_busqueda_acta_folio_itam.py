@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
+from core.asset_api import _comprobar_pdf
 from core.models import ActaEntrega, ActaEstadoEvento, MovimientoActivo
 
 suffix = uuid.uuid4().hex[:10]
@@ -46,6 +47,10 @@ with transaction.atomic():
     }).status_code == 400
     original = client.get(f'/api/actas/{acta.pk}/pdf/')
     assert original.status_code == 200 and original.content.startswith(b'%PDF-')
+    initial_integrity = client.get(f'/api/actas/{acta.pk}/integridad/')
+    assert initial_integrity.status_code == 200 and initial_integrity.data['original']['coincide'] is True
+    assert initial_integrity.data['copia_firmada'] is None
+    assert initial_integrity['Cache-Control'] == 'no-store, private'
     pending = client.post(f'/api/actas/{acta.pk}/estado/', {'estado_nuevo': 'PENDIENTE_FIRMA'}, format='json')
     assert pending.status_code == 200, (pending.status_code, pending.data)
     updated = client.get('/api/actas/', {'folio': folio})
@@ -86,6 +91,18 @@ with transaction.atomic():
     assert rows[1][5] == acta.hash_verificacion
     signed_event = ActaEstadoEvento.objects.get(acta=acta, estado_nuevo='FIRMADA')
     assert rows[1][6] == signed_event.hash_copia_firmada
+    verified = client.get(f'/api/actas/{acta.pk}/integridad/')
+    assert verified.status_code == 200 and verified.data['folio'] == folio
+    assert verified.data['original']['coincide'] is True
+    assert verified.data['copia_firmada']['coincide'] is True
+    assert verified.data['original']['sha256_registrado'] == acta.hash_verificacion
+    assert verified.data['copia_firmada']['sha256_registrado'] == signed_event.hash_copia_firmada
+    assert '%PDF-' not in str(verified.data)
+    assert _comprobar_pdf(b'%PDF-corrupto', acta.hash_verificacion)['coincide'] is False
+    assert _comprobar_pdf(b'%PDF-corrupto', signed_event.hash_copia_firmada)['coincide'] is False
+    assert _comprobar_pdf(None, acta.hash_verificacion)['coincide'] is False
+    assert _comprobar_pdf(original.content, acta.hash_verificacion)['coincide'] is True
+
     assert 'snapshot' not in content.lower() and '%PDF-' not in content
     empty_report = client.get('/api/actas/reporte/', {'folio': folio, 'estado': 'GENERADA'})
     assert len(list(csv.reader(io.StringIO(b''.join(empty_report.streaming_content).decode('utf-8-sig')), delimiter=';'))) == 1
@@ -98,9 +115,11 @@ with transaction.atomic():
     client.force_authenticate(user=viewer)
     assert client.get('/api/actas/', {'folio': folio}).status_code == 403
     assert client.get('/api/actas/reporte/').status_code == 403
+    assert client.get(f'/api/actas/{acta.pk}/integridad/').status_code == 403
     anonymous = APIClient(SERVER_NAME='127.0.0.1', HTTP_HOST='127.0.0.1')
     assert anonymous.get('/api/actas/', {'folio': folio}).status_code in (401, 403)
     assert anonymous.get('/api/actas/reporte/').status_code in (401, 403)
+    assert anonymous.get(f'/api/actas/{acta.pk}/integridad/').status_code in (401, 403)
     transaction.set_rollback(True)
 assert not ActaEntrega.objects.filter(folio=folio).exists()
-print('Archivo ITAM: folio, fechas, estado vigente, CSV, PDF y permisos OK; rollback confirmado')
+print('Archivo ITAM: folio, fechas, CSV, PDF, integridad y permisos OK; rollback confirmado')

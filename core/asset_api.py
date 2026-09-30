@@ -1,5 +1,6 @@
 """API de movimientos y documentos persistidos del inventario TI."""
 import csv
+import hashlib
 import re
 import uuid
 from datetime import datetime, time
@@ -346,6 +347,17 @@ def _reporte_actas_rows(queryset):
         yield writer.writerow([_csv_cell(value) for value in values])
 
 
+def _comprobar_pdf(pdf, hash_guardado):
+    contenido = bytes(pdf or b'')
+    hash_calculado = hashlib.sha256(contenido).hexdigest() if contenido else ''
+    return {
+        'presente': bool(contenido),
+        'coincide': contenido.startswith(b'%PDF-') and hash_calculado == hash_guardado,
+        'sha256_registrado': hash_guardado,
+        'sha256_calculado': hash_calculado,
+    }
+
+
 class ActaEntregaViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [PortalRolePermission]
     pagination_class = PortalPageNumberPagination
@@ -379,7 +391,7 @@ class ActaEntregaViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(fecha_emision__lte=end)
         if params.get('estado'):
             queryset = _actas_con_estado_vigente(queryset).filter(estado_actual=params['estado'])
-        if self.action != 'reporte':
+        if self.action not in {'reporte', 'integridad'}:
             queryset = queryset.defer('documento_pdf', 'snapshot_documento').prefetch_related(
                 Prefetch('estado_eventos', queryset=ActaEstadoEvento.objects.select_related('usuario').defer('copia_firmada_pdf'),
                          to_attr='_eventos_estado'))
@@ -403,6 +415,21 @@ class ActaEntregaViewSet(viewsets.ReadOnlyModelViewSet):
     def pendientes(self, request):
         page = self.paginate_queryset(actas_pendientes_firma())
         response = self.get_paginated_response([resumen_acta_pendiente(acta) for acta in page])
+        response['Cache-Control'] = 'no-store, private'
+        return response
+
+    @action(detail=True, methods=['get'])
+    def integridad(self, request, pk=None):
+        acta = self.get_object()
+        firma = acta.estado_eventos.filter(estado_nuevo='FIRMADA').only(
+            'copia_firmada_pdf', 'hash_copia_firmada',
+        ).first()
+        response = Response({
+            'folio': acta.folio,
+            'original': _comprobar_pdf(acta.documento_pdf, acta.hash_verificacion),
+            'copia_firmada': _comprobar_pdf(firma.copia_firmada_pdf, firma.hash_copia_firmada)
+            if firma else None,
+        })
         response['Cache-Control'] = 'no-store, private'
         return response
 

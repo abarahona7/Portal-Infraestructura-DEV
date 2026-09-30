@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { cambiarEstadoActa, downloadActa, downloadActaFirmada, getActaEventos, movimientoError } from '../../../api/movimientosApi';
+import { cambiarEstadoActa, downloadActa, downloadActaFirmada, getActaEventos, movimientoError, verificarIntegridadActa } from '../../../api/movimientosApi';
 import MovimientoShell from './MovimientoShell';
 
 const nextState = { GENERADA: 'PENDIENTE_FIRMA', PENDIENTE_FIRMA: 'FIRMADA', FIRMADA: 'CERRADA' };
@@ -13,6 +13,8 @@ export default function ActaGestionModal({ initialActa, role, onClose, onUpdated
   const [archivo, setArchivo] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [integridad, setIntegridad] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -31,10 +33,19 @@ export default function ActaGestionModal({ initialActa, role, onClose, onUpdated
       setNuevoEstado(nextState[updated.estado] || (role === 'Administrador' && updated.estado !== 'ANULADA' ? 'ANULADA' : ''));
       setMotivo('');
       setArchivo(null);
+      setIntegridad(null);
       setEventos(await getActaEventos(acta.id));
       onUpdated();
     } catch (err) { setError(movimientoError(err)); }
     finally { setBusy(false); }
+  };
+
+  const checkIntegrity = async () => {
+    setChecking(true);
+    setError('');
+    try { setIntegridad(await verificarIntegridadActa(acta.id)); }
+    catch (err) { setIntegridad(null); setError(movimientoError(err)); }
+    finally { setChecking(false); }
   };
 
   return <MovimientoShell title={`Acta ${acta.folio}`} onClose={onClose} busy={busy} footer={<button type="button" className="movimiento-button" onClick={onClose} disabled={busy}>Cerrar</button>}>
@@ -42,7 +53,14 @@ export default function ActaGestionModal({ initialActa, role, onClose, onUpdated
     <div className="movimiento-add">
       <button type="button" className="movimiento-button" onClick={() => downloadActa(acta).catch((err) => setError(movimientoError(err)))}>Descargar original</button>
       {acta.tiene_copia_firmada && <button type="button" className="movimiento-button" onClick={() => downloadActaFirmada(acta).catch((err) => setError(movimientoError(err)))}>Descargar copia firmada</button>}
+      <button type="button" className="movimiento-button" disabled={checking} onClick={checkIntegrity}>{checking ? 'Comprobando...' : 'Comprobar huellas de archivos'}</button>
     </div>
+    {integridad && <div className="movimiento-entry" role="status">
+      <strong>Comprobación de archivos</strong>
+      <span>PDF original: {integridad.original.coincide ? 'coincide con su huella SHA-256' : 'no coincide o falta el archivo'}.</span>
+      <span>Copia firmada: {integridad.copia_firmada ? (integridad.copia_firmada.coincide ? 'coincide con su huella SHA-256' : 'no coincide o falta el archivo') : 'aún no registrada'}.</span>
+      <span>Esta comprobación verifica los archivos guardados; no certifica la identidad del firmante.</span>
+    </div>}
     <h4>Historial de estados</h4>
     {eventos.length === 0 && <p className="movimiento-note">Acta generada; todavía no hay transiciones.</p>}
     {eventos.map((item) => <article className="movimiento-entry" key={item.id}>

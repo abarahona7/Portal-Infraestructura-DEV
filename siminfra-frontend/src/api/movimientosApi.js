@@ -57,6 +57,11 @@ export const movimientoError = (error) => {
   return messages(detail).join(' ') || 'No se pudo completar la operación.';
 };
 
+export const verificarIntegridadActa = async (actaId) => {
+  const { data } = await apiClient.get(`/actas/${actaId}/integridad/`);
+  return data;
+};
+
 export const getActaEventos = async (actaId, signal) => {
   const { data } = await apiClient.get(`/actas/${actaId}/eventos/`, { signal });
   return data;

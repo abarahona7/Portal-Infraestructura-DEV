@@ -3,7 +3,7 @@ import { defineConfig } from 'vite'
 
 const apiProxy = {
   '/api': {
-    target: 'http://127.0.0.1:8000',
+    target: 'http://127.0.0.1:8008',
     changeOrigin: true,
   },
 }
@@ -16,11 +16,13 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       host: isLanDevelopment ? '0.0.0.0' : '127.0.0.1',
-      port: 5173,
-      strictPort: isLanDevelopment,
+      port: 5176,
+      strictPort: true,
       proxy: apiProxy,
     },
     preview: {
+      port: 5176,
+      strictPort: true,
       proxy: apiProxy,
     },
   }

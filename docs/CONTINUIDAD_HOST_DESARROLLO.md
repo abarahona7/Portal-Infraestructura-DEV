@@ -119,7 +119,7 @@ VITE_API_URL=/api
 Terminal del backend, desde la raíz:
 
 ```powershell
-.\venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
+.\venv\Scripts\python.exe manage.py runserver 127.0.0.1:8008
 ```
 
 Terminal del frontend:
@@ -129,7 +129,7 @@ cd siminfra-frontend
 npm run dev:lan
 ```
 
-El navegador de otro equipo debe entrar a `http://IP_DEL_HOST:5173`. Las reglas
+El navegador de otro equipo debe entrar a `http://IP_DEL_HOST:5176`. Las reglas
 de firewall y el procedimiento completo están en
 [`DESARROLLO_RED_LOCAL.md`](DESARROLLO_RED_LOCAL.md).
 

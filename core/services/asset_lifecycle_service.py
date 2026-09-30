@@ -61,6 +61,7 @@ def _activo_snapshot(activo):
         'estado': activo.estado,
         'estado_fisico': activo.estado_fisico,
         'ubicacion_actual': activo.ubicacion_actual,
+        'accesorios': activo.accesorios or '',
         'usuario_id': activo.usuario_id,
         'fecha_asignacion': activo.fecha_asignacion.isoformat() if activo.fecha_asignacion else None,
     }
@@ -116,7 +117,7 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
                          estado_operativo_resultante=None, accesorios_detalle=None,
                          observaciones='', request=None, qr_base_url=None, operacion_id=None):
     """Persist state, movement, numbered PDF and audit atomically after locking the asset."""
-    supported = {'ASIGNACION', 'PRESTAMO', 'CAMBIO', 'DEVOLUCION', 'REASIGNACION',
+    supported = {'ALTA', 'ASIGNACION', 'PRESTAMO', 'CAMBIO', 'DEVOLUCION', 'REASIGNACION',
                  'INGRESO_REPARACION', 'SALIDA_REPARACION', 'BAJA'}
     if tipo_movimiento not in supported:
         raise ValidationError({'tipo_movimiento': 'Tipo de movimiento no disponible.'})
@@ -132,14 +133,17 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
         raise ValidationError({'estado_fisico': 'Seleccione un estado físico válido.'})
     if len(observaciones) > 2000:
         raise ValidationError({'observaciones': 'Las observaciones no pueden exceder 2000 caracteres.'})
-    if (estado_fisico == 'DANADO' or tipo_movimiento in {'INGRESO_REPARACION', 'SALIDA_REPARACION', 'BAJA'}) and not observaciones:
+    requiere_motivo = (estado_fisico == 'DANADO' and tipo_movimiento != 'ALTA') or tipo_movimiento in {
+        'INGRESO_REPARACION', 'SALIDA_REPARACION', 'BAJA',
+    }
+    if requiere_motivo and not observaciones:
         raise ValidationError({'observaciones': 'Describa el motivo o trabajo realizado.'})
 
     try:
         activo = Equipamiento.objects.select_for_update().get(pk=activo_id)
     except (Equipamiento.DoesNotExist, ValueError, TypeError):
         raise ValidationError({'activo_id': 'El activo seleccionado no existe.'})
-    antes = _activo_snapshot(activo)
+    antes = None if tipo_movimiento == 'ALTA' else _activo_snapshot(activo)
     assigned = activo.usuario_id is not None
     origen_id = colaborador_origen_id
     destino_id = colaborador_destino_id
@@ -159,7 +163,11 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
     elif destino_id is not None:
         raise ValidationError({'colaborador_destino_id': 'Este movimiento no admite colaborador de destino.'})
 
-    if tipo_movimiento in {'ASIGNACION', 'PRESTAMO', 'CAMBIO'}:
+    if tipo_movimiento == 'ALTA':
+        if assigned or activo.estado != 'STOCK' or activo.movimientos.exists():
+            raise MovimientoConflict('ALTA_YA_REGISTRADA', 'El alta solo corresponde a un activo disponible sin movimientos previos.')
+        estado_resultante = 'STOCK'
+    elif tipo_movimiento in {'ASIGNACION', 'PRESTAMO', 'CAMBIO'}:
         if assigned or activo.estado != 'STOCK':
             raise MovimientoConflict('ACTIVO_NO_DISPONIBLE', 'El activo no está disponible para entrega.')
         estado_resultante = 'PRESTAMO' if tipo_movimiento == 'PRESTAMO' else 'ASIGNADO'
@@ -211,17 +219,19 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
     colaborador = destino or origen
     momento = timezone.now()
     actor = usuario_ti.get_username()
-    token = set_current_audit_user(usuario_ti)
-    try:
-        activo.usuario = destino
-        activo.estado = estado_resultante
-        activo.estado_fisico = estado_fisico
-        activo.ubicacion_actual = ubicacion_destino
-        activo.fecha_asignacion = timezone.localdate(momento) if destino else None
-        activo.save()
-    finally:
-        reset_current_audit_user(token)
+    if tipo_movimiento != 'ALTA':
+        token = set_current_audit_user(usuario_ti)
+        try:
+            activo.usuario = destino
+            activo.estado = estado_resultante
+            activo.estado_fisico = estado_fisico
+            activo.ubicacion_actual = ubicacion_destino
+            activo.fecha_asignacion = timezone.localdate(momento) if destino else None
+            activo.save()
+        finally:
+            reset_current_audit_user(token)
     despues = _activo_snapshot(activo)
+    ubicacion_origen = antes['ubicacion_actual'] if antes else None
     folio = generar_siguiente_folio(anio=timezone.localdate(momento).year)
     anio, correlativo = (int(part) for part in folio.split('-')[1:])
     documento = {
@@ -235,7 +245,7 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
         'colaborador_destino': _colaborador_snapshot(destino),
         'usuario_ti': {'id': usuario_ti.pk, 'nombre': usuario_ti.get_full_name() or actor, 'username': actor},
         'activo': deepcopy(despues),
-        'ubicacion_origen': antes['ubicacion_actual'],
+        'ubicacion_origen': ubicacion_origen,
         'ubicacion_destino': ubicacion_destino,
         'estado_fisico': estado_fisico,
         'estado_operativo_resultante': estado_resultante,
@@ -268,7 +278,7 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
     movimiento = MovimientoActivo.objects.create(
         activo=activo, acta=acta, tipo_movimiento=tipo_movimiento, operacion_id=operacion_id,
         fecha_movimiento=momento, colaborador_origen=origen,
-        colaborador_destino=destino, ubicacion_origen=antes['ubicacion_actual'],
+        colaborador_destino=destino, ubicacion_origen=ubicacion_origen,
         ubicacion_destino=ubicacion_destino, estado_fisico=estado_fisico,
         estado_operativo_resultante=estado_resultante, accesorios_detalle=accesorios,
         observaciones=observaciones, ejecutado_por=actor, usuario_ti=usuario_ti,

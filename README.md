@@ -35,14 +35,14 @@ Versión funcional definitiva del Portal Infraestructura TI.
 3. Crear `.env` desde `.env.example` y generar una `FIELD_ENCRYPTION_KEY`
    estable. Django carga este archivo automáticamente y las variables definidas
    por el sistema tienen prioridad.
-4. Ejecutar migraciones y `python manage.py runserver`.
+4. Ejecutar migraciones y `.venv/bin/python manage.py runserver 127.0.0.1:8008`.
 5. En `siminfra-frontend`, instalar dependencias con `npm ci` y crear `.env.local` con:
 
 ```env
 VITE_API_URL=/api
 ```
 
-6. Ejecutar `npm run dev`.
+6. Ejecutar `npm run dev` en `siminfra-frontend`. Vite escuchará en `127.0.0.1:5176` y enviará `/api` a Django en `127.0.0.1:8008`. Para acceso por túnel SSH, abrir `http://localhost:5176`.
 
 Para permitir pruebas desde otros equipos de la misma red, seguir
 [Desarrollo en red local](docs/DESARROLLO_RED_LOCAL.md). El perfil LAN se

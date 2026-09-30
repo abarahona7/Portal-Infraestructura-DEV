@@ -4,7 +4,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$ruleName = 'SimInfra Vite LAN (TCP 5173)'
+$ruleName = 'SimInfra Vite LAN (TCP 5176)'
 
 $currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principal = [Security.Principal.WindowsPrincipal]::new($currentIdentity)
@@ -46,7 +46,7 @@ $ruleParameters = @{
     Profile = @('Domain', 'Private')
     Program = $nodePath
     Protocol = 'TCP'
-    LocalPort = 5173
+    LocalPort = 5176
     RemoteAddress = 'LocalSubnet'
 }
 
@@ -54,5 +54,5 @@ New-NetFirewallRule @ruleParameters | Out-Null
 
 Write-Host "Regla configurada: $ruleName"
 Write-Host "Programa: $nodePath"
-Write-Host 'Puerto: TCP 5173'
+Write-Host 'Puerto: TCP 5176'
 Write-Host 'Origen permitido: subred local en perfiles Dominio y Privado'

@@ -1067,12 +1067,16 @@ def generar_acta_custodia_pdf(snapshot):
     for key, label in (('imei', 'IMEI'), ('mac_address', 'MAC'), ('hostname', 'Hostname')):
         if activo.get(key):
             activo_rows.append(row(label, activo[key]))
+    accesorios_texto = ', '.join(
+        f"{a.get('nombre', '')}{' (faltante: ' + a.get('nota', '') + ')' if not a.get('entregado') else ''}"
+        for a in accesorios
+    )
+    if not accesorios_texto and tipo == 'ALTA':
+        accesorios_texto = activo.get('accesorios') or ''
     activo_rows.extend([
         row('Estado físico', snapshot.get('estado_fisico')),
         row('Estado operativo', snapshot.get('estado_operativo_resultante')),
-        row('Accesorios', ', '.join(
-            f"{a.get('nombre', '')}{' (faltante: ' + a.get('nota', '') + ')' if not a.get('entregado') else ''}"
-            for a in accesorios) or 'Sin accesorios registrados'),
+        row('Accesorios', accesorios_texto or 'Sin accesorios registrados'),
         row('Observaciones', snapshot.get('observaciones')),
     ])
     activo_table = Table(activo_rows, colWidths=[3.2 * cm, 14.6 * cm], hAlign='LEFT')

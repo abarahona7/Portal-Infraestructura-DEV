@@ -478,6 +478,24 @@ class EquipamientoViewSet(
             return EquipamientoListSerializer
         return EquipamientoSerializer
 
+    def perform_create(self, serializer):
+        from .services.asset_lifecycle_service import registrar_movimiento
+
+        token = set_current_audit_user(self.request.user)
+        try:
+            with transaction.atomic():
+                activo = serializer.save()
+                registrar_movimiento(
+                    tipo_movimiento='ALTA', activo_id=activo.pk,
+                    usuario_ti=self.request.user, request=self.request,
+                    ubicacion_destino=activo.ubicacion_actual,
+                    estado_fisico=activo.estado_fisico,
+                    accesorios_detalle=[], observaciones='Alta inicial en inventario TI.',
+                )
+        finally:
+            reset_current_audit_user(token)
+
+
     def get_queryset(self):
         queryset = Equipamiento.objects.select_related('usuario', 'usuario__ip')
         if self.action == 'retrieve':

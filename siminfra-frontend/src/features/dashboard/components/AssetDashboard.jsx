@@ -3,6 +3,7 @@ import { Download, RefreshCw } from 'lucide-react';
 import apiClient from '../../../api/client';
 import { downloadActa, downloadActaFirmada, downloadReporteMovimientos, movimientoError } from '../../../api/movimientosApi';
 import ActaGestionModal from '../../movimientos/components/ActaGestionModal';
+import ActaArchivoPanel from './ActaArchivoPanel';
 import './AssetDashboard.css';
 
 const warrantyTabs = [['proximas', 'Próximas'], ['vencidas', 'Vencidas'], ['sin_fecha', 'Sin fecha']];
@@ -340,6 +341,7 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
           </div>
         </article></div>}
       </section>
+      <ActaArchivoPanel role={role} onUpdated={refreshDashboard} />
       <div className="itam-dashboard-distributions">
         <Distribution title="Por tipo" items={data.por_tipo} empty="Todavía no hay activos." />
         <Distribution title="Por ubicación" items={data.por_ubicacion} empty="Todavía no hay ubicaciones." />

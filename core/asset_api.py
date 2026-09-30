@@ -5,17 +5,18 @@ import uuid
 from datetime import datetime, time
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, OperationalError
-from django.db.models import Prefetch, Q
+from django.db.models import F, OuterRef, Prefetch, Q, Subquery
 from django.http import HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db.models.functions import Coalesce
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 
-from .models import ActaEntrega, ActaEstadoEvento, ESTADOS_FISICOS, MovimientoActivo, TIPOS_MOVIMIENTO, Usuario
+from .models import ActaEntrega, ActaEstadoEvento, ESTADOS_ACTA, ESTADOS_FISICOS, MovimientoActivo, TIPOS_MOVIMIENTO, Usuario
 from .pagination import PortalPageNumberPagination
 from .permissions import PortalRolePermission
 from .services.acta_estado_service import (
@@ -328,6 +329,17 @@ class ActaEntregaViewSet(viewsets.ReadOnlyModelViewSet):
             if not re.fullmatch(r'ATI-[0-9]{4}-[0-9]{6}', folio):
                 raise serializers.ValidationError({'folio': 'Indique un folio con formato ATI-AAAA-######.'})
             queryset = queryset.filter(folio=folio)
+        if 'tipo_movimiento' in self.request.query_params:
+            kind = self.request.query_params['tipo_movimiento'].strip().upper()
+            if kind not in dict(TIPOS_MOVIMIENTO):
+                raise serializers.ValidationError({'tipo_movimiento': 'Seleccione un tipo de movimiento válido.'})
+            queryset = queryset.filter(tipo_movimiento=kind)
+        if 'estado' in self.request.query_params:
+            state = self.request.query_params['estado'].strip().upper()
+            if state not in dict(ESTADOS_ACTA):
+                raise serializers.ValidationError({'estado': 'Seleccione un estado de acta válido.'})
+            latest = ActaEstadoEvento.objects.filter(acta_id=OuterRef('pk')).order_by('-pk').values('estado_nuevo')[:1]
+            queryset = queryset.annotate(estado_actual=Coalesce(Subquery(latest), F('estado'))).filter(estado_actual=state)
         return queryset
 
     def list(self, request, *args, **kwargs):

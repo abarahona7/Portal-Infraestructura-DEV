@@ -3,6 +3,7 @@ import uuid
 
 from django.contrib.auth.models import Group, User
 from django.db import transaction
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
 from core.models import ActaEntrega, MovimientoActivo
@@ -34,6 +35,30 @@ with transaction.atomic():
     assert pending.status_code == 200, (pending.status_code, pending.data)
     updated = client.get('/api/actas/', {'folio': folio})
     assert updated.status_code == 200 and updated.data['results'][0]['estado'] == 'PENDIENTE_FIRMA'
+    archive_pending = client.get('/api/actas/', {
+        'folio': folio, 'estado': 'PENDIENTE_FIRMA', 'tipo_movimiento': 'ALTA', 'page_size': 1,
+    })
+    assert archive_pending.status_code == 200 and archive_pending.data['count'] == 1
+    assert archive_pending.data['results'][0]['id'] == acta.pk
+    archive_old = client.get('/api/actas/', {'folio': folio, 'estado': 'GENERADA'})
+    assert archive_old.status_code == 200 and archive_old.data['count'] == 0
+    archive_wrong_type = client.get('/api/actas/', {'folio': folio, 'tipo_movimiento': 'BAJA'})
+    assert archive_wrong_type.status_code == 200 and archive_wrong_type.data['count'] == 0
+    assert client.get('/api/actas/', {'estado': 'INVENTADO'}).status_code == 400
+    assert client.get('/api/actas/', {'tipo_movimiento': 'INVENTADO'}).status_code == 400
+    signed_file = SimpleUploadedFile('copia.pdf', original.content, content_type='application/pdf')
+    signed = client.post(f'/api/actas/{acta.pk}/estado/', {
+        'estado_nuevo': 'FIRMADA', 'archivo_firmado': signed_file,
+    }, format='multipart')
+    assert signed.status_code == 200, (signed.status_code, signed.data)
+    assert client.get('/api/actas/', {'folio': folio, 'estado': 'FIRMADA'}).data['count'] == 1
+    closed = client.post(f'/api/actas/{acta.pk}/estado/', {'estado_nuevo': 'CERRADA'}, format='json')
+    assert closed.status_code == 200, (closed.status_code, closed.data)
+    archive_closed = client.get('/api/actas/', {'folio': folio, 'estado': 'CERRADA'})
+    assert archive_closed.status_code == 200 and archive_closed.data['count'] == 1
+    assert archive_closed.data['results'][0]['tiene_copia_firmada'] is True
+    assert client.get('/api/actas/', {'folio': folio, 'estado': 'FIRMADA'}).data['count'] == 0
+    assert client.get(f'/api/actas/{acta.pk}/firmada/').status_code == 200
     invalid = client.get('/api/actas/', {'folio': 'ATI-invalido'})
     assert invalid.status_code == 400 and 'folio' in invalid.data
     empty = client.get('/api/actas/', {'folio': 'ATI-2000-000000'})
@@ -46,4 +71,4 @@ with transaction.atomic():
     assert anonymous.get('/api/actas/', {'folio': folio}).status_code in (401, 403)
     transaction.set_rollback(True)
 assert not ActaEntrega.objects.filter(folio=folio).exists()
-print('Búsqueda por folio ITAM: acta real, estado, PDF y permisos OK; rollback confirmado')
+print('Archivo ITAM: folio, filtros de estado vigente/tipo, PDF y permisos OK; rollback confirmado')

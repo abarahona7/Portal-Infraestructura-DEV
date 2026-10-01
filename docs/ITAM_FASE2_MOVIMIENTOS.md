@@ -17,7 +17,7 @@ La reparación y la baja exigen observaciones. Para retirar un activo asignado h
 
 El préstamo usa el mismo control de custodio y accesorios que una asignación y termina mediante devolución, reasignación o cambio de equipo. La fecha de vencimiento del préstamo no forma parte del modelo actual; requerirá una regla operativa definida antes de generar alertas de atraso.
 
-El cambio se registra desde «Cambio de equipo» en la pantalla de Equipos. `POST /api/movimientos/cambio/` bloquea los dos activos en orden de ID y registra una `DEVOLUCION` del antiguo y un movimiento `CAMBIO` del reemplazo. Cada uno tiene folio y PDF propios, ambos comparten `operacion_id` (UUID), y cualquiera de las dos fichas permite abrir el cambio completo. `GET /api/movimientos/?operacion_id=<uuid>` recupera las dos partes. Ejemplo de solicitud:
+El cambio se inicia desde «Registrar movimiento» en Equipos, eligiendo el tipo «Cambio de equipo». `POST /api/movimientos/cambio/` bloquea los dos activos en orden de ID y registra una `DEVOLUCION` del antiguo y un movimiento `CAMBIO` del reemplazo. Cada uno tiene folio y PDF propios, ambos comparten `operacion_id` (UUID), y cualquiera de las dos fichas permite abrir el cambio completo. `GET /api/movimientos/?operacion_id=<uuid>` recupera las dos partes. Ejemplo de solicitud:
 
 ```json
 {

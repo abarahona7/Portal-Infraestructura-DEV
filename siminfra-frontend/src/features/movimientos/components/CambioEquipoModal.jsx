@@ -131,6 +131,7 @@ export default function CambioEquipoModal({ open, onClose, onCompleted }) {
     result ? <><button type="button" className="movimiento-button" onClick={close}>Cerrar</button><button type="button" className="movimiento-button" onClick={() => downloadActa(result.salida.acta).catch((err) => setError(movimientoError(err)))}>Descargar comprobante de devolución</button><button type="button" className="movimiento-button movimiento-button-primary" onClick={() => downloadActa(result.entrada.acta).catch((err) => setError(movimientoError(err)))}>Descargar comprobante de entrega</button></>
       : <><button type="button" className="movimiento-button" disabled={busy} onClick={preview ? () => setPreview(false) : close}>{preview ? 'Volver' : 'Cancelar'}</button><button type="button" className="movimiento-button movimiento-button-primary" disabled={busy} onClick={preview ? submit : confirmPreview}>{preview ? 'Confirmar ambos movimientos' : 'Vista previa'}</button></>
   }>
+    {!result && <p className="movimiento-note">Usa esta opción cuando una persona entrega un equipo y recibe otro. Se registran ambas acciones juntas.</p>}
     {error && <p className="movimiento-error" role="alert">{error}</p>}
     {result ? <div className="movimiento-success"><strong>Cambio registrado.</strong><p>Se guardaron dos comprobantes vinculados: {result.salida.acta.folio} y {result.entrada.acta.folio}.</p></div>
       : preview ? <dl className="movimiento-summary">

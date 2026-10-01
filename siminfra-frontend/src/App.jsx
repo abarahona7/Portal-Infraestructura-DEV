@@ -1091,7 +1091,7 @@ export default function App() {
                     </h2>
                   </div>
 
-                  {!isViewer && <div className="movimiento-footer"><button type="button" className="movimiento-button" onClick={() => setCambioEquipoOpen(true)}>Cambio de equipo</button><button type="button" className="movimiento-button movimiento-button-primary" onClick={() => setMovimientoOpen(true)}>Nuevo movimiento</button></div>}
+                  {!isViewer && <div className="movimiento-footer"><button type="button" className="movimiento-button movimiento-button-primary" onClick={() => setMovimientoOpen(true)}>Registrar movimiento</button></div>}
 
                   <div className="equipment-results-count">
                     <strong>
@@ -1301,7 +1301,7 @@ export default function App() {
             </>
           )}
 
-        <NuevoMovimientoModal open={movimientoOpen} onClose={() => setMovimientoOpen(false)} onCompleted={() => { refreshAllData(); showToast('Movimiento registrado. Comprobante guardado.'); }} />
+        <NuevoMovimientoModal open={movimientoOpen} onClose={() => setMovimientoOpen(false)} onChangeEquipment={() => { setMovimientoOpen(false); setCambioEquipoOpen(true); }} onCompleted={() => { refreshAllData(); showToast('Movimiento registrado. Comprobante guardado.'); }} />
         <CambioEquipoModal open={cambioEquipoOpen} onClose={() => setCambioEquipoOpen(false)} onCompleted={() => { refreshAllData(); showToast('Cambio de equipo registrado. Dos comprobantes guardados.'); }} />
         <HistorialMovimientosModal activo={historialActivo} onClose={() => setHistorialActivo(null)} />
         {historialColaborador && <HistorialColaboradorModal colaborador={historialColaborador} onClose={() => setHistorialColaborador(null)} onOpenAsset={setHistorialActivo} />}

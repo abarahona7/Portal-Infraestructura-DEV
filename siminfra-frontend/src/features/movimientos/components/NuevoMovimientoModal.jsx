@@ -8,6 +8,7 @@ const TYPES = [
   ['PRESTAMO', 'Préstamo'],
   ['DEVOLUCION', 'Devolución'],
   ['REASIGNACION', 'Reasignación'],
+  ['CAMBIO', 'Cambio de equipo'],
   ['INGRESO_REPARACION', 'Ingreso a reparación'],
   ['SALIDA_REPARACION', 'Salida de reparación'],
   ['BAJA', 'Baja'],
@@ -40,7 +41,7 @@ const resultingState = (kind, returnState) => ({
   INGRESO_REPARACION: 'MANTENCION', SALIDA_REPARACION: 'STOCK', BAJA: 'BAJA',
 })[kind];
 
-export default function NuevoMovimientoModal({ open, onClose, onCompleted }) {
+export default function NuevoMovimientoModal({ open, onClose, onCompleted, onChangeEquipment }) {
   const [form, setForm] = useState(initial);
   const [assetSearch, setAssetSearch] = useState('');
   const [personSearch, setPersonSearch] = useState('');
@@ -99,15 +100,20 @@ export default function NuevoMovimientoModal({ open, onClose, onCompleted }) {
     setPreview(false);
     setError('');
   };
-  const setType = (type) => {
-    setForm({ ...initial, tipo_movimiento: type });
-    setAsset(null); setSelectedPerson(null); setPreview(false); setResult(null); setError('');
-  };
   const close = () => {
     if (busy) return;
     setForm(initial); setAsset(null); setSelectedPerson(null);
     setAssetSearch(''); setPersonSearch(''); setPreview(false); setResult(null); setError('');
     onClose();
+  };
+  const setType = (type) => {
+    if (type === 'CAMBIO') {
+      close();
+      onChangeEquipment();
+      return;
+    }
+    setForm({ ...initial, tipo_movimiento: type });
+    setAsset(null); setSelectedPerson(null); setPreview(false); setResult(null); setError('');
   };
   const validate = () => {
     if (!asset) return 'Seleccione un activo.';

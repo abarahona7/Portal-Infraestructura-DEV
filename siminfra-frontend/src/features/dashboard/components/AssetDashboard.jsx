@@ -11,6 +11,11 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
+  const [selectedDepartment, setSelectedDepartment] = useState(null);
+  const [departmentPage, setDepartmentPage] = useState(1);
+  const [departmentData, setDepartmentData] = useState(null);
+  const [departmentLoading, setDepartmentLoading] = useState(false);
+  const [departmentError, setDepartmentError] = useState('');
   const [activeReview, setActiveReview] = useState(null);
   const [identifierPage, setIdentifierPage] = useState(1);
   const [identifierData, setIdentifierData] = useState(null);
@@ -43,6 +48,16 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
       .catch((err) => { if (err.code !== 'ERR_CANCELED') { setError(movimientoError(err)); setLoading(false); } });
     return () => controller.abort();
   }, [reloadKey]);
+
+  useEffect(() => {
+    if (!selectedDepartment) return undefined;
+    const controller = new AbortController();
+    apiClient.get(`/activos/departamentos/${selectedDepartment.id}/equipos/`, {
+      params: { page: departmentPage, page_size: 20 }, signal: controller.signal,
+    }).then(({ data: response }) => { setDepartmentData(response); setDepartmentError(''); setDepartmentLoading(false); })
+      .catch((err) => { if (err.code !== 'ERR_CANCELED') { setDepartmentError(movimientoError(err)); setDepartmentLoading(false); } });
+    return () => controller.abort();
+  }, [selectedDepartment, departmentPage, reloadKey]);
 
   useEffect(() => {
     if (!identifierField) return undefined;
@@ -87,13 +102,29 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
 
   const refreshDashboard = () => {
     setLoading(true);
+    if (selectedDepartment) { setDepartmentPage(1); setDepartmentData(null); setDepartmentLoading(true); }
     if (identifierField) { setIdentifierPage(1); setIdentifierData(null); setIdentifierLoading(true); }
     if (showUnassigned) { setUnassignedPage(1); setUnassignedData(null); setUnassignedLoading(true); }
     if (showAllPending) { setPendingPage(1); setPendingData(null); setPendingLoading(true); }
     if (showAllCustody) { setCustodyPage(1); setCustodyData(null); setCustodyLoading(true); }
     setReloadKey((value) => value + 1);
   };
+  const toggleDepartment = (department) => {
+    const next = selectedDepartment?.id === department.id ? null : department;
+    setSelectedDepartment(next);
+    if (next) setActiveReview(null);
+    setDepartmentPage(1);
+    setDepartmentData(null);
+    setDepartmentError('');
+    setDepartmentLoading(Boolean(next));
+  };
+  const changeDepartmentPage = (nextPage) => {
+    setDepartmentData(null);
+    setDepartmentLoading(true);
+    setDepartmentPage(nextPage);
+  };
   const selectIdentifier = (field) => {
+    setSelectedDepartment(null);
     setActiveReview((current) => current === field ? null : field);
     setIdentifierPage(1);
     setIdentifierData(null);
@@ -102,6 +133,7 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
   };
   const changeIdentifierPage = (nextPage) => { setIdentifierData(null); setIdentifierLoading(true); setIdentifierPage(nextPage); };
   const toggleUnassigned = () => {
+    setSelectedDepartment(null);
     setActiveReview((current) => current === 'sin_custodio' ? null : 'sin_custodio');
     setUnassignedPage(1);
     setUnassignedData(null);
@@ -109,7 +141,10 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
     setUnassignedLoading(!showUnassigned);
   };
   const changeUnassignedPage = (nextPage) => { setUnassignedData(null); setUnassignedLoading(true); setUnassignedPage(nextPage); };
-  const toggleReview = (target) => setActiveReview((current) => current === target ? null : target);
+  const toggleReview = (target) => {
+    setSelectedDepartment(null);
+    setActiveReview((current) => current === target ? null : target);
+  };
   const changeCustodyPage = (nextPage) => { setCustodyData(null); setCustodyLoading(true); setCustodyPage(nextPage); };
   const changePendingPage = (nextPage) => { setPendingData(null); setPendingLoading(true); setPendingPage(nextPage); };
   const pendingRows = showAllPending ? (pendingData?.results || []) : (data?.pendientes_tecnicos || []);
@@ -123,7 +158,7 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
   ] : [];
   const visibleReviewItems = reviewItems.filter(([key, , count]) => count > 0 || key === activeReview);
   const topDepartments = (data?.por_area || [])
-    .filter((item) => item.nombre !== 'Otros' && item.nombre !== 'Sin registrar')
+    .filter((item) => item.id != null)
     .slice(0, 5);
   const largestDepartmentCount = topDepartments[0]?.total || 1;
 
@@ -150,17 +185,41 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
         </div>
         <section className="itam-dashboard-panel itam-dashboard-department-panel">
           <h3>Departamentos con más equipos asignados</h3>
-          <p className="itam-dashboard-empty">Equipos que actualmente tienen un colaborador asignado.</p>
+          <p className="itam-dashboard-empty">Selecciona un departamento para ver sus equipos asignados.</p>
           {!topDepartments.length && <p className="itam-dashboard-empty">No hay departamentos identificados para los equipos asignados.</p>}
           {!!topDepartments.length && <ol className="itam-dashboard-departments" aria-label="Equipos asignados por departamento">
-            {topDepartments.map((item) => <li key={item.nombre} className="itam-dashboard-department">
-              <span className="itam-dashboard-department-name">{item.nombre}</span>
-              <div className="itam-dashboard-department-track" aria-hidden="true"><div className="itam-dashboard-department-bar" style={{ width: `${(item.total / largestDepartmentCount) * 100}%` }} /></div>
-              <strong className="itam-dashboard-department-count">{item.total.toLocaleString('es-CL')} <span className="itam-dashboard-sr-only">{item.total === 1 ? 'equipo' : 'equipos'}</span></strong>
+            {topDepartments.map((item) => <li key={item.id} className="itam-dashboard-department">
+              <button className="itam-dashboard-department-button" type="button" aria-expanded={selectedDepartment?.id === item.id} aria-controls="itam-dashboard-department-detail" onClick={() => toggleDepartment(item)}>
+                <span className="itam-dashboard-department-name">{item.nombre}</span>
+                <span className="itam-dashboard-department-track" aria-hidden="true"><span className="itam-dashboard-department-bar" style={{ width: `${(item.total / largestDepartmentCount) * 100}%` }} /></span>
+                <strong className="itam-dashboard-department-count">{item.total.toLocaleString('es-CL')} <span className="itam-dashboard-sr-only">{item.total === 1 ? 'equipo' : 'equipos'}</span></strong>
+                <ChevronDown size={16} aria-hidden="true" />
+              </button>
             </li>)}
           </ol>}
         </section>
       </div>
+      {selectedDepartment && <section id="itam-dashboard-department-detail" className="itam-dashboard-panel itam-dashboard-department-detail">
+        <div className="itam-dashboard-department-detail-heading">
+          <div><h3>Equipos de {departmentData?.departamento || selectedDepartment.nombre}</h3><p className="itam-dashboard-empty">{departmentData ? `${departmentData.count.toLocaleString('es-CL')} equipos asignados` : 'Equipos asignados a colaboradores de este departamento.'}</p></div>
+          <button type="button" onClick={() => toggleDepartment(selectedDepartment)}>Cerrar</button>
+        </div>
+        {departmentLoading && <p role="status">Cargando equipos...</p>}
+        {departmentError && <p className="itam-dashboard-error" role="alert">{departmentError}</p>}
+        {departmentData && <div className="itam-dashboard-recent">
+          {departmentData.results.map((item) => <article key={item.id}>
+            <div><strong>{item.tipo} {item.marca} {item.modelo}</strong><span>Colaborador: {item.colaborador}</span><span>Serie: {item.numero_serie || 'N/I'} · AF: {item.af || 'N/I'} · ID: {item.id}</span></div>
+            <span>{item.estado}</span>
+            <div className="itam-dashboard-actions"><button type="button" onClick={() => onEditAsset(item)}>Abrir ficha</button><button type="button" onClick={() => onOpenHistory(item)}>Historial</button></div>
+          </article>)}
+          {!departmentData.results.length && <p className="itam-dashboard-empty">Ya no hay equipos asignados a este departamento.</p>}
+        </div>}
+        {departmentData?.total_pages > 1 && <div className="itam-dashboard-pager">
+          <button type="button" disabled={departmentLoading || departmentPage <= 1} onClick={() => changeDepartmentPage(departmentPage - 1)}>Anterior</button>
+          <span>Página {departmentData.page} de {departmentData.total_pages}</span>
+          <button type="button" disabled={departmentLoading || departmentPage >= departmentData.total_pages} onClick={() => changeDepartmentPage(departmentPage + 1)}>Siguiente</button>
+        </div>}
+      </section>}
       <div className="itam-dashboard-view">
       <section className="itam-dashboard-panel itam-dashboard-review">
         <h3>Pendientes por revisar</h3>

@@ -2,12 +2,13 @@
 from datetime import timedelta
 
 from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import ESTADOS_EQUIPO, Equipamiento, MovimientoActivo
+from .models import Departamento, ESTADOS_EQUIPO, Equipamiento, MovimientoActivo
 from .pagination import PortalPageNumberPagination
 from .permissions import PortalRolePermission
 from .services.acta_estado_service import actas_pendientes_firma, resumen_acta_pendiente
@@ -191,6 +192,31 @@ class AssetTechnicalPendingView(APIView):
         return response
 
 
+class AssetDepartmentEquipmentView(APIView):
+    permission_classes = [PortalRolePermission]
+
+    def get(self, request, departamento_id):
+        department = get_object_or_404(Departamento, pk=departamento_id)
+        assets = Equipamiento.objects.filter(
+            usuario__departamento_id=department.pk,
+        ).select_related('usuario').only(
+            'id', 'tipo', 'marca', 'modelo', 'numero_serie', 'af', 'estado',
+            'ubicacion_actual', 'usuario', 'usuario__nombre_completo',
+        ).order_by('-pk')
+        paginator = PortalPageNumberPagination()
+        page = paginator.paginate_queryset(assets, request, view=self)
+        response = paginator.get_paginated_response([{
+            'id': asset.pk, 'tipo': asset.tipo, 'marca': asset.marca,
+            'modelo': asset.modelo, 'numero_serie': asset.numero_serie,
+            'af': asset.af, 'estado': asset.estado,
+            'ubicacion_actual': asset.ubicacion_actual,
+            'colaborador': asset.usuario.nombre_completo,
+        } for asset in page])
+        response.data['departamento'] = department.nombre
+        response['Cache-Control'] = 'no-store, private'
+        return response
+
+
 class AssetDashboardView(APIView):
     permission_classes = [PortalRolePermission]
 
@@ -228,6 +254,23 @@ class AssetDashboardView(APIView):
                 entries.append({'nombre': 'Otros', 'total': remaining})
             return entries
 
+        department_assets = assets.filter(usuario__isnull=False)
+        department_field = 'usuario__departamento__nombre'
+        department_id_field = 'usuario__departamento_id'
+        department_groups = list(department_assets.values(
+            department_id_field, department_field,
+        ).annotate(total=Count('pk')).order_by(
+            '-total', department_field,
+        )[:10])
+        por_area = [{
+            'id': row[department_id_field],
+            'nombre': row[department_field] or 'Sin registrar',
+            'total': row['total'],
+        } for row in department_groups]
+        remaining = department_assets.count() - sum(item['total'] for item in por_area)
+        if remaining:
+            por_area.append({'id': None, 'nombre': 'Otros', 'total': remaining})
+
         pendientes = [_serialize_pending(asset) for asset in _pending_assets(assets.filter(ficha_incompleta))[:10]]
         actas_pendientes = actas_pendientes_firma()
         custodios_no_activos = _inactive_custody_assets(assets)
@@ -263,7 +306,7 @@ class AssetDashboardView(APIView):
             'actas_pendientes_recientes': [resumen_acta_pendiente(acta) for acta in actas_pendientes[:8]],
             'por_tipo': distribution(assets, 'tipo'),
             'por_ubicacion': distribution(assets, 'ubicacion_actual'),
-            'por_area': distribution(assets.filter(usuario__isnull=False), 'usuario__departamento__nombre'),
+            'por_area': por_area,
             'movimientos_30_dias': MovimientoActivo.objects.filter(
                 fecha_movimiento__gte=timezone.now() - timedelta(days=30)).count(),
             'ultimos_movimientos': movements,

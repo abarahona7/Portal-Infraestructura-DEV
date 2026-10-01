@@ -15,7 +15,7 @@ with transaction.atomic():
     baseline = client.get('/api/activos/resumen/')
     assert baseline.status_code == 200, (baseline.status_code, baseline.data)
     original = baseline.data['conteos']
-    department = Departamento.objects.create(nombre=f'Dashboard TI {suffix}')
+    department = Departamento.objects.create(nombre=f'Dashboard Tecnología {suffix}')
     person = Usuario.objects.create(nombre_completo='Persona tablero', usuario_red=f'dash.{suffix}',
         correo_corp=f'dash.{suffix}@example.com', departamento=department, rut='11.111.111-1')
     asset = Equipamiento.objects.create(tipo='Notebook', marca='Prueba', modelo='Dashboard',
@@ -65,12 +65,12 @@ with transaction.atomic():
     with patch.object(Equipamiento.objects, 'all', return_value=Equipamiento.objects.filter(pk=asset.pk)):
         named = client.get('/api/activos/resumen/')
         assert named.status_code == 200, (named.status_code, named.data)
-        assert named.data['por_area'] == [{'nombre': department.nombre, 'total': 1}]
+        assert named.data['por_area'] == [{'id': department.pk, 'nombre': department.nombre, 'total': 1}]
         department.nombre = f'Tecnología {suffix}'
         department.save()
         renamed = client.get('/api/activos/resumen/')
         assert renamed.status_code == 200, (renamed.status_code, renamed.data)
-        assert renamed.data['por_area'] == [{'nombre': department.nombre, 'total': 1}]
+        assert renamed.data['por_area'] == [{'id': department.pk, 'nombre': department.nombre, 'total': 1}]
         assert person.dpto_area != department.nombre
     assert assigned.data['ultimos_movimientos'][0]['folio'] == movement.data['acta']['folio']
     assert 'rut' not in str(assigned.data).lower()
@@ -94,6 +94,38 @@ with transaction.atomic():
     assert 'rut' not in str(custody_page.data).lower() and 'correo_corp' not in str(custody_page.data).lower()
     custody_next = client.get('/api/activos/custodios-no-activos/?page=2&page_size=1')
     assert custody_next.status_code == 200 and custody_next.data['results'][0]['id'] == en_revision[0].pk
+    other_department = Departamento.objects.create(nombre=f'Otro Dashboard {suffix}')
+    other_person = Usuario.objects.create(
+        nombre_completo='Persona de otro departamento', usuario_red=f'other.{suffix}',
+        correo_corp=f'other.{suffix}@example.com', departamento=other_department,
+    )
+    other_asset = Equipamiento.objects.create(
+        tipo='Monitor', marca='Prueba', modelo='Otro departamento',
+        numero_serie=f'OTHER-{suffix}', estado='ASIGNADO', usuario=other_person,
+    )
+    by_department = client.get(
+        f'/api/activos/departamentos/{department.pk}/equipos/?page=1&page_size=1'
+    )
+    assert by_department.status_code == 200, (by_department.status_code, by_department.data)
+    assert by_department.data['departamento'] == department.nombre
+    assert by_department.data['count'] == 3 and by_department.data['total_pages'] == 3
+    assert by_department.data['results'][0]['id'] == en_revision[1].pk
+    assert by_department.data['results'][0]['colaborador'] == licencia.nombre_completo
+    assert 'rut' not in str(by_department.data).lower()
+    assert 'correo' not in str(by_department.data).lower()
+    assert by_department['Cache-Control'] == 'no-store, private'
+    department_next = client.get(
+        f'/api/activos/departamentos/{department.pk}/equipos/?page=2&page_size=1'
+    )
+    assert department_next.data['results'][0]['id'] == en_revision[0].pk
+    department_last = client.get(
+        f'/api/activos/departamentos/{department.pk}/equipos/?page=3&page_size=1'
+    )
+    assert department_last.data['results'][0]['id'] == asset.pk
+    other_results = client.get(f'/api/activos/departamentos/{other_department.pk}/equipos/')
+    assert other_results.data['count'] == 1
+    assert other_results.data['results'][0]['id'] == other_asset.pk
+    assert client.get('/api/activos/departamentos/999999999/equipos/').status_code == 404
     mantenimiento = Equipamiento.objects.create(tipo='Monitor', marca='Prueba', modelo='Taller',
         numero_serie=f'MAN-{suffix}', estado='MANTENCION', ubicacion_actual='Taller TI')
     unassigned_summary = client.get('/api/activos/resumen/')
@@ -113,6 +145,7 @@ with transaction.atomic():
     assert invalid_state.status_code == 400 and 'estado' in invalid_state.data
     anonymous = APIClient(SERVER_NAME='127.0.0.1', HTTP_HOST='127.0.0.1')
     assert anonymous.get('/api/activos/resumen/').status_code in (401, 403)
+    assert anonymous.get(f'/api/activos/departamentos/{department.pk}/equipos/').status_code in (401, 403)
     assert anonymous.get('/api/activos/pendientes-tecnicos/').status_code in (401, 403)
     assert anonymous.get('/api/activos/custodios-no-activos/').status_code in (401, 403)
     assert anonymous.get('/api/activos/sin-custodio/').status_code in (401, 403)
@@ -120,6 +153,7 @@ with transaction.atomic():
     viewer.groups.add(Group.objects.get_or_create(name='Visualizador')[0])
     client.force_authenticate(user=viewer)
     assert client.get('/api/activos/resumen/').status_code == 403
+    assert client.get(f'/api/activos/departamentos/{department.pk}/equipos/').status_code == 403
     assert client.get('/api/activos/pendientes-tecnicos/').status_code == 403
     assert client.get('/api/activos/custodios-no-activos/').status_code == 403
     assert client.get('/api/activos/sin-custodio/').status_code == 403

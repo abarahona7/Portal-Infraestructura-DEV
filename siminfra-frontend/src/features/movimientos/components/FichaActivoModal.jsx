@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../../api/client';
-import { downloadActa, getMovimientos, movimientoError } from '../../../api/movimientosApi';
+import { downloadActa, downloadActaFirmada, getMovimientos, movimientoError } from '../../../api/movimientosApi';
 import MovimientoShell from './MovimientoShell';
 
 export default function FichaActivoModal({ token, onClose, onHistory }) {
@@ -52,7 +52,14 @@ export default function FichaActivoModal({ token, onClose, onHistory }) {
       <label>Enlace de la ficha<input readOnly value={qrUrl} onFocus={(event) => event.target.select()} /></label>
       <h4>Últimos movimientos</h4>
       {!recent.length && <p className="movimiento-note">Aún no hay movimientos en la nueva trazabilidad.</p>}
-      {recent.map((item) => <article className="movimiento-entry" key={item.id}><div className="movimiento-entry-header"><strong>{item.tipo_movimiento}</strong><time>{new Date(item.fecha_movimiento).toLocaleString('es-CL')}</time></div><span>{item.acta?.folio || 'Sin acta'} · {item.ejecutado_por}</span>{item.acta && <button type="button" className="movimiento-button" onClick={() => downloadActa(item.acta).catch((err) => setError(movimientoError(err)))}>Descargar acta</button>}</article>)}
+      {recent.map((item) => <article className="movimiento-entry" key={item.id}>
+        <div className="movimiento-entry-header"><strong>{item.tipo_movimiento}</strong><time>{new Date(item.fecha_movimiento).toLocaleString('es-CL')}</time></div>
+        <span>{item.acta ? `${item.acta.folio} · ${item.acta.estado.replaceAll('_', ' ')}` : 'Sin acta'} · {item.ejecutado_por}</span>
+        {item.acta && <>
+          <button type="button" className="movimiento-button" onClick={() => downloadActa(item.acta).catch((err) => setError(movimientoError(err)))}>Descargar original</button>
+          {item.acta.tiene_copia_firmada && <button type="button" className="movimiento-button" onClick={() => downloadActaFirmada(item.acta).catch((err) => setError(movimientoError(err)))}>Descargar copia firmada</button>}
+        </>}
+      </article>)}
     </>}
   </MovimientoShell>;
 }

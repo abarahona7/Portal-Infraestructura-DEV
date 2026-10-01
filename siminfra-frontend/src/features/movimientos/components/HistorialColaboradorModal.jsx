@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { downloadActa, getCustodiasColaborador, getMovimientos, movimientoError } from '../../../api/movimientosApi';
+import { downloadActa, downloadActaFirmada, getCustodiasColaborador, getMovimientos, movimientoError } from '../../../api/movimientosApi';
 import MovimientoShell from './MovimientoShell';
 import CambioResumen from './CambioResumen';
 import ActaGestionModal from './ActaGestionModal';
@@ -81,7 +81,11 @@ export default function HistorialColaboradorModal({ colaborador, onClose, onOpen
         <span>Serie: {asset.numero_serie || 'N/I'} · Ubicación: {item.ubicacion_destino} · Estado: {item.estado_operativo_resultante}</span>
         <span>Folio: {item.acta?.folio || '—'} · Registrado por: {item.ejecutado_por}</span>
         {item.operacion_id && <button type="button" className="movimiento-button" onClick={() => setOperacionId(item.operacion_id)}>Ver cambio de equipo completo</button>}
-        {item.acta && <button type="button" className="movimiento-button" onClick={() => downloadActa(item.acta).catch((err) => setError(movimientoError(err)))}>Descargar acta {item.acta.folio}</button>}
+        {item.acta && <>
+          <button type="button" className="movimiento-button" onClick={() => downloadActa(item.acta).catch((err) => setError(movimientoError(err)))}>Descargar original {item.acta.folio}</button>
+          {item.acta.tiene_copia_firmada && <button type="button" className="movimiento-button" onClick={() => downloadActaFirmada(item.acta).catch((err) => setError(movimientoError(err)))}>Descargar copia firmada</button>}
+          <button type="button" className="movimiento-button" onClick={() => setGestionActa(item.acta)}>Gestionar acta · {item.acta.estado.replaceAll('_', ' ')}</button>
+        </>}
       </article>;
     })}
     {data.total_pages > 1 && <div className="movimiento-pager"><button type="button" className="movimiento-button" disabled={page <= 1} onClick={() => setPage(page - 1)}>Anterior</button><span>Página {page} de {data.total_pages}</span><button type="button" className="movimiento-button" disabled={page >= data.total_pages} onClick={() => setPage(page + 1)}>Siguiente</button></div>}

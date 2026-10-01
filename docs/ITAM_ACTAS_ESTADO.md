@@ -1,5 +1,7 @@
 # Ciclo de estados de actas ITAM (DEV)
 
+La gestión de estados y la carga de nuevas copias firmadas se retiraron de la interfaz para mantener un flujo simple de movimientos y comprobantes. La API y los eventos existentes se conservan; las copias firmadas ya registradas siguen descargables desde el historial.
+
 El acta emitida conserva su folio, PDF original, SHA-256 y snapshot sin cambios. La API calcula el estado vigente desde eventos inmutables asociados al acta; por ello el campo `ActaEntrega.estado` almacenado sigue en `GENERADA` para actas emitidas. No se debe usar ese campo directamente para informes del estado vigente: usar el serializador de la API o el servicio `estado_vigente`.
 
 Flujo: `GENERADA → PENDIENTE_FIRMA → FIRMADA → CERRADA`. Un administrador puede registrar `ANULADA` desde cualquier estado previo con motivo obligatorio, incluso después del cierre, sin borrar el historial. El paso a `FIRMADA` requiere cargar una copia PDF de hasta 10 MB. El portal conserva el archivo, su SHA-256, actor y fecha. Cada transición guarda además una entrada en `SecurityAuditLog` con folio, estado anterior y nuevo, motivo, hash, origen de la operación e IP proporcionada por el servidor. El historial de la API muestra el nombre del usuario que realizó el cambio. Esta carga es una declaración operacional: el portal no valida la identidad del firmante ni certifica la firma.

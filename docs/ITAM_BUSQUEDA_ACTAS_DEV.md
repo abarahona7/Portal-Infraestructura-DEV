@@ -1,6 +1,6 @@
 # Consulta de actas ITAM por folio en DEV
 
-El Tablero de Activos permite localizar un acta por su folio completo `ATI-AAAA-######`. La búsqueda muestra tipo, fecha y estado vigente, y permite descargar el PDF original, la copia firmada si existe y abrir la gestión del acta. Incluye actas generadas, pendientes de firma, firmadas, cerradas y anuladas; no altera el documento ni inventa un folio para las actas legadas anteriores a ITAM.
+La búsqueda por folio completo `ATI-AAAA-######` permanece en la API, pero ya no tiene pantalla propia en el portal. Para el uso diario, el comprobante se descarga desde el movimiento asociado en el historial del equipo o colaborador. La API incluye actas generadas, pendientes de firma, firmadas, cerradas y anuladas; no altera documentos ni inventa folios para movimientos legados.
 
 `GET /api/actas/?folio=ATI-2026-000001` busca por coincidencia exacta sobre el índice único existente. Acepta minúsculas y espacios exteriores, valida el formato y usa los permisos actuales de actas (Operador Infraestructura o Administrador). La respuesta impide caché. No requiere migración.
 

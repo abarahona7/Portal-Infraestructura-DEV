@@ -7,7 +7,7 @@ Versión funcional definitiva del Portal Infraestructura TI.
 - Backend: Django + Django REST Framework
 - Autenticación: JWT con access token en memoria y refresh token en cookie HttpOnly
 - Frontend: React + Vite
-- Base de datos: SQLite para desarrollo; MySQL preparado para producción
+- Base de datos: MySQL 8 en DEV para ITAM; MySQL preparado para producción
 - Cifrado: Fernet para campos sensibles (`ENC2::`)
 - UI: Inter + Lucide React
 
@@ -62,6 +62,7 @@ respaldos.
 
 ## Documentación técnica
 
+- [Uso actual de activos TI en DEV](docs/ITAM_USO_ACTUAL.md)
 - [Mapa de acciones actuales por rol y módulo](docs/ACCIONES_ACTUALES.md)
 - [Arquitectura y diagramas de flujo](docs/ARQUITECTURA_Y_FLUJOS.md)
 - [Modelo de datos y relaciones](docs/MODELO_DATOS.md)

@@ -93,13 +93,13 @@ export default function EquiposTable({
   const Actions = ({ equipo }) => (
     <div className="equipos-actions">
       <button type="button" className="equipo-action equipo-action-history" onClick={() => onShowAssetQr?.(equipo)} title="Abrir ficha y QR" aria-label="Abrir ficha y QR"><QrCode size={18} aria-hidden="true" /></button>
-      <button type="button" className="equipo-action equipo-action-history" onClick={() => onShowAssetMovements?.(equipo)} title="Trazabilidad y actas" aria-label="Ver movimientos y actas"><FileText size={18} aria-hidden="true" /></button>
+      <button type="button" className="equipo-action equipo-action-history" onClick={() => onShowAssetMovements?.(equipo)} title="Movimientos y comprobantes" aria-label="Ver movimientos y comprobantes"><FileText size={18} aria-hidden="true" /></button>
       <button
         type="button"
         className="equipo-action equipo-action-history"
         onClick={() => onShowHistory(equipo)}
-        title="Ver Historial Auditoría"
-        aria-label="Ver historial"
+        title="Historial de cambios de la ficha"
+        aria-label="Ver cambios de la ficha"
       >
         <History size={18} />
       </button>

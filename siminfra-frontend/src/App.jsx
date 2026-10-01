@@ -301,7 +301,6 @@ export default function App() {
 
   const moduleDataEnabled = !(
     activeModuleTab === 'activos-resumen' ||
-    activeModuleTab === 'activos-consultas' ||
     (activeModuleTab === 'usuarios' && !selectedDpto && !normalizedSearch)
     || (activeModuleTab === 'ips' && !selectedIpSegment && !normalizedSearch)
   );
@@ -1048,7 +1047,7 @@ export default function App() {
           />
         )}
 
-        {(tab === 'activos-resumen' || tab === 'activos-consultas') && <React.Suspense fallback={<p role="status">Cargando activos...</p>}><AssetDashboard key={tab} mode={tab === 'activos-consultas' ? 'queries' : 'overview'} onOpenHistory={setHistorialActivo} onEditAsset={openDashboardAssetForEdit} role={authUser?.role} /></React.Suspense>}
+        {tab === 'activos-resumen' && <React.Suspense fallback={<p role="status">Cargando activos...</p>}><AssetDashboard onOpenHistory={setHistorialActivo} onEditAsset={openDashboardAssetForEdit} /></React.Suspense>}
 
         {tab === 'departamentos' && (
           <DepartamentosSubareasPage
@@ -1072,8 +1071,7 @@ export default function App() {
             tab !== 'usuarios' &&
             tab !== 'ips' &&
             tab !== 'departamentos' &&
-            tab !== 'activos-resumen' &&
-            tab !== 'activos-consultas'
+            tab !== 'activos-resumen'
           )
         ) && (
             <>
@@ -1303,10 +1301,10 @@ export default function App() {
             </>
           )}
 
-        <NuevoMovimientoModal open={movimientoOpen} onClose={() => setMovimientoOpen(false)} onCompleted={() => { refreshAllData(); showToast('Movimiento y acta generados.'); }} />
-        <CambioEquipoModal open={cambioEquipoOpen} onClose={() => setCambioEquipoOpen(false)} onCompleted={() => { refreshAllData(); showToast('Cambio de equipo y dos actas generados.'); }} />
-        <HistorialMovimientosModal role={authUser?.role} activo={historialActivo} onClose={() => setHistorialActivo(null)} />
-        {historialColaborador && <HistorialColaboradorModal role={authUser?.role} colaborador={historialColaborador} onClose={() => setHistorialColaborador(null)} onOpenAsset={setHistorialActivo} />}
+        <NuevoMovimientoModal open={movimientoOpen} onClose={() => setMovimientoOpen(false)} onCompleted={() => { refreshAllData(); showToast('Movimiento registrado. Comprobante guardado.'); }} />
+        <CambioEquipoModal open={cambioEquipoOpen} onClose={() => setCambioEquipoOpen(false)} onCompleted={() => { refreshAllData(); showToast('Cambio de equipo registrado. Dos comprobantes guardados.'); }} />
+        <HistorialMovimientosModal activo={historialActivo} onClose={() => setHistorialActivo(null)} />
+        {historialColaborador && <HistorialColaboradorModal colaborador={historialColaborador} onClose={() => setHistorialColaborador(null)} onOpenAsset={setHistorialActivo} />}
         {fichaQrToken && <FichaActivoModal key={fichaQrToken} token={fichaQrToken} onHistory={setHistorialActivo} onClose={() => { setFichaQrToken(null); if (window.location.pathname.startsWith('/qr/a/')) window.history.replaceState(null, '', '/'); }} />}
 
         {/* MODALES DE DETALLE / HISTORIAL */}

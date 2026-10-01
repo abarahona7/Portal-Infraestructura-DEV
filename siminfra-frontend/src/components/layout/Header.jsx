@@ -24,9 +24,6 @@ export default function Header({
       case 'activos-resumen':
         return 'Activos TI / Tablero';
 
-      case 'activos-consultas':
-        return 'Activos TI / Actas y garantías';
-
       case 'usuarios':
         return 'Usuarios';
 

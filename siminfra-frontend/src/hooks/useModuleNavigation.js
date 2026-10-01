@@ -7,7 +7,6 @@ const SIDEBAR_KEY = 'portal-infra-ti-chile-sidebar-collapsed';
 const VALID_TABS = new Set([
   'usuarios',
   'activos-resumen',
-  'activos-consultas',
   'pcs-genericos',
   'servidores',
   'perfiles',
@@ -20,7 +19,7 @@ const VALID_TABS = new Set([
 const readSavedTab = () => {
   try {
     const saved = sessionStorage.getItem(ACTIVE_TAB_KEY);
-    if (saved === 'equipos') return 'pcs-genericos';
+    if (saved === 'equipos' || saved === 'activos-consultas') return 'pcs-genericos';
     return VALID_TABS.has(saved) ? saved : 'usuarios';
   } catch {
     return 'usuarios';

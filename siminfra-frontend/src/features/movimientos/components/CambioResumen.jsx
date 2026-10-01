@@ -24,7 +24,7 @@ export default function CambioResumen({ operacionId, onClose }) {
       return <div className="movimiento-operation-part" key={item.id}>
         <strong>{item.tipo_movimiento} · {[asset.tipo, asset.marca, asset.modelo].filter(Boolean).join(' ')}</strong>
         <span>Serie: {asset.numero_serie || 'N/I'} · Estado: {item.estado_operativo_resultante} · Folio: {item.acta?.folio || '—'}</span>
-        {item.acta && <button type="button" className="movimiento-button" onClick={() => downloadActa(item.acta).catch((err) => setError(movimientoError(err)))}>Descargar acta {item.acta.folio}</button>}
+        {item.acta && <button type="button" className="movimiento-button" onClick={() => downloadActa(item.acta).catch((err) => setError(movimientoError(err)))}>Descargar comprobante</button>}
       </div>;
     })}
   </section>;

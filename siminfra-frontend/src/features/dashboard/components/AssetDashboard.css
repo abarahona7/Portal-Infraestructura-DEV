@@ -23,12 +23,6 @@
 .itam-dashboard-review-count { display: inline-flex; align-items: center; gap: .6rem; flex: 0 0 auto; color: #475569; }
 .itam-dashboard-review-row[aria-expanded="true"] .itam-dashboard-review-count svg { transform: rotate(180deg); }
 .itam-dashboard-review p { margin: .35rem 0 .6rem; color: #64748b; font-size: .85rem; }
-.itam-dashboard-distributions { display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 1rem; }
-.itam-dashboard-bars { display: grid; gap: .8rem; }
-.itam-dashboard-bar-row { display: grid; grid-template-columns: minmax(80px, 1fr) minmax(60px, 2fr) auto; align-items: center; gap: .6rem; font-size: .85rem; }
-.itam-dashboard-bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.itam-dashboard-track { height: 9px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
-.itam-dashboard-track span { display: block; height: 100%; background: #2563eb; border-radius: inherit; }
 .itam-dashboard-recent { display: grid; gap: .5rem; }
 .itam-dashboard-recent article { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; border-top: 1px solid #f1f5f9; padding: .7rem 0; }
 .itam-dashboard-recent article > div:first-child { display: grid; gap: .25rem; min-width: 190px; flex: 1; }
@@ -46,46 +40,13 @@
 .itam-dashboard-report-form { display: flex; align-items: end; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
 .itam-dashboard-report-form label { display: grid; gap: .35rem; color: #475569; font-size: .85rem; font-weight: 600; }
 .itam-dashboard-report-form input, .itam-dashboard-report-form select { min-height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: .4rem .55rem; background: #fff; color: #0f172a; }
-.itam-dashboard-report-form button { display: inline-flex; align-items: center; gap: .4rem; min-height: 38px; border: 1px solid #1d4ed8; border-radius: 6px; padding: .45rem .7rem; background: #1d4ed8; color: #fff; font-weight: 600; cursor: pointer; }
-.itam-dashboard-report-form button:disabled { opacity: .6; cursor: wait; }
 
-.itam-dashboard-warranty-summary { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0; color: #475569; font-size: .9rem; }
-.itam-dashboard-warranty-summary strong { color: #0f172a; }
-.itam-dashboard-warranty-controls { display: flex; gap: .5rem; margin: .5rem 0 .85rem; }
-.itam-dashboard-warranty-controls button { border: 1px solid #bfdbfe; border-radius: 6px; padding: .45rem .7rem; background: #fff; color: #1d4ed8; cursor: pointer; }
-.itam-dashboard-warranty-controls button[aria-pressed="true"] { background: #dbeafe; border-color: #60a5fa; font-weight: 700; }
 
-/* Resumen directo y herramientas secundarias disponibles al final. */
 .itam-dashboard-view { display: grid; gap: 1rem; min-width: 0; }
-.itam-dashboard-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.itam-dashboard-section-heading h3 { margin: 0; }
-.itam-dashboard-section-heading button { flex: 0 0 auto; padding: .45rem .7rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #1d4ed8; font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; }
-.itam-dashboard-section-heading button:hover { background: #eff6ff; }
-.itam-dashboard-section-heading button:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
-.itam-dashboard-extra-heading h3 { margin: 0 0 .25rem; color: #0f172a; font-size: 1rem; }
-.itam-dashboard-extra-heading p { margin: 0; color: #64748b; font-size: .85rem; }
-.itam-dashboard-extra { min-width: 0; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
-.itam-dashboard-extra > summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.15rem; color: #334155; font-weight: 600; cursor: pointer; list-style: none; }
-.itam-dashboard-extra > summary::-webkit-details-marker { display: none; }
-.itam-dashboard-extra > summary::after { content: '+'; color: #2563eb; font-size: 1.25rem; line-height: 1; }
-.itam-dashboard-extra[open] > summary::after { content: '−'; }
-.itam-dashboard-extra > summary:hover { background: #f8fafc; }
-.itam-dashboard-extra > summary:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
-.itam-dashboard-extra > .itam-dashboard-panel { border: 0; border-top: 1px solid #e2e8f0; border-radius: 0; box-shadow: none; }
-.itam-dashboard-extra > .itam-dashboard-distributions { padding: 1rem; }
 .itam-dashboard-actions { flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
 .itam-dashboard-actions button { border-color: transparent; background: transparent; font: inherit; font-size: .82rem; font-weight: 600; white-space: nowrap; }
 .itam-dashboard-actions button:hover { background: #eff6ff; }
 @media (max-width: 560px) {
   .itam-dashboard-recent article > div:first-child { flex-basis: 100%; }
   .itam-dashboard-actions { width: 100%; justify-content: flex-start; margin-left: 0; }
-  .itam-dashboard-section-heading { align-items: flex-start; flex-wrap: wrap; }
 }
-
-.itam-dashboard-report-form .itam-dashboard-clear-filters { border-color: transparent; background: transparent; color: #1d4ed8; }
-.itam-dashboard-report-form .itam-dashboard-clear-filters:hover { background: #eff6ff; }
-.itam-dashboard-filter-details { flex-basis: 100%; color: #475569; font-size: .85rem; }
-.itam-dashboard-filter-details > summary { width: fit-content; color: #1d4ed8; font-weight: 600; cursor: pointer; }
-.itam-dashboard-filter-details > .itam-dashboard-report-form { margin-top: .4rem; }
-.itam-dashboard-export-link { margin-top: .8rem; padding: .3rem 0; border: 0; background: transparent; color: #1d4ed8; font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; }
-.itam-dashboard-export-link:disabled { opacity: .6; cursor: default; }

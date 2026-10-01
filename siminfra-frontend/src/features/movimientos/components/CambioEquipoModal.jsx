@@ -128,11 +128,11 @@ export default function CambioEquipoModal({ open, onClose, onCompleted }) {
   };
 
   return <MovimientoShell title="Cambio de equipo" onClose={close} busy={busy} footer={
-    result ? <><button type="button" className="movimiento-button" onClick={close}>Cerrar</button><button type="button" className="movimiento-button" onClick={() => downloadActa(result.salida.acta).catch((err) => setError(movimientoError(err)))}>Acta de devolución {result.salida.acta.folio}</button><button type="button" className="movimiento-button movimiento-button-primary" onClick={() => downloadActa(result.entrada.acta).catch((err) => setError(movimientoError(err)))}>Acta de entrega {result.entrada.acta.folio}</button></>
+    result ? <><button type="button" className="movimiento-button" onClick={close}>Cerrar</button><button type="button" className="movimiento-button" onClick={() => downloadActa(result.salida.acta).catch((err) => setError(movimientoError(err)))}>Descargar comprobante de devolución</button><button type="button" className="movimiento-button movimiento-button-primary" onClick={() => downloadActa(result.entrada.acta).catch((err) => setError(movimientoError(err)))}>Descargar comprobante de entrega</button></>
       : <><button type="button" className="movimiento-button" disabled={busy} onClick={preview ? () => setPreview(false) : close}>{preview ? 'Volver' : 'Cancelar'}</button><button type="button" className="movimiento-button movimiento-button-primary" disabled={busy} onClick={preview ? submit : confirmPreview}>{preview ? 'Confirmar ambos movimientos' : 'Vista previa'}</button></>
   }>
     {error && <p className="movimiento-error" role="alert">{error}</p>}
-    {result ? <div className="movimiento-success"><strong>Cambio registrado.</strong><p>Se generaron dos actas vinculadas: {result.salida.acta.folio} y {result.entrada.acta.folio}.</p></div>
+    {result ? <div className="movimiento-success"><strong>Cambio registrado.</strong><p>Se guardaron dos comprobantes vinculados: {result.salida.acta.folio} y {result.entrada.acta.folio}.</p></div>
       : preview ? <dl className="movimiento-summary">
         <dt>Colaborador</dt><dd>{oldAsset?.usuario_nombre}</dd>
         <dt>Equipo devuelto</dt><dd>{assetLabel(oldAsset)} → {form.estado_operativo_origen} en {form.ubicacion_retorno}</dd>
@@ -140,7 +140,7 @@ export default function CambioEquipoModal({ open, onClose, onCompleted }) {
         <dt>Accesorios devueltos</dt><dd>{form.accesorios_devueltos.map((item) => `${item.nombre}: ${item.entregado ? 'recibido' : 'faltante'}`).join(', ') || 'Sin accesorios'}</dd>
         <dt>Accesorios entregados</dt><dd>{form.accesorios_entregados.map((item) => `${item.nombre}: ${item.entregado ? 'entregado' : 'faltante'}`).join(', ') || 'Sin accesorios'}</dd>
         <dt>Motivo</dt><dd>{form.observaciones}</dd>
-        <dt>Documentos</dt><dd>Se emitirán dos actas y folios vinculados en una sola operación.</dd>
+        <dt>Documentos</dt><dd>Se guardarán dos comprobantes vinculados al cambio de equipo.</dd>
       </dl>
         : <div className="movimiento-fields">
           <label>Buscar equipo anterior<input value={oldSearch} onChange={(event) => setOldSearch(event.target.value)} placeholder="Serie, activo fijo, marca o modelo" /></label>

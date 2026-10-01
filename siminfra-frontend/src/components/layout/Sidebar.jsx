@@ -8,7 +8,6 @@ import {
   Users,
   Package,
   BarChart3,
-  Search,
   Monitor,
   Laptop,
   Smartphone,
@@ -69,11 +68,6 @@ const navigationGroups = [
         id: 'activos-resumen',
         icon: BarChart3,
         label: 'Tablero de Activos',
-      },
-      {
-        id: 'activos-consultas',
-        icon: Search,
-        label: 'Actas y Garantías',
       },
       {
         id: 'equipos-notebook',

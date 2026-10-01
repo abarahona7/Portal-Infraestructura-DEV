@@ -114,7 +114,7 @@ export default function NuevoMovimientoModal({ open, onClose, onCompleted }) {
     if (!canUseAsset) return 'El estado actual del activo no permite este movimiento.';
     if (needsDestination && !form.colaborador_destino_id) return 'Seleccione el colaborador que recibe el activo.';
     if (needsDestination && Number(form.colaborador_destino_id) === Number(asset.usuario)) return 'Seleccione un colaborador distinto del custodio actual.';
-    if (needsDestination && !selectedPerson?.rut) return 'El colaborador necesita un RUT válido antes de generar el acta.';
+    if (needsDestination && !selectedPerson?.rut) return 'El colaborador necesita un RUT válido antes de registrar el movimiento.';
     if (!form.ubicacion_destino.trim()) return 'Indique la ubicación de destino.';
     if ((form.estado_fisico === 'DANADO' || ['INGRESO_REPARACION', 'SALIDA_REPARACION', 'BAJA'].includes(kind)) && !form.observaciones.trim()) return 'Indique el motivo o trabajo realizado.';
     if (checklist && form.accesorios_detalle.some((item) => !item.entregado && !item.nota?.trim())) return 'Explique cada accesorio faltante.';
@@ -155,11 +155,11 @@ export default function NuevoMovimientoModal({ open, onClose, onCompleted }) {
   }));
 
   return <MovimientoShell title="Nuevo movimiento de activo" onClose={close} busy={busy} footer={
-    result ? <><button className="movimiento-button" type="button" onClick={close}>Cerrar</button><button className="movimiento-button movimiento-button-primary" type="button" onClick={() => downloadActa(result.acta).catch((err) => setError(movimientoError(err)))}>Descargar acta {result.acta.folio}</button></>
-      : <><button className="movimiento-button" type="button" onClick={preview ? () => setPreview(false) : close} disabled={busy}>{preview ? 'Volver' : 'Cancelar'}</button><button className="movimiento-button movimiento-button-primary" type="button" disabled={busy} onClick={preview ? submit : confirmPreview}>{preview ? 'Confirmar y generar acta' : 'Vista previa'}</button></>
+    result ? <><button className="movimiento-button" type="button" onClick={close}>Cerrar</button><button className="movimiento-button movimiento-button-primary" type="button" onClick={() => downloadActa(result.acta).catch((err) => setError(movimientoError(err)))}>Descargar comprobante</button></>
+      : <><button className="movimiento-button" type="button" onClick={preview ? () => setPreview(false) : close} disabled={busy}>{preview ? 'Volver' : 'Cancelar'}</button><button className="movimiento-button movimiento-button-primary" type="button" disabled={busy} onClick={preview ? submit : confirmPreview}>{preview ? 'Confirmar movimiento' : 'Vista previa'}</button></>
   }>
     {error && <p role="alert" className="movimiento-error">{error}</p>}
-    {result ? <div className="movimiento-success"><strong>Movimiento registrado.</strong><p>Acta {result.acta.folio} generada y guardada.</p></div>
+    {result ? <div className="movimiento-success"><strong>Movimiento registrado.</strong><p>Comprobante {result.acta.folio} generado y guardado.</p></div>
       : preview ? <dl className="movimiento-summary">
         <dt>Movimiento</dt><dd>{labels[kind]}</dd>
         <dt>Activo</dt><dd>{asset?.tipo} {asset?.marca} {asset?.modelo} · Serie {asset?.numero_serie || 'N/I'}</dd>

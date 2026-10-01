@@ -54,9 +54,9 @@ export default function FichaActivoModal({ token, onClose, onHistory }) {
       {!recent.length && <p className="movimiento-note">Aún no hay movimientos en la nueva trazabilidad.</p>}
       {recent.map((item) => <article className="movimiento-entry" key={item.id}>
         <div className="movimiento-entry-header"><strong>{item.tipo_movimiento}</strong><time>{new Date(item.fecha_movimiento).toLocaleString('es-CL')}</time></div>
-        <span>{item.acta ? `${item.acta.folio} · ${item.acta.estado.replaceAll('_', ' ')}` : 'Sin acta'} · {item.ejecutado_por}</span>
+        <span>{item.acta ? `Comprobante ${item.acta.folio}` : 'Sin comprobante'} · {item.ejecutado_por}</span>
         {item.acta && <>
-          <button type="button" className="movimiento-button" onClick={() => downloadActa(item.acta).catch((err) => setError(movimientoError(err)))}>Descargar original</button>
+          <button type="button" className="movimiento-button" onClick={() => downloadActa(item.acta).catch((err) => setError(movimientoError(err)))}>Descargar comprobante</button>
           {item.acta.tiene_copia_firmada && <button type="button" className="movimiento-button" onClick={() => downloadActaFirmada(item.acta).catch((err) => setError(movimientoError(err)))}>Descargar copia firmada</button>}
         </>}
       </article>)}

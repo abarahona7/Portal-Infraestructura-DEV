@@ -560,7 +560,7 @@ export default function EquipoCreateForm({
         />
       </div>
 
-      <p style={{ color: '#475569', fontSize: '0.85rem' }}>El activo se registra disponible. Para entregarlo use «Nuevo movimiento» y se generará su acta con folio.</p>
+      <p style={{ color: '#475569', fontSize: '0.85rem' }}>El activo se registra disponible. Para entregarlo use «Nuevo movimiento» y se guardará un comprobante descargable.</p>
     </>
   );
 }

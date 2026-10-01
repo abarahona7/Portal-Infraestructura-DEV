@@ -36,7 +36,7 @@ with transaction.atomic():
     assert rows[0][0] == 'ID movimiento'
     assert [row[0] for row in rows].index(str(recent.pk)) < [row[0] for row in rows].index(str(old.pk))
     recent_row = next(row for row in rows if row[0] == str(recent.pk))
-    assert recent_row[10] == "'=SUM(1,1)" and recent_row[-1] == "'=cmd"
+    assert 'Ubicación' not in ';'.join(rows[0]) and recent_row[-1] == "'=cmd"
     assert 'snapshot' not in body.lower() and 'documento_pdf' not in body.lower()
     current_date = timezone.localdate(today).isoformat()
     filtered = client.get('/api/movimientos/reporte/', {

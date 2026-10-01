@@ -529,6 +529,7 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
         'numero_serie_normalizado',
         'hostname_computador_normalizado',
         'af_normalizado',
+        'ubicacion_actual',
     )
     usuario_red = serializers.ReadOnlyField(
         source='usuario.usuario_red'
@@ -590,9 +591,9 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
             if attrs.get('usuario') is not None or attrs.get('fecha_asignacion') or attrs.get('estado', 'STOCK') != 'STOCK':
                 raise serializers.ValidationError({'usuario': 'Registre el activo disponible y luego use Nuevo movimiento para asignarlo.'})
         else:
-            for field in ('usuario', 'fecha_asignacion', 'estado', 'estado_fisico', 'ubicacion_actual'):
+            for field in ('usuario', 'fecha_asignacion', 'estado', 'estado_fisico'):
                 if field in attrs and attrs[field] != getattr(instance, field):
-                    raise serializers.ValidationError({field: 'Use Nuevo movimiento para cambiar asignación, estado o ubicación.'})
+                    raise serializers.ValidationError({field: 'Use Nuevo movimiento para cambiar asignación o estado.'})
 
         serie = attrs.get('numero_serie')
         af = attrs.get('af')
@@ -804,20 +805,13 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
 
 
 class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
-    def validate_rut(self, value):
-        if not value:
-            return None
-        from .rut_validator import validar_rut
-        from django.core.exceptions import ValidationError as DjangoValidationError
-        try:
-            return validar_rut(value)
-        except DjangoValidationError as exc:
-            raise serializers.ValidationError(exc.message_dict.get('rut', exc.messages)) from exc
-
     internal_model_fields = (
         'nombre_completo_normalizado',
         'usuario_red_normalizado',
         'correo_corp_normalizado',
+        'rut',
+        'rut_normalizado',
+        'ubicacion',
     )
     equipos = EquipamientoSerializer(many=True, read_only=True)
     historial = HistorialUsuarioSerializer(many=True, read_only=True)
@@ -1501,7 +1495,7 @@ class EquipamientoListSerializer(serializers.ModelSerializer):
             'modelo', 'numero_serie', 'hostname', 'af', 'accesorios',
             'fecha_asignacion', 'estado', 'numero_telefono', 'imei',
             'icloud_cuenta', 'icloud_password_configured', 'pin_configured',
-            'ip_asignada', 'estado_fisico', 'mac_address', 'ubicacion_actual',
+            'ip_asignada', 'estado_fisico', 'mac_address',
             'accesorios_requeridos', 'fecha_alta', 'fecha_vencimiento_garantia', 'token_qr',
         ]
 
@@ -1534,7 +1528,7 @@ class UsuarioListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'nombre_completo', 'usuario_red', 'correo_corp', 'dpto_area',
             'departamento', 'departamento_nombre', 'subarea', 'subarea_nombre',
-            'cargo', 'hostname', 'estado', 'rut', 'centro_costo', 'ubicacion',
+            'cargo', 'hostname', 'estado', 'centro_costo',
             'gmail', 'celular', 'telefono',
             'anexo', 'sif', 'vpn_cisco', 'equipos', 'ip_actual', 'anexo_actual',
             'password_gmail_configured', 'password_vpn_configured',

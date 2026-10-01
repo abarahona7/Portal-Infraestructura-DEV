@@ -10,7 +10,7 @@ from core.services.asset_lifecycle_service import MovimientoConflict, registrar_
 
 @transaction.atomic
 def registrar_cambio_equipo(*, activo_origen_id, activo_destino_id, colaborador_id,
-                           ubicacion_retorno, ubicacion_entrega, estado_fisico_origen,
+                           estado_fisico_origen,
                            estado_fisico_destino, accesorios_devueltos,
                            accesorios_entregados, observaciones, usuario_ti,
                            estado_operativo_origen='STOCK', request=None):
@@ -34,14 +34,14 @@ def registrar_cambio_equipo(*, activo_origen_id, activo_destino_id, colaborador_
     operation_id = uuid.uuid4()
     returned = registrar_movimiento(
         tipo_movimiento='DEVOLUCION', activo_id=old.pk,
-        colaborador_origen_id=colaborador_id, ubicacion_destino=ubicacion_retorno,
+        colaborador_origen_id=colaborador_id,
         estado_fisico=estado_fisico_origen, estado_operativo_resultante=estado_operativo_origen,
         accesorios_detalle=accesorios_devueltos, observaciones=observaciones,
         usuario_ti=usuario_ti, request=request, operacion_id=operation_id,
     )
     issued = registrar_movimiento(
         tipo_movimiento='CAMBIO', activo_id=new.pk,
-        colaborador_destino_id=colaborador_id, ubicacion_destino=ubicacion_entrega,
+        colaborador_destino_id=colaborador_id,
         estado_fisico=estado_fisico_destino, accesorios_detalle=accesorios_entregados,
         observaciones=observaciones, usuario_ti=usuario_ti, request=request,
         operacion_id=operation_id,

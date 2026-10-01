@@ -528,7 +528,6 @@ export default function EquipoCreateForm({
 
       <div><label style={labelStyle}>Estado físico</label><select aria-label="Estado físico" value={equipo.estado_fisico || 'USADO'} onChange={(e) => updateField('estado_fisico', e.target.value)} style={inputStyle}><option value="NUEVO">Nuevo</option><option value="SEMINUEVO">Seminuevo</option><option value="USADO">Usado</option><option value="DANADO">Dañado</option></select></div>
       <div><label style={labelStyle}>Fecha de vencimiento de garantía (opcional)</label><input aria-label="Fecha de vencimiento de garantía" type="date" value={equipo.fecha_vencimiento_garantia || ''} onChange={(e) => updateField('fecha_vencimiento_garantia', e.target.value)} style={inputStyle} /></div>
-      <div><label style={labelStyle}>Ubicación inicial</label><input aria-label="Ubicación inicial" value={equipo.ubicacion_actual || ''} maxLength={100} onChange={(e) => updateField('ubicacion_actual', e.target.value)} style={inputStyle} /></div>
       {usaHostname && <div><label style={labelStyle}>MAC Address *</label><input aria-label="MAC Address" required value={equipo.mac_address || ''} maxLength={30} onChange={(e) => updateField('mac_address', e.target.value)} style={inputStyle} placeholder="AA:BB:CC:DD:EE:FF" /></div>}
 
       {/* =========================

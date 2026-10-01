@@ -15,13 +15,20 @@ from .permissions import PortalRolePermission
 
 
 class AssetQrSerializer(serializers.ModelSerializer):
-    usuario_nombre = serializers.ReadOnlyField(source='usuario.nombre_completo')
-    usuario_departamento = serializers.ReadOnlyField(source='usuario.dpto_area')
+    usuario_nombre = serializers.SerializerMethodField()
+    usuario_departamento = serializers.SerializerMethodField()
+
+    def get_usuario_nombre(self, obj):
+        return obj.usuario.nombre_completo if obj.usuario_id else None
+
+    def get_usuario_departamento(self, obj):
+        return obj.usuario.departamento.nombre if obj.usuario_id else None
 
     class Meta:
         model = Equipamiento
         fields = ('id', 'tipo', 'marca', 'modelo', 'numero_serie', 'af', 'estado',
-                  'estado_fisico', 'ubicacion_actual', 'accesorios', 'fecha_vencimiento_garantia',
+                  'estado_fisico', 'hostname', 'mac_address', 'imei', 'numero_telefono',
+                  'accesorios', 'fecha_vencimiento_garantia',
                   'usuario_nombre', 'usuario_departamento')
 
 
@@ -40,7 +47,7 @@ class AssetQrView(APIView):
 
     def get(self, request, token):
         try:
-            asset = Equipamiento.objects.select_related('usuario').get(token_qr=token)
+            asset = Equipamiento.objects.select_related('usuario__departamento').get(token_qr=token)
         except Equipamiento.DoesNotExist:
             return Response({'detail': 'Activo no encontrado.'}, status=404)
         url = _asset_url(token)

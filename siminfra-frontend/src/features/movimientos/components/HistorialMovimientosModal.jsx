@@ -23,7 +23,7 @@ export default function HistorialMovimientosModal({ activo, onClose }) {
     {!data.count && <p>Este activo todavía no tiene movimientos registrados en el nuevo módulo.</p>}
     {data.results.map((item) => <article key={item.id} className="movimiento-entry">
       <div className="movimiento-entry-header"><h4>{item.tipo_movimiento}</h4><time>{new Date(item.fecha_movimiento).toLocaleString('es-CL')}</time></div>
-      <dl className="movimiento-summary"><dt>Colaborador</dt><dd>{(item.colaborador_destino || item.colaborador_origen)?.nombre_completo || 'Inventario TI'}</dd><dt>Área</dt><dd>{(item.colaborador_destino || item.colaborador_origen)?.area || '—'}</dd><dt>Ubicación</dt><dd>{item.ubicacion_destino}</dd><dt>Estado</dt><dd>{item.estado_operativo_resultante} · {item.estado_fisico}</dd><dt>Usuario TI</dt><dd>{item.ejecutado_por}</dd><dt>Folio</dt><dd>{item.acta?.folio || '—'}</dd></dl>
+      <dl className="movimiento-summary"><dt>Colaborador</dt><dd>{(item.colaborador_destino || item.colaborador_origen)?.nombre_completo || 'Inventario TI'}</dd><dt>Área</dt><dd>{(item.colaborador_destino || item.colaborador_origen)?.area || '—'}</dd><dt>Estado</dt><dd>{item.estado_operativo_resultante} · {item.estado_fisico}</dd><dt>Usuario TI</dt><dd>{item.ejecutado_por}</dd><dt>Folio</dt><dd>{item.acta?.folio || '—'}</dd></dl>
       {item.operacion_id && <button className="movimiento-button" type="button" onClick={() => setOperacionId(item.operacion_id)}>Ver cambio de equipo completo</button>}
       {item.acta && <>
         <button className="movimiento-button" type="button" onClick={() => downloadActa(item.acta).catch((err) => setError(movimientoError(err)))}>Descargar comprobante</button>

@@ -33,3 +33,10 @@
   .movimiento-summary dd { margin-bottom: .5rem; }
   .movimiento-add { flex-wrap: wrap; }
 }
+
+.ficha-asset-identity { display: grid; gap: .25rem; padding: .9rem 1rem; border: 1px solid #bfdbfe; border-radius: 9px; background: #eff6ff; }
+.ficha-asset-identity strong { color: #0f172a; font-size: 1.05rem; }
+.ficha-asset-identity span { color: #475569; font-size: .85rem; }
+.ficha-asset-qr { display: grid; justify-items: start; gap: .6rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; }
+.ficha-asset-qr img { padding: .4rem; border: 1px solid #e2e8f0; border-radius: 8px; background: white; }
+.ficha-asset-qr label { width: 100%; }

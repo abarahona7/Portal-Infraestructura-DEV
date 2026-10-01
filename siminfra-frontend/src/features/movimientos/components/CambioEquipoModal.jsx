@@ -4,7 +4,6 @@ import { downloadActa, movimientoError } from '../../../api/movimientosApi';
 import MovimientoShell from './MovimientoShell';
 
 const initial = {
-  ubicacion_retorno: 'Bodega TI', ubicacion_entrega: '',
   estado_fisico_origen: 'USADO', estado_fisico_destino: 'USADO',
   estado_operativo_origen: 'STOCK', accesorios_devueltos: [],
   accesorios_entregados: [], observaciones: '',
@@ -64,7 +63,6 @@ export default function CambioEquipoModal({ open, onClose, onCompleted }) {
     const selected = oldOptions.find((item) => String(item.id) === id) || null;
     setOldAsset(selected);
     setForm((current) => ({ ...current,
-      ubicacion_entrega: selected?.ubicacion_actual || '',
       estado_fisico_origen: selected?.estado_fisico || 'USADO',
       accesorios_devueltos: (selected?.accesorios_requeridos || []).map((name) => ({ nombre: name, entregado: true, nota: '' })),
     }));
@@ -87,7 +85,6 @@ export default function CambioEquipoModal({ open, onClose, onCompleted }) {
     if (oldAsset.id === newAsset.id) return 'El equipo de reemplazo debe ser distinto.';
     if (!oldAsset.usuario || !['ASIGNADO', 'PRESTAMO'].includes(oldAsset.estado)) return 'El equipo anterior debe estar asignado o en préstamo.';
     if (newAsset.usuario || newAsset.estado !== 'STOCK') return 'El equipo nuevo debe estar disponible.';
-    if (!form.ubicacion_retorno.trim() || !form.ubicacion_entrega.trim()) return 'Indique las ubicaciones de retorno y entrega.';
     if (!form.observaciones.trim()) return 'Explique el motivo del cambio de equipo.';
     if ([...form.accesorios_devueltos, ...form.accesorios_entregados].some((item) => !item.nombre.trim())) return 'Indique el nombre de cada accesorio.';
     if ([...form.accesorios_devueltos, ...form.accesorios_entregados].some((item) => !item.entregado && !item.nota?.trim())) return 'Explique cada accesorio faltante.';
@@ -107,8 +104,6 @@ export default function CambioEquipoModal({ open, onClose, onCompleted }) {
       const { data } = await apiClient.post('/movimientos/cambio/', {
         activo_origen_id: oldAsset.id, activo_destino_id: newAsset.id,
         colaborador_id: oldAsset.usuario,
-        ubicacion_retorno: form.ubicacion_retorno.trim(),
-        ubicacion_entrega: form.ubicacion_entrega.trim(),
         estado_fisico_origen: form.estado_fisico_origen,
         estado_fisico_destino: form.estado_fisico_destino,
         estado_operativo_origen: form.estado_operativo_origen,
@@ -136,8 +131,8 @@ export default function CambioEquipoModal({ open, onClose, onCompleted }) {
     {result ? <div className="movimiento-success"><strong>Cambio registrado.</strong><p>Se guardaron dos comprobantes vinculados: {result.salida.acta.folio} y {result.entrada.acta.folio}.</p></div>
       : preview ? <dl className="movimiento-summary">
         <dt>Colaborador</dt><dd>{oldAsset?.usuario_nombre}</dd>
-        <dt>Equipo devuelto</dt><dd>{assetLabel(oldAsset)} → {form.estado_operativo_origen} en {form.ubicacion_retorno}</dd>
-        <dt>Equipo entregado</dt><dd>{assetLabel(newAsset)} → ASIGNADO en {form.ubicacion_entrega}</dd>
+        <dt>Equipo devuelto</dt><dd>{assetLabel(oldAsset)} → {form.estado_operativo_origen}</dd>
+        <dt>Equipo entregado</dt><dd>{assetLabel(newAsset)} → ASIGNADO</dd>
         <dt>Accesorios devueltos</dt><dd>{form.accesorios_devueltos.map((item) => `${item.nombre}: ${item.entregado ? 'recibido' : 'faltante'}`).join(', ') || 'Sin accesorios'}</dd>
         <dt>Accesorios entregados</dt><dd>{form.accesorios_entregados.map((item) => `${item.nombre}: ${item.entregado ? 'entregado' : 'faltante'}`).join(', ') || 'Sin accesorios'}</dd>
         <dt>Motivo</dt><dd>{form.observaciones}</dd>
@@ -149,8 +144,6 @@ export default function CambioEquipoModal({ open, onClose, onCompleted }) {
           {oldAsset && <p className="movimiento-note">Custodio: {oldAsset.usuario_nombre || 'Sin asignar'} · Estado: {oldAsset.estado}</p>}
           <label>Buscar reemplazo<input value={newSearch} onChange={(event) => setNewSearch(event.target.value)} placeholder="Serie, activo fijo, marca o modelo" /></label>
           <label>Equipo de reemplazo<select value={newAsset?.id || ''} onChange={(event) => selectNew(event.target.value)}><option value="">Seleccione...</option>{newOptions.map((item) => <option value={item.id} key={item.id}>{assetLabel(item)} · {item.estado}</option>)}</select></label>
-          <label>Ubicación de retorno<input value={form.ubicacion_retorno} maxLength={100} onChange={(event) => setField('ubicacion_retorno', event.target.value)} /></label>
-          <label>Ubicación de entrega<input value={form.ubicacion_entrega} maxLength={100} onChange={(event) => setField('ubicacion_entrega', event.target.value)} /></label>
           <label>Estado del equipo anterior<select value={form.estado_fisico_origen} onChange={(event) => setField('estado_fisico_origen', event.target.value)}>{physicalOptions.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
           <label>Estado del reemplazo<select value={form.estado_fisico_destino} onChange={(event) => setField('estado_fisico_destino', event.target.value)}>{physicalOptions.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
           <label>Destino del equipo anterior<select value={form.estado_operativo_origen} onChange={(event) => setField('estado_operativo_origen', event.target.value)}><option value="STOCK">Disponible</option><option value="MANTENCION">En reparación</option></select></label>

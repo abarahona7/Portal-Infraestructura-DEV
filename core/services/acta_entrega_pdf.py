@@ -898,7 +898,6 @@ def generar_acta_entrega_pdf(
         "Departamento de Tecnología, procede "
         "a hacer entrega al colaborador "
         f"<b>{nombre_usuario}</b>, "
-        "Rut ___________________-_____, "
         "perteneciente al Departamento de "
         f"<b>{area_usuario}</b>, "
         "del/los siguiente(s) elemento(s) "
@@ -1037,17 +1036,15 @@ def generar_acta_custodia_pdf(snapshot):
     story.append(Paragraph(f"<b>Folio:</b> {plain(snapshot.get('folio'))} &nbsp;&nbsp; "
                            f"<b>Fecha:</b> {plain(fecha)} &nbsp;&nbsp; "
                            f"<b>Movimiento:</b> {plain(tipo)}", small))
-    story.append(Paragraph(f"<b>Ubicación:</b> {plain(snapshot.get('ubicacion_destino'))}", small))
+    story.append(Paragraph(f"<b>Departamento:</b> {plain(snapshot.get('departamento') or snapshot.get('ubicacion_destino'))}", small))
     if snapshot.get('operacion_id'):
         story.append(Paragraph(f"<b>Cambio de equipo:</b> {plain(snapshot['operacion_id'])}", small))
     if colaborador:
         story.append(Paragraph('DATOS DEL COLABORADOR', heading))
         col_rows = [
             row('Nombre', colaborador.get('nombre_completo')),
-            row('RUT', colaborador.get('rut')),
             row('Área / cargo', f"{colaborador.get('area') or ''} / {colaborador.get('cargo') or ''}"),
             row('Correo', colaborador.get('correo_corp')),
-            row('Ubicación', colaborador.get('ubicacion')),
         ]
         if tipo == 'REASIGNACION':
             previous = snapshot.get('colaborador_origen') or {}
@@ -1102,7 +1099,7 @@ def generar_acta_custodia_pdf(snapshot):
         entrega_label, recibe_label = 'Entrega', 'Recibe TI'
     else:
         story.append(Paragraph('CONSTANCIA DEL MOVIMIENTO', heading))
-        story.append(Paragraph('Infraestructura TI registra el cambio de estado y ubicación del activo con las observaciones indicadas.', small))
+        story.append(Paragraph('Infraestructura TI registra el cambio de estado y custodia del activo con las observaciones indicadas.', small))
         entrega_nombre = operador.get('nombre')
         recibe_nombre = ''
         entrega_label, recibe_label = 'Registra TI', 'Verifica'

@@ -484,11 +484,10 @@ class EquipamientoViewSet(
         token = set_current_audit_user(self.request.user)
         try:
             with transaction.atomic():
-                activo = serializer.save()
+                activo = serializer.save(ubicacion_actual='Sin departamento asignado')
                 registrar_movimiento(
                     tipo_movimiento='ALTA', activo_id=activo.pk,
                     usuario_ti=self.request.user, request=self.request,
-                    ubicacion_destino=activo.ubicacion_actual,
                     estado_fisico=activo.estado_fisico,
                     accesorios_detalle=[], observaciones='Alta inicial en inventario TI.',
                 )

@@ -35,14 +35,12 @@ def _colaborador_snapshot(colaborador):
     return {
         'id': colaborador.pk,
         'nombre_completo': colaborador.nombre_completo,
-        'rut': colaborador.rut or '',
         'correo_corp': colaborador.correo_corp,
         'usuario_red': colaborador.usuario_red,
         'cargo': colaborador.cargo or '',
         'area': colaborador.departamento.nombre,
         'subarea': colaborador.subarea.nombre if colaborador.subarea_id else '',
         'centro_costo': colaborador.centro_costo or '',
-        'ubicacion': colaborador.ubicacion,
     }
 
 
@@ -60,7 +58,6 @@ def _activo_snapshot(activo):
         'token_qr': str(activo.token_qr),
         'estado': activo.estado,
         'estado_fisico': activo.estado_fisico,
-        'ubicacion_actual': activo.ubicacion_actual,
         'accesorios': activo.accesorios or '',
         'usuario_id': activo.usuario_id,
         'fecha_asignacion': activo.fecha_asignacion.isoformat() if activo.fecha_asignacion else None,
@@ -113,7 +110,7 @@ def _validar_accesorios(items, *, activo, devolucion, exigir_maestro=False):
 @transaction.atomic
 def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
                          colaborador_destino_id=None, colaborador_origen_id=None,
-                         ubicacion_destino, estado_fisico='USADO',
+                         ubicacion_destino=None, estado_fisico='USADO',
                          estado_operativo_resultante=None, accesorios_detalle=None,
                          observaciones='', request=None, qr_base_url=None, operacion_id=None):
     """Persist state, movement, numbered PDF and audit atomically after locking the asset."""
@@ -125,10 +122,9 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
         raise ValidationError({'operacion_id': 'El cambio de equipo requiere una operación vinculada.'})
     if not getattr(usuario_ti, 'is_authenticated', False) or not usuario_ti.pk or not usuario_ti.is_active:
         raise ValidationError({'usuario_ti': 'Se requiere un operador autenticado y activo.'})
-    ubicacion_destino = _text(ubicacion_destino)
+    # El argumento heredado de ubicación se ignora: la pertenencia se obtiene
+    # siempre del Departamento del colaborador asignado.
     observaciones = str(observaciones or '').strip()
-    if not ubicacion_destino or len(ubicacion_destino) > 100:
-        raise ValidationError({'ubicacion_destino': 'Indique una ubicación de hasta 100 caracteres.'})
     if estado_fisico not in dict(ESTADOS_FISICOS):
         raise ValidationError({'estado_fisico': 'Seleccione un estado físico válido.'})
     if len(observaciones) > 2000:
@@ -208,8 +204,7 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
             raise ValidationError({'colaborador_destino_id': 'Seleccione un colaborador válido.'})
         if destino.estado != 'ACTIVO':
             raise MovimientoConflict('COLABORADOR_INACTIVO', 'Solo se pueden asignar activos a colaboradores activos.')
-        if not destino.rut:
-            raise ValidationError({'colaborador_destino_id': 'Complete el RUT del colaborador antes de emitir un acta.'})
+    ubicacion_destino = destino.departamento.nombre if destino else 'Sin departamento asignado'
     accesorios = _validar_accesorios(
         accesorios_detalle, activo=activo,
         devolucion=tipo_movimiento in {'DEVOLUCION', 'REASIGNACION'} or
@@ -231,7 +226,7 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
         finally:
             reset_current_audit_user(token)
     despues = _activo_snapshot(activo)
-    ubicacion_origen = antes['ubicacion_actual'] if antes else None
+    ubicacion_origen = origen.departamento.nombre if origen else None
     folio = generar_siguiente_folio(anio=timezone.localdate(momento).year)
     anio, correlativo = (int(part) for part in folio.split('-')[1:])
     documento = {
@@ -245,8 +240,7 @@ def registrar_movimiento(*, tipo_movimiento, activo_id, usuario_ti,
         'colaborador_destino': _colaborador_snapshot(destino),
         'usuario_ti': {'id': usuario_ti.pk, 'nombre': usuario_ti.get_full_name() or actor, 'username': actor},
         'activo': deepcopy(despues),
-        'ubicacion_origen': ubicacion_origen,
-        'ubicacion_destino': ubicacion_destino,
+        'departamento': destino.departamento.nombre if destino else 'Sin departamento asignado',
         'estado_fisico': estado_fisico,
         'estado_operativo_resultante': estado_resultante,
         'accesorios': accesorios,

@@ -43,6 +43,7 @@ export const prepareCreatePayload = (
   if (tab === 'equipos') {
     delete payload.usuario;
     delete payload.fecha_asignacion;
+    delete payload.ubicacion_actual;
     payload.estado = 'STOCK';
     ['marca', 'modelo', 'numero_serie', 'hostname', 'af', 'numero_telefono', 'imei', 'mac_address', 'icloud_cuenta', 'accesorios'].forEach((field) => {
       if (typeof payload[field] === 'string') {

@@ -70,7 +70,7 @@ class AssetWarrantyView(APIView):
 def _inactive_custody_assets(queryset):
     return queryset.filter(CUSTODIO_NO_ACTIVO).select_related('usuario').only(
         'id', 'tipo', 'marca', 'modelo', 'numero_serie', 'af', 'estado',
-        'ubicacion_actual', 'usuario', 'usuario__nombre_completo', 'usuario__estado',
+        'usuario', 'usuario__nombre_completo', 'usuario__estado',
     ).order_by('-pk')
 
 
@@ -79,7 +79,6 @@ def _serialize_inactive_custody(asset):
         'id': asset.pk, 'tipo': asset.tipo, 'marca': asset.marca,
         'modelo': asset.modelo, 'numero_serie': asset.numero_serie,
         'af': asset.af, 'estado': asset.estado,
-        'ubicacion_actual': asset.ubicacion_actual,
         'colaborador': {
             'id': asset.usuario_id,
             'nombre_completo': asset.usuario.nombre_completo,
@@ -112,14 +111,14 @@ class AssetUnassignedView(APIView):
                 raise ValidationError({'estado': 'Seleccione un estado operativo válido.'})
             queryset = queryset.filter(estado=state)
         queryset = queryset.only(
-            'id', 'tipo', 'marca', 'modelo', 'numero_serie', 'af', 'estado', 'ubicacion_actual',
+            'id', 'tipo', 'marca', 'modelo', 'numero_serie', 'af', 'estado',
         ).order_by('-pk')
         paginator = PortalPageNumberPagination()
         page = paginator.paginate_queryset(queryset, request, view=self)
         response = paginator.get_paginated_response([{
             'id': asset.pk, 'tipo': asset.tipo, 'marca': asset.marca, 'modelo': asset.modelo,
             'numero_serie': asset.numero_serie, 'af': asset.af,
-            'estado': asset.estado, 'ubicacion_actual': asset.ubicacion_actual,
+            'estado': asset.estado,
         } for asset in page])
         response['Cache-Control'] = 'no-store, private'
         return response
@@ -166,14 +165,14 @@ class AssetMissingIdentifierView(APIView):
         column = 'numero_serie' if field == 'serie' else 'af'
         condition = Q(**{f'{column}__isnull': True}) | Q(**{column: ''})
         queryset = Equipamiento.objects.filter(condition).only(
-            'id', 'tipo', 'marca', 'modelo', 'numero_serie', 'af', 'estado', 'ubicacion_actual',
+            'id', 'tipo', 'marca', 'modelo', 'numero_serie', 'af', 'estado',
         ).order_by('-pk')
         paginator = PortalPageNumberPagination()
         page = paginator.paginate_queryset(queryset, request, view=self)
         response = paginator.get_paginated_response([{
             'id': asset.pk, 'tipo': asset.tipo, 'marca': asset.marca, 'modelo': asset.modelo,
             'numero_serie': asset.numero_serie, 'af': asset.af,
-            'estado': asset.estado, 'ubicacion_actual': asset.ubicacion_actual,
+            'estado': asset.estado,
         } for asset in page])
         response['Cache-Control'] = 'no-store, private'
         return response
@@ -201,7 +200,7 @@ class AssetDepartmentEquipmentView(APIView):
             usuario__departamento_id=department.pk,
         ).select_related('usuario').only(
             'id', 'tipo', 'marca', 'modelo', 'numero_serie', 'af', 'estado',
-            'ubicacion_actual', 'usuario', 'usuario__nombre_completo',
+            'usuario', 'usuario__nombre_completo',
         ).order_by('-pk')
         paginator = PortalPageNumberPagination()
         page = paginator.paginate_queryset(assets, request, view=self)
@@ -209,8 +208,7 @@ class AssetDepartmentEquipmentView(APIView):
             'id': asset.pk, 'tipo': asset.tipo, 'marca': asset.marca,
             'modelo': asset.modelo, 'numero_serie': asset.numero_serie,
             'af': asset.af, 'estado': asset.estado,
-            'ubicacion_actual': asset.ubicacion_actual,
-            'colaborador': asset.usuario.nombre_completo,
+                'colaborador': asset.usuario.nombre_completo,
         } for asset in page])
         response.data['departamento'] = department.nombre
         response['Cache-Control'] = 'no-store, private'
@@ -305,7 +303,6 @@ class AssetDashboardView(APIView):
             'actas_pendientes_firma': actas_pendientes.count(),
             'actas_pendientes_recientes': [resumen_acta_pendiente(acta) for acta in actas_pendientes[:8]],
             'por_tipo': distribution(assets, 'tipo'),
-            'por_ubicacion': distribution(assets, 'ubicacion_actual'),
             'por_area': por_area,
             'movimientos_30_dias': MovimientoActivo.objects.filter(
                 fecha_movimiento__gte=timezone.now() - timedelta(days=30)).count(),

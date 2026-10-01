@@ -75,7 +75,7 @@ export default function HistorialColaboradorModal({ colaborador, onClose, onOpen
       const asset = item.snapshot?.despues || { id: item.activo_id };
       return <article className="movimiento-entry" key={item.id}>
         <div className="movimiento-entry-header"><strong>{item.tipo_movimiento} · {assetLabel(asset)}</strong><time>{new Date(item.fecha_movimiento).toLocaleString('es-CL')}</time></div>
-        <span>Serie: {asset.numero_serie || 'N/I'} · Ubicación: {item.ubicacion_destino} · Estado: {item.estado_operativo_resultante}</span>
+        <span>Serie: {asset.numero_serie || 'N/I'} · Estado: {item.estado_operativo_resultante}</span>
         <span>Folio: {item.acta?.folio || '—'} · Registrado por: {item.ejecutado_por}</span>
         {item.operacion_id && <button type="button" className="movimiento-button" onClick={() => setOperacionId(item.operacion_id)}>Ver cambio de equipo completo</button>}
         {item.acta && <>

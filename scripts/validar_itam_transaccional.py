@@ -12,7 +12,7 @@ with transaction.atomic():
     department = Departamento.objects.create(nombre=f'Prueba ITAM {suffix}')
     person = Usuario.objects.create(nombre_completo=f'Prueba ITAM {suffix}',
         usuario_red=f'itam.{suffix}', correo_corp=f'itam.{suffix}@example.com',
-        departamento=department, rut='12.345.678-5')
+        departamento=department)
     operator = User.objects.create_user(username=f'itam_op_{suffix}', password='temporary-only')
     operator.groups.add(Group.objects.get_or_create(name='Operador Infraestructura')[0])
     asset = Equipamiento.objects.create(tipo='Notebook', marca='Prueba', modelo='T14',
@@ -21,7 +21,7 @@ with transaction.atomic():
     client.force_authenticate(user=operator)
     first = client.post('/api/movimientos/', {'tipo_movimiento': 'ASIGNACION',
         'activo_id': asset.pk, 'colaborador_destino_id': person.pk,
-        'ubicacion_destino': 'Oficina', 'estado_fisico': 'USADO',
+        'estado_fisico': 'USADO',
         'accesorios_detalle': [{'nombre':'Cargador','entregado':True},
                               {'nombre':'Mouse','entregado':True}]}, format='json')
     assert first.status_code == 201, (first.status_code, first.data)
@@ -32,9 +32,11 @@ with transaction.atomic():
     assert qr_detail.status_code == 200, (qr_detail.status_code, getattr(qr_detail, 'data', None))
     assert qr_detail.data['activo']['usuario_nombre'] == person.nombre_completo
     assert qr_detail.data['qr_url'].endswith(f'/qr/a/{asset.token_qr}')
-    assert 'rut' not in qr_detail.data['activo']
+    assert qr_detail.data['activo']['usuario_departamento'] == department.nombre
+    assert 'rut' not in qr_detail.data['activo'] and 'ubicacion_actual' not in qr_detail.data['activo']
     collaborator = client.get(f'/api/usuarios/{person.pk}/')
     assert collaborator.status_code == 200 and any(item['id'] == asset.pk for item in collaborator.data['equipos'])
+    assert 'rut' not in collaborator.data and 'ubicacion' not in collaborator.data
     qr_image = client.get(f'{qr_path}imagen/')
     assert qr_image.status_code == 200 and qr_image['Content-Type'].startswith('image/svg+xml')
     assert b'<svg' in qr_image.content and person.nombre_completo.encode() not in qr_image.content
@@ -51,17 +53,17 @@ with transaction.atomic():
     assert hashlib.sha256(pdf.content).hexdigest() == first.data['acta']['hash_verificacion']
     double = client.post('/api/movimientos/', {'tipo_movimiento': 'ASIGNACION',
         'activo_id': asset.pk, 'colaborador_destino_id': person.pk,
-        'ubicacion_destino': 'Oficina', 'estado_fisico': 'USADO',
+        'estado_fisico': 'USADO',
         'accesorios_detalle': []}, format='json')
     assert double.status_code == 409, (double.status_code, double.data)
     missing = client.post('/api/movimientos/', {'tipo_movimiento': 'DEVOLUCION',
         'activo_id': asset.pk, 'colaborador_origen_id': person.pk,
-        'ubicacion_destino': 'Bodega TI', 'estado_fisico': 'USADO',
+        'estado_fisico': 'USADO',
         'accesorios_detalle': [{'nombre':'Cargador','entregado':True}]}, format='json')
     assert missing.status_code == 400, (missing.status_code, missing.data)
     returned = client.post('/api/movimientos/', {'tipo_movimiento': 'DEVOLUCION',
         'activo_id': asset.pk, 'colaborador_origen_id': person.pk,
-        'ubicacion_destino': 'Bodega TI', 'estado_fisico': 'USADO',
+        'estado_fisico': 'USADO',
         'accesorios_detalle': [{'nombre':'Cargador','entregado':True},
                               {'nombre':'Mouse','entregado':False,'nota':'Extraviado'}]}, format='json')
     assert returned.status_code == 201, (returned.status_code, returned.data)
@@ -69,8 +71,11 @@ with transaction.atomic():
     assert client.delete(f"/api/movimientos/{first.data['id']}/").status_code == 403
     asset.refresh_from_db()
     assert asset.usuario_id is None and asset.estado == 'STOCK'
+    qr_unassigned = client.get(qr_path)
+    assert qr_unassigned.status_code == 200 and qr_unassigned.data['activo']['usuario_departamento'] is None
     history = client.get(f'/api/movimientos/?activo_id={asset.pk}')
     assert history.status_code == 200 and history.data['count'] == 2
+    assert 'rut' not in str(history.data).lower() and 'ubicacion' not in str(history.data).lower()
     collaborator_history = client.get(f'/api/movimientos/?colaborador_id={person.pk}')
     assert collaborator_history.status_code == 200 and collaborator_history.data['count'] == 2
     collaborator = client.get(f'/api/usuarios/{person.pk}/')

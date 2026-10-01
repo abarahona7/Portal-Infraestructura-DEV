@@ -6,9 +6,7 @@ export const getInitialCreateItem = (tab) => {
         nombre_completo: '',
         hostname: '',
         cargo: '',
-        rut: '',
         centro_costo: '',
-        ubicacion: 'Casa Matriz - Quilicura',
         dpto_area: '',
         departamento: null,
         subarea: null,
@@ -35,7 +33,6 @@ export const getInitialCreateItem = (tab) => {
         icloud_password: '',
         estado: 'STOCK',
         estado_fisico: 'USADO',
-        ubicacion_actual: 'Bodega TI',
         fecha_vencimiento_garantia: '',
         mac_address: '',
       };

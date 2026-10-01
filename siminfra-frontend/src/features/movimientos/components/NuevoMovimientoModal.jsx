@@ -16,7 +16,7 @@ const TYPES = [
 const labels = Object.fromEntries(TYPES);
 const initial = {
   tipo_movimiento: 'ASIGNACION', activo_id: '', colaborador_destino_id: '',
-  ubicacion_destino: '', estado_fisico: 'USADO', estado_operativo_resultante: 'STOCK',
+  estado_fisico: 'USADO', estado_operativo_resultante: 'STOCK',
   accesorios_detalle: [], observaciones: '',
 };
 
@@ -93,7 +93,6 @@ export default function NuevoMovimientoModal({ open, onClose, onCompleted, onCha
     setSelectedPerson(null);
     setForm((current) => ({
       ...current, activo_id: id, colaborador_destino_id: '',
-      ubicacion_destino: selected?.ubicacion_actual || '',
       estado_fisico: selected?.estado_fisico || 'USADO',
       accesorios_detalle: (selected?.accesorios_requeridos || []).map((name) => ({ nombre: name, entregado: true, nota: '' })),
     }));
@@ -120,8 +119,6 @@ export default function NuevoMovimientoModal({ open, onClose, onCompleted, onCha
     if (!canUseAsset) return 'El estado actual del activo no permite este movimiento.';
     if (needsDestination && !form.colaborador_destino_id) return 'Seleccione el colaborador que recibe el activo.';
     if (needsDestination && Number(form.colaborador_destino_id) === Number(asset.usuario)) return 'Seleccione un colaborador distinto del custodio actual.';
-    if (needsDestination && !selectedPerson?.rut) return 'El colaborador necesita un RUT válido antes de registrar el movimiento.';
-    if (!form.ubicacion_destino.trim()) return 'Indique la ubicación de destino.';
     if ((form.estado_fisico === 'DANADO' || ['INGRESO_REPARACION', 'SALIDA_REPARACION', 'BAJA'].includes(kind)) && !form.observaciones.trim()) return 'Indique el motivo o trabajo realizado.';
     if (checklist && form.accesorios_detalle.some((item) => !item.entregado && !item.nota?.trim())) return 'Explique cada accesorio faltante.';
     return '';
@@ -138,7 +135,7 @@ export default function NuevoMovimientoModal({ open, onClose, onCompleted, onCha
     try {
       const payload = {
         tipo_movimiento: kind, activo_id: Number(form.activo_id),
-        ubicacion_destino: form.ubicacion_destino.trim(), estado_fisico: form.estado_fisico,
+        estado_fisico: form.estado_fisico,
         accesorios_detalle: checklist ? form.accesorios_detalle.map((item) => ({
           ...item, nombre: item.nombre.trim(), nota: item.nota?.trim() || '',
         })) : [],
@@ -171,7 +168,6 @@ export default function NuevoMovimientoModal({ open, onClose, onCompleted, onCha
         <dt>Activo</dt><dd>{asset?.tipo} {asset?.marca} {asset?.modelo} · Serie {asset?.numero_serie || 'N/I'}</dd>
         {fromCustodian && <><dt>Custodio origen</dt><dd>{asset?.usuario_nombre}</dd></>}
         {needsDestination && <><dt>Colaborador destino</dt><dd>{selectedPerson?.nombre_completo}</dd></>}
-        <dt>Ubicación destino</dt><dd>{form.ubicacion_destino}</dd>
         <dt>Estado resultante</dt><dd>{resultingState(kind, form.estado_operativo_resultante)}</dd>
         <dt>Estado físico</dt><dd>{form.estado_fisico}</dd>
         {checklist && <><dt>Accesorios</dt><dd>{form.accesorios_detalle.map((a) => `${a.nombre}: ${a.entregado ? 'entregado' : `faltante (${a.nota})`}`).join(', ') || 'Sin accesorios'}</dd></>}
@@ -184,7 +180,6 @@ export default function NuevoMovimientoModal({ open, onClose, onCompleted, onCha
           {asset && !canUseAsset && <p className="movimiento-error">El activo está {asset.estado}. Seleccione otro o registre el movimiento previo.</p>}
           {fromCustodian && <p className="movimiento-note">Custodio actual: {asset?.usuario_nombre || 'Sin registro'}</p>}
           {needsDestination && <><label>Buscar colaborador<input value={personSearch} onChange={(event) => setPersonSearch(event.target.value)} placeholder="Nombre, usuario de red o correo" /></label><label>Colaborador destino<select value={form.colaborador_destino_id} onChange={(event) => { setField('colaborador_destino_id', event.target.value); setSelectedPerson(people.find((person) => String(person.id) === event.target.value) || null); }}><option value="">Seleccione...</option>{people.map((person) => <option key={person.id} value={person.id}>{person.nombre_completo} ({person.usuario_red})</option>)}</select></label></>}
-          <label>Ubicación destino<input value={form.ubicacion_destino} maxLength={100} onChange={(event) => setField('ubicacion_destino', event.target.value)} /></label>
           <label>Estado físico<select value={form.estado_fisico} onChange={(event) => setField('estado_fisico', event.target.value)}><option value="NUEVO">Nuevo</option><option value="SEMINUEVO">Seminuevo</option><option value="USADO">Usado</option><option value="DANADO">Dañado</option></select></label>
           {kind === 'DEVOLUCION' && <label>Destino operativo<select value={form.estado_operativo_resultante} onChange={(event) => setField('estado_operativo_resultante', event.target.value)}><option value="STOCK">Disponible</option><option value="MANTENCION">En reparación</option></select></label>}
           {checklist && <fieldset style={{ gridColumn: '1 / -1' }}><legend>Accesorios {needsDestination ? 'entregados' : 'recibidos'}</legend>{form.accesorios_detalle.map((entry, index) => <div className="movimiento-accessory" key={index}><label><input type="checkbox" checked={entry.entregado} onChange={(event) => setAccessory(index, { entregado: event.target.checked })} />{needsDestination ? 'Entregado' : entry.nombre}</label>{needsDestination && <input value={entry.nombre} maxLength={100} aria-label={`Nombre accesorio ${index + 1}`} onChange={(event) => setAccessory(index, { nombre: event.target.value })} />}{!entry.entregado && <input value={entry.nota || ''} maxLength={200} placeholder="Motivo del faltante" aria-label={`Nota accesorio ${index + 1}`} onChange={(event) => setAccessory(index, { nota: event.target.value })} />}</div>)}{needsDestination && <button type="button" className="movimiento-button movimiento-add" onClick={addAccessory}>Agregar accesorio</button>}</fieldset>}

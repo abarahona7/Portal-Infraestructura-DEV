@@ -144,9 +144,7 @@ export default function UsuarioCreateForm({
         </select>
       </div>
 
-      <div><label style={labelStyle}>RUT</label><input aria-label="RUT" value={usuario.rut || ''} maxLength={12} placeholder="12345678-5" onChange={(e) => updateField('rut', e.target.value)} style={inputStyle} /></div>
       <div><label style={labelStyle}>Centro de costo</label><input aria-label="Centro de costo" value={usuario.centro_costo || ''} maxLength={50} onChange={(e) => updateField('centro_costo', e.target.value)} style={inputStyle} /></div>
-      <div><label style={labelStyle}>Ubicación</label><input aria-label="Ubicación" value={usuario.ubicacion || ''} maxLength={100} onChange={(e) => updateField('ubicacion', e.target.value)} style={inputStyle} /></div>
 
       <div>
         <label style={labelStyle}>Cargo</label>

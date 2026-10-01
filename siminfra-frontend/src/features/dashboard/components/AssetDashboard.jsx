@@ -241,7 +241,7 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
           <p className="itam-dashboard-empty">{identifierData.count.toLocaleString('es-CL')} equipos encontrados.</p>
           <div className="itam-dashboard-recent">
             {identifierData.results.map((item) => <article key={item.id}>
-              <div><strong>{item.tipo} {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'N/I'} · AF: {item.af || 'N/I'} · ID: {item.id}</span><span>Ubicación: {item.ubicacion_actual}</span></div>
+              <div><strong>{item.tipo} {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'N/I'} · AF: {item.af || 'N/I'} · ID: {item.id}</span></div>
               <span>{item.estado}</span>
               <div className="itam-dashboard-actions"><button type="button" onClick={() => onEditAsset(item)}>Editar ficha</button><button type="button" onClick={() => onOpenHistory(item)}>Historial</button></div>
             </article>)}
@@ -267,7 +267,7 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
           <p className="itam-dashboard-empty">{unassignedData.count.toLocaleString('es-CL')} activos encontrados.</p>
           <div className="itam-dashboard-recent">
             {unassignedData.results.map((item) => <article key={item.id}>
-              <div><strong>{item.tipo} {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'N/I'} · AF: {item.af || 'N/I'} · ID: {item.id}</span><span>Ubicación: {item.ubicacion_actual}</span></div>
+              <div><strong>{item.tipo} {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'N/I'} · AF: {item.af || 'N/I'} · ID: {item.id}</span></div>
               <span>{item.estado}</span>
               <div className="itam-dashboard-actions"><button type="button" onClick={() => onOpenHistory(item)}>Historial</button><button type="button" onClick={() => onEditAsset(item)}>Editar ficha</button></div>
             </article>)}
@@ -296,7 +296,7 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
         <div className="itam-dashboard-recent">
           {custodyRows.map((item) => <article key={item.id}>
             <div><strong>{item.tipo} {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'N/I'} · AF: {item.af || 'N/I'}</span><span>Custodio: {item.colaborador.nombre_completo} · Estado: {item.colaborador.estado}</span></div>
-            <span>{item.estado} · {item.ubicacion_actual}</span>
+            <span>{item.estado}</span>
             <div className="itam-dashboard-actions"><button type="button" onClick={() => onOpenHistory(item)}>Revisar historial</button></div>
           </article>)}
         </div>

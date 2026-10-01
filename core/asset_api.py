@@ -41,7 +41,6 @@ class NuevoMovimientoSerializer(serializers.Serializer):
     activo_id = serializers.IntegerField(min_value=1)
     colaborador_destino_id = serializers.IntegerField(min_value=1, required=False, allow_null=True)
     colaborador_origen_id = serializers.IntegerField(min_value=1, required=False, allow_null=True)
-    ubicacion_destino = serializers.CharField(max_length=100)
     estado_fisico = serializers.ChoiceField(choices=ESTADOS_FISICOS)
     estado_operativo_resultante = serializers.ChoiceField(
         choices=['STOCK', 'MANTENCION', 'ASIGNADO', 'PRESTAMO', 'BAJA'], required=False)
@@ -65,8 +64,6 @@ class CambioEquipoSerializer(serializers.Serializer):
     activo_origen_id = serializers.IntegerField(min_value=1)
     activo_destino_id = serializers.IntegerField(min_value=1)
     colaborador_id = serializers.IntegerField(min_value=1)
-    ubicacion_retorno = serializers.CharField(max_length=100)
-    ubicacion_entrega = serializers.CharField(max_length=100)
     estado_fisico_origen = serializers.ChoiceField(choices=ESTADOS_FISICOS)
     estado_fisico_destino = serializers.ChoiceField(choices=ESTADOS_FISICOS)
     estado_operativo_origen = serializers.ChoiceField(choices=['STOCK', 'MANTENCION'], required=False)
@@ -129,25 +126,38 @@ class CambioEstadoActaSerializer(serializers.Serializer):
     archivo_firmado = serializers.FileField(required=False)
 
 
+def _snapshot_publico(value):
+    if isinstance(value, dict):
+        excluded = {'rut', 'ubicacion', 'ubicacion_actual', 'ubicacion_origen', 'ubicacion_destino'}
+        return {key: _snapshot_publico(item) for key, item in value.items() if key not in excluded}
+    if isinstance(value, list):
+        return [_snapshot_publico(item) for item in value]
+    return value
+
+
 class MovimientoSerializer(serializers.ModelSerializer):
     acta = ActaSerializer(read_only=True)
     colaborador_origen = serializers.SerializerMethodField()
     colaborador_destino = serializers.SerializerMethodField()
+    snapshot = serializers.SerializerMethodField()
 
     class Meta:
         model = MovimientoActivo
         fields = ['id', 'activo_id', 'tipo_movimiento', 'fecha_movimiento',
                   'operacion_id', 'colaborador_origen_id', 'colaborador_destino_id',
-                  'colaborador_origen', 'colaborador_destino', 'ubicacion_origen',
-                  'ubicacion_destino', 'estado_fisico', 'estado_operativo_resultante',
+                  'colaborador_origen', 'colaborador_destino',
+                  'estado_fisico', 'estado_operativo_resultante',
                   'accesorios_detalle', 'observaciones', 'ejecutado_por', 'acta', 'snapshot']
         read_only_fields = fields
 
     def get_colaborador_origen(self, obj):
-        return obj.snapshot.get('colaborador_origen')
+        return _snapshot_publico((obj.snapshot or {}).get('colaborador_origen'))
 
     def get_colaborador_destino(self, obj):
-        return obj.snapshot.get('colaborador_destino')
+        return _snapshot_publico((obj.snapshot or {}).get('colaborador_destino'))
+
+    def get_snapshot(self, obj):
+        return _snapshot_publico(obj.snapshot)
 
 
 def _filter_id(request, name):
@@ -191,19 +201,18 @@ def _reporte_movimientos_rows(queryset):
     writer = csv.writer(_CsvBuffer(), delimiter=';')
     yield '\ufeff'
     yield writer.writerow(['ID movimiento', 'Fecha y hora', 'Tipo', 'ID activo', 'Equipo actual', 'Serie actual',
-                           'Activo fijo actual', 'Custodio origen', 'Custodio destino', 'Ubicación origen',
-                           'Ubicación destino', 'Estado resultante', 'Folio', 'Ejecutado por'])
+                           'Activo fijo actual', 'Custodio origen', 'Custodio destino',
+                           'Estado resultante', 'Folio', 'Ejecutado por'])
     fields = ('id', 'fecha_movimiento', 'tipo_movimiento', 'activo_id', 'activo__tipo',
               'activo__marca', 'activo__modelo', 'activo__numero_serie', 'activo__af',
               'colaborador_origen__nombre_completo', 'colaborador_destino__nombre_completo',
-              'ubicacion_origen', 'ubicacion_destino', 'estado_operativo_resultante',
-              'acta__folio', 'ejecutado_por')
+              'estado_operativo_resultante', 'acta__folio', 'ejecutado_por')
     for row in queryset.values_list(*fields).iterator(chunk_size=1000):
         (movement_id, date, kind, asset_id, asset_type, brand, model, serial, af,
-         origin, destination, origin_place, destination_place, state, folio, actor) = row
+         origin, destination, state, folio, actor) = row
         values = (movement_id, timezone.localtime(date).strftime('%Y-%m-%d %H:%M:%S'), kind,
                   asset_id, ' '.join(part for part in (asset_type, brand, model) if part), serial,
-                  af, origin, destination, origin_place, destination_place, state, folio, actor)
+                  af, origin, destination, state, folio, actor)
         yield writer.writerow([_csv_cell(value) for value in values])
 
 

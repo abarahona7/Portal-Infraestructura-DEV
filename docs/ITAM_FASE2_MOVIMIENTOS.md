@@ -1,13 +1,15 @@
 # Activos TI: movimientos avanzados de Fase 2
 
+El flujo vigente, sin RUT personal ni ubicación física, se resume en [ITAM_SIMPLIFICACION.md](ITAM_SIMPLIFICACION.md).
+
 El formulario «Nuevo movimiento» ahora ofrece reasignación, ingreso y salida de reparación y baja, además de asignación y devolución. Todos los movimientos generan una fila nueva e inmutable, acta PDF con folio anual, snapshot histórico y auditoría; el estado actual del activo se actualiza en la misma transacción. El identificador QR del activo no cambia.
 
 | Movimiento | Estado inicial admitido | Colaboradores | Estado final |
 | --- | --- | --- | --- |
-| Asignación | Disponible, sin custodio | Destino activo con RUT | Asignado |
-| Préstamo | Disponible, sin custodio | Destino activo con RUT | En préstamo |
+| Asignación | Disponible, sin custodio | Destino activo | Asignado |
+| Préstamo | Disponible, sin custodio | Destino activo | En préstamo |
 | Devolución | Asignado o en préstamo (también mantención legada con custodio) | Origen igual al custodio actual | Disponible o en reparación |
-| Reasignación | Asignado o en préstamo | Origen igual al custodio actual; destino distinto, activo y con RUT | Asignado al nuevo custodio |
+| Reasignación | Asignado o en préstamo | Origen igual al custodio actual; destino distinto y activo | Asignado al nuevo custodio |
 | Ingreso a reparación | Disponible o asignado/en préstamo | Si tiene custodio, debe indicarse como origen | En reparación, sin custodio |
 | Salida de reparación | En reparación, sin custodio | Ninguno | Disponible |
 | Baja | Disponible, sin custodio | Ninguno | Baja |
@@ -24,8 +26,6 @@ El cambio se inicia desde «Registrar movimiento» en Equipos, eligiendo el tipo
   "activo_origen_id": 142,
   "activo_destino_id": 215,
   "colaborador_id": 87,
-  "ubicacion_retorno": "Bodega TI",
-  "ubicacion_entrega": "Oficina",
   "estado_fisico_origen": "USADO",
   "estado_fisico_destino": "NUEVO",
   "estado_operativo_origen": "STOCK",

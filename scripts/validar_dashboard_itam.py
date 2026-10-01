@@ -17,7 +17,7 @@ with transaction.atomic():
     original = baseline.data['conteos']
     department = Departamento.objects.create(nombre=f'Dashboard Tecnología {suffix}')
     person = Usuario.objects.create(nombre_completo='Persona tablero', usuario_red=f'dash.{suffix}',
-        correo_corp=f'dash.{suffix}@example.com', departamento=department, rut='11.111.111-1')
+        correo_corp=f'dash.{suffix}@example.com', departamento=department)
     asset = Equipamiento.objects.create(tipo='Notebook', marca='Prueba', modelo='Dashboard',
         numero_serie=None, af=None, estado='STOCK', ubicacion_actual='Bodega tablero')
     available = client.get('/api/activos/resumen/')
@@ -50,9 +50,9 @@ with transaction.atomic():
     next_page = client.get('/api/activos/pendientes-tecnicos/?page=2&page_size=2')
     assert next_page.status_code == 200 and next_page.data['page'] == 2
     assert next_page.data['results'][0]['id'] != celular.pk
-    assert any(row['nombre'] == 'Bodega tablero' for row in available.data['por_ubicacion'])
+    assert 'por_ubicacion' not in available.data
     movement = client.post('/api/movimientos/', {'tipo_movimiento': 'ASIGNACION', 'activo_id': asset.pk,
-        'colaborador_destino_id': person.pk, 'ubicacion_destino': 'Oficina tablero',
+        'colaborador_destino_id': person.pk,
         'estado_fisico': 'USADO', 'accesorios_detalle': []}, format='json')
     assert movement.status_code == 201, (movement.status_code, movement.data)
     assigned = client.get('/api/activos/resumen/')

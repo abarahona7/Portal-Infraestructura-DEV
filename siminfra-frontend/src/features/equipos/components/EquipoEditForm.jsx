@@ -518,7 +518,6 @@ export default function EquipoEditForm({
 
       <div><label style={labelStyle}>Estado físico</label><input value={equipo.estado_fisico || 'USADO'} disabled style={inputStyle} /></div>
       <div><label style={labelStyle}>Fecha de vencimiento de garantía (opcional)</label><input aria-label="Fecha de vencimiento de garantía" type="date" value={equipo.fecha_vencimiento_garantia || ''} onChange={(e) => updateField('fecha_vencimiento_garantia', e.target.value)} style={inputStyle} /></div>
-      <div><label style={labelStyle}>Ubicación actual</label><input value={equipo.ubicacion_actual || ''} disabled style={inputStyle} /></div>
       {usaHostname && <div><label style={labelStyle}>MAC Address</label><input aria-label="MAC Address" value={equipo.mac_address || ''} maxLength={30} onChange={(e) => updateField('mac_address', e.target.value)} style={inputStyle} placeholder="AA:BB:CC:DD:EE:FF" /></div>}
 
       {/* =========================

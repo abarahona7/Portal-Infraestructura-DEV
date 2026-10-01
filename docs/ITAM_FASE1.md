@@ -1,5 +1,7 @@
 # Activos TI: Fase 1
 
+Este documento registra la implementación inicial. El flujo vigente se resume en [ITAM_SIMPLIFICACION.md](ITAM_SIMPLIFICACION.md).
+
 La pantalla de Equipos mantiene el maestro de activos. Los nuevos equipos se registran disponibles; «Nuevo movimiento» permite asignar y devolver un equipo existente. Cada confirmación válida crea en una sola transacción MySQL el cambio de estado, el movimiento, el folio anual, el acta PDF y el registro de auditoría. El botón de documento en cada fila abre la trazabilidad básica y permite descargar cada acta persistida.
 
 ## Datos y compatibilidad
@@ -19,14 +21,13 @@ La pantalla de Equipos mantiene el maestro de activos. Los nuevos equipos se reg
   "tipo_movimiento": "ASIGNACION",
   "activo_id": 142,
   "colaborador_destino_id": 87,
-  "ubicacion_destino": "Oficina TI",
   "estado_fisico": "USADO",
   "accesorios_detalle": [{"nombre": "Cargador", "entregado": true}],
   "observaciones": "Equipo comprobado"
 }
 ```
 
-Para una devolución use `DEVOLUCION` y `colaborador_origen_id`, indicando cada accesorio recibido; si falta alguno, use `entregado: false` y una `nota`. Las asignaciones requieren RUT válido en la ficha del colaborador. El servidor valida de nuevo estado, colaborador y accesorios con la fila del activo bloqueada. `409` indica un conflicto de estado; `400` identifica datos incorrectos o incompletos. `GET /api/movimientos/?activo_id=142` muestra el histórico paginado. También admite `colaborador_id`.
+Para una devolución use `DEVOLUCION` y `colaborador_origen_id`, indicando cada accesorio recibido; si falta alguno, use `entregado: false` y una `nota`. El servidor valida de nuevo estado, colaborador y accesorios con la fila del activo bloqueada. `409` indica un conflicto de estado; `400` identifica datos incorrectos o incompletos. `GET /api/movimientos/?activo_id=142` muestra el histórico paginado. También admite `colaborador_id`.
 
 ## Validación y operación
 

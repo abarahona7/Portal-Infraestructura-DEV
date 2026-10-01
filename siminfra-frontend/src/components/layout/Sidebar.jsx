@@ -60,14 +60,14 @@ const navigationGroups = [
     },
     children: [
       {
-        id: 'pcs-genericos',
-        icon: Monitor,
-        label: 'PCs Genéricos',
-      },
-      {
         id: 'activos-resumen',
         icon: BarChart3,
         label: 'Tablero de Activos',
+      },
+      {
+        id: 'pcs-genericos',
+        icon: Monitor,
+        label: 'PCs Genéricos',
       },
       {
         id: 'equipos-notebook',
@@ -160,6 +160,15 @@ export default function Sidebar({
         [groupId]: !current[groupId],
       };
 
+      saveGroups(next);
+      return next;
+    });
+  };
+
+  const showGroup = (groupId) => {
+    setOpenGroups((current) => {
+      if (current[groupId]) return current;
+      const next = { ...current, [groupId]: true };
       saveGroups(next);
       return next;
     });
@@ -304,7 +313,7 @@ export default function Sidebar({
                           ? 'sidebar-module-active'
                           : ''
                       }`}
-                      onClick={() => onSelectTab(group.parent.id)}
+                      onClick={() => { if (group.id === 'equipos-group') showGroup(group.id); onSelectTab(group.parent.id); }}
                       title={collapsed ? group.parent.label : undefined}
                     >
                       <span className="sidebar-module-icon">

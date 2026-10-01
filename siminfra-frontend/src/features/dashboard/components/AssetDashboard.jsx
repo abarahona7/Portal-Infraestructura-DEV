@@ -7,9 +7,12 @@ import './AssetDashboard.css';
 const unassignedStates = [['', 'Todos'], ['STOCK', 'Disponible'], ['MANTENCION', 'En reparación'], ['BAJA', 'Baja'], ['ASIGNADO', 'Asignado'], ['PRESTAMO', 'En préstamo']];
 
 const cards = [
-  ['total', 'Total de activos'],
+  ['total', 'Total de equipos'],
   ['disponibles', 'Disponibles'],
   ['asignados', 'Asignados'],
+  ['en_prestamo', 'En préstamo'],
+  ['en_reparacion', 'En reparación'],
+  ['dados_de_baja', 'De baja'],
 ];
 
 export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
@@ -142,7 +145,6 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
         {cards.map(([key, label]) => <div className="itam-dashboard-card" key={key}><span>{label}</span><strong>{data.conteos[key].toLocaleString('es-CL')}</strong></div>)}
       </div>
       <div className="itam-dashboard-context">
-        <span>En reparación: <strong>{data.conteos.en_reparacion.toLocaleString('es-CL')}</strong> · En préstamo: <strong>{data.conteos.en_prestamo.toLocaleString('es-CL')}</strong> · De baja: <strong>{data.conteos.dados_de_baja.toLocaleString('es-CL')}</strong></span>
         <span>Actualizado: {new Date(data.actualizado_en).toLocaleString('es-CL')}</span>
       </div>
       </div>

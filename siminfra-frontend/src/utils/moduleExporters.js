@@ -33,7 +33,7 @@ export const exportUsuariosExcel = ({
       },
       {
         key: 'subarea',
-        header: 'Subárea',
+        header: 'Área',
         value: (usuario) =>
           usuario.subarea_nombre || 'N/I',
       },
@@ -562,7 +562,7 @@ export const exportPerfilesExcel = ({
       },
       {
         key: 'subarea',
-        header: 'Subárea',
+        header: 'Área',
         value: (perfil) =>
           perfil.subarea_nombre || 'N/I',
       },
@@ -704,7 +704,7 @@ export const exportPCsGenericosExcel = ({
       },
       {
         key: 'subarea',
-        header: 'Subárea',
+        header: 'Área',
         value: (pc) =>
           pc.subarea_nombre || 'N/I',
       },

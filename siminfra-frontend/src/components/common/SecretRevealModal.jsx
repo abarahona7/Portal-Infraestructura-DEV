@@ -33,17 +33,6 @@ export default function SecretRevealModal({ request, username, onClose }) {
   }, []);
 
   useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        closeModal();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [closeModal]);
-
-  useEffect(() => {
     if (!secret) {
       return undefined;
     }
@@ -98,12 +87,10 @@ export default function SecretRevealModal({ request, username, onClose }) {
   return (
     <div
       className="secret-reveal-overlay"
-      onMouseDown={closeModal}
       role="presentation"
     >
       <div
         className="secret-reveal-modal"
-        onMouseDown={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="secret-reveal-title"

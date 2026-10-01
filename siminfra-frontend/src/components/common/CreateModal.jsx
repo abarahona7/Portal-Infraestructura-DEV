@@ -15,16 +15,6 @@ export default function CreateModal({
     <div
       className="create-modal-overlay"
       role="presentation"
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') {
-          onClose?.();
-        }
-      }}
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
     >
       <section
         className="create-modal"

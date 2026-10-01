@@ -118,9 +118,9 @@ export default function UsuarioCreateForm({
       </div>
 
       <div>
-        <label style={labelStyle}>Subárea</label>
+        <label style={labelStyle}>Área</label>
         <select
-          aria-label="Subárea"
+          aria-label="Área"
           value={usuario.subarea ?? ''}
           onChange={(e) =>
             updateField('subarea', e.target.value ? Number(e.target.value) : null)
@@ -133,7 +133,7 @@ export default function UsuarioCreateForm({
         >
           <option value="">
             {selectedDepartmentId
-              ? 'Selecciona una Subárea...'
+              ? 'Selecciona un Área...'
               : 'Selecciona primero un Departamento'}
           </option>
           {availableSubareas.map((subarea) => (

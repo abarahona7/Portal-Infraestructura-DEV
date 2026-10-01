@@ -194,11 +194,6 @@ export default function UsuarioDetailModal({
     <div
       className="user-detail-overlay"
       role="presentation"
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') {
-          onClose?.();
-        }
-      }}
     >
       <section
         className="user-detail-modal"

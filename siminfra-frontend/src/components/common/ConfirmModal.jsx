@@ -23,11 +23,6 @@ export default function ConfirmModal({
     <div
       className="confirm-overlay"
       role="presentation"
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') {
-          onCancel?.();
-        }
-      }}
     >
       <section
         className="confirm-modal"

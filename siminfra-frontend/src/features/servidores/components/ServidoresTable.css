@@ -14,7 +14,8 @@
 
   background-color: #ffffff;
 
-  font-size: 0.85rem;
+  font-family: inherit;
+  font-size: 0.9rem;
 }
 
 .servidores-table th {
@@ -28,7 +29,7 @@
 
   border-bottom: 1px solid #e2e8f0;
 
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   font-weight: 800;
 
   text-transform: uppercase;
@@ -41,6 +42,8 @@
   padding: 0.85rem 0.9rem;
 
   color: #334155;
+
+  font-size: 0.83rem;
 
   border-bottom: 1px solid #f1f5f9;
 
@@ -64,9 +67,10 @@
 .servidor-ip {
   color: #2563eb !important;
 
-  font-family: monospace;
+  font-family: inherit;
 
-  font-size: 0.85rem;
+  font-size: inherit;
+  font-variant-numeric: tabular-nums;
 
   font-weight: 700;
 
@@ -375,7 +379,8 @@
 .servidor-mobile-monospace {
   color: #2563eb;
 
-  font-family: monospace;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
 
   font-weight: 700;
 }

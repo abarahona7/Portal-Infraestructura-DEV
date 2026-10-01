@@ -13,16 +13,6 @@ export default function EditModal({
     <div
       className="edit-modal-overlay"
       role="presentation"
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') {
-          onClose?.();
-        }
-      }}
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose?.();
-        }
-      }}
     >
       <section
         className="edit-modal"

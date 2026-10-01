@@ -53,8 +53,8 @@ export default function PerfilDepartmentCards({
     <section className="perfil-department-section">
       <div className="perfil-department-heading">
         <div>
-          <h2>Perfiles por Departamento / Subárea</h2>
-          <p>Selecciona un Departamento y, si corresponde, una Subárea.</p>
+          <h2>Perfiles por Departamento / Área</h2>
+          <p>Selecciona un Departamento y, si corresponde, un Área.</p>
         </div>
 
         {selectedFilter && (
@@ -90,7 +90,7 @@ export default function PerfilDepartmentCards({
 
       {selectedDepartment && subareas.length > 0 && (
         <div className="perfil-subarea-block">
-          <span className="perfil-subarea-label">Subáreas de {selectedDepartment.nombre}</span>
+          <span className="perfil-subarea-label">Áreas de {selectedDepartment.nombre}</span>
 
           <div className="perfil-subarea-grid">
             {subareas.map((subarea) => {

@@ -145,9 +145,9 @@ export default function PerfilCreateForm({
       </div>
 
       <div>
-        <label style={labelStyle}>Subárea</label>
+        <label style={labelStyle}>Área</label>
         <select
-          aria-label="Subárea"
+          aria-label="Área"
           value={perfil.subarea ?? ''}
           onChange={(e) =>
             updateField('subarea', e.target.value ? Number(e.target.value) : null)
@@ -160,7 +160,7 @@ export default function PerfilCreateForm({
         >
           <option value="">
             {selectedDepartmentId
-              ? 'Selecciona una Subárea...'
+              ? 'Selecciona un Área...'
               : 'Selecciona primero un Departamento'}
           </option>
           {availableSubareas.map((subarea) => (

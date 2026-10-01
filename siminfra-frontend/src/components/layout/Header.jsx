@@ -46,10 +46,10 @@ export default function Header({
         return 'Anexos';
 
       case 'departamentos':
-        return 'Departamentos / Subáreas';
+        return 'Departamentos / Áreas';
 
       default:
-        return 'Portal Infraestructura TI Chile';
+        return 'Portal de Infraestructura TI Chile';
     }
   };
 
@@ -69,7 +69,7 @@ export default function Header({
 
         <div className="main-header-titles">
           <h1>
-            Portal Infraestructura TI Chile
+            Portal de Infraestructura TI Chile
           </h1>
 
           <div className="main-header-module">

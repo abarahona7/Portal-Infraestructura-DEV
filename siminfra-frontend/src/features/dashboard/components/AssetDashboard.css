@@ -53,3 +53,25 @@
 .itam-dashboard-warranty-controls { display: flex; gap: .5rem; margin: .5rem 0 .85rem; }
 .itam-dashboard-warranty-controls button { border: 1px solid #bfdbfe; border-radius: 6px; padding: .45rem .7rem; background: #fff; color: #1d4ed8; cursor: pointer; }
 .itam-dashboard-warranty-controls button[aria-pressed="true"] { background: #dbeafe; border-color: #60a5fa; font-weight: 700; }
+
+/* Una sección a la vez evita saturar el tablero con controles de toda la gestión. */
+.itam-dashboard-navigation { display: flex; flex-wrap: wrap; gap: .35rem; border-bottom: 1px solid #e2e8f0; }
+.itam-dashboard-navigation button { border: 0; border-bottom: 2px solid transparent; background: transparent; color: #475569; padding: .65rem .85rem; font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; }
+.itam-dashboard-navigation button:hover { color: #1d4ed8; background: #f8fafc; }
+.itam-dashboard-navigation button[aria-current="page"] { color: #1d4ed8; border-bottom-color: #2563eb; }
+.itam-dashboard-navigation button:focus-visible, .itam-dashboard-actions button:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.itam-dashboard-view { display: grid; gap: 1rem; min-width: 0; }
+.itam-dashboard-view[hidden] { display: none; }
+.itam-dashboard-actions { flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+.itam-dashboard-actions button { border-color: transparent; background: transparent; font: inherit; font-size: .82rem; font-weight: 600; white-space: nowrap; }
+.itam-dashboard-actions button:hover { background: #eff6ff; }
+.itam-dashboard-review-action button { background: #f8fafc; border-color: transparent; }
+.itam-dashboard-review-action button:hover { background: #eff6ff; }
+@media (max-width: 560px) {
+  .itam-dashboard-navigation { flex-wrap: nowrap; overflow-x: auto; }
+  .itam-dashboard-navigation button { flex: 0 0 auto; }
+  .itam-dashboard-recent article > div:first-child { flex-basis: 100%; }
+  .itam-dashboard-actions { width: 100%; justify-content: flex-start; margin-left: 0; }
+  .itam-dashboard-review > div { flex-wrap: wrap; }
+  .itam-dashboard-review-action { justify-content: space-between; width: 100%; }
+}

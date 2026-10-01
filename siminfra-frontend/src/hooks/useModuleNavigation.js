@@ -19,7 +19,7 @@ const VALID_TABS = new Set([
 const readSavedTab = () => {
   try {
     const saved = sessionStorage.getItem(ACTIVE_TAB_KEY);
-    if (saved === 'equipos') return 'activos-resumen';
+    if (saved === 'equipos') return 'pcs-genericos';
     return VALID_TABS.has(saved) ? saved : 'usuarios';
   } catch {
     return 'usuarios';
@@ -71,7 +71,7 @@ export const useModuleNavigation = (resetFilters, role) => {
 
   const selectTab = (selectedTab) => {
     const nextTab = selectedTab === 'equipos'
-      ? 'activos-resumen'
+      ? 'pcs-genericos'
       : selectedTab;
 
     if (!VALID_TABS.has(nextTab)) {

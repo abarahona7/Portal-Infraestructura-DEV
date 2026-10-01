@@ -202,7 +202,7 @@ export default function UsuariosTable({
                 value={usuario.departamento_nombre || usuario.dpto_area || 'N/I'}
               />
               <MobileField
-                label="Subárea"
+                label="Área"
                 value={usuario.subarea_nombre || 'N/I'}
               />
               <MobileField

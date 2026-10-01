@@ -16,6 +16,14 @@ const warrantyDueLabel = (item) => {
   return `Vencimiento: ${item.fecha_vencimiento_garantia} · ${remaining}`;
 };
 
+const dashboardViews = [
+  ['resumen', 'Resumen'],
+  ['revision', 'Revisión'],
+  ['garantias', 'Garantías'],
+  ['actas', 'Actas'],
+  ['reportes', 'Reportes'],
+];
+
 const cards = [
   ['total', 'Total de activos'],
   ['disponibles', 'Disponibles'],
@@ -41,6 +49,7 @@ function Distribution({ title, items, empty }) {
 }
 
 export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
+  const [activeView, setActiveView] = useState('resumen');
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -241,12 +250,16 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
 
   return <><div className="itam-dashboard">
     <div className="itam-dashboard-heading">
-      <div><span className="itam-dashboard-eyebrow">Inventario TI</span><h2>Resumen de activos</h2><p>Estado actual del maestro de equipos y movimientos registrados en el nuevo módulo.</p></div>
+      <div><span className="itam-dashboard-eyebrow">Inventario TI</span><h2>Tablero de activos</h2><p>Consulta el inventario, sus pendientes y las actas desde cada sección.</p></div>
       <button type="button" className="itam-dashboard-refresh" disabled={loading} onClick={refreshDashboard}><RefreshCw size={17} />Actualizar</button>
     </div>
+    <nav className="itam-dashboard-navigation" aria-label="Secciones del tablero">
+      {dashboardViews.map(([view, label]) => <button key={view} type="button" aria-current={activeView === view ? 'page' : undefined} onClick={() => setActiveView(view)}>{label}</button>)}
+    </nav>
     {loading && !data && <p role="status">Cargando indicadores...</p>}
     {error && <p className="itam-dashboard-error" role="alert">{error}</p>}
     {data && <>
+      <div className="itam-dashboard-view" hidden={activeView !== 'resumen'}>
       <div className="itam-dashboard-cards">
         {cards.map(([key, label]) => <div className="itam-dashboard-card" key={key}><span>{label}</span><strong>{data.conteos[key].toLocaleString('es-CL')}</strong></div>)}
       </div>
@@ -254,6 +267,8 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
         <span><strong>{data.movimientos_30_dias.toLocaleString('es-CL')}</strong> movimientos en los últimos 30 días</span>
         <span>Actualizado: {new Date(data.actualizado_en).toLocaleString('es-CL')}</span>
       </div>
+      </div>
+      <div className="itam-dashboard-view" hidden={activeView !== 'revision'}>
       <section className="itam-dashboard-panel itam-dashboard-review">
         <h3>Datos que requieren revisión</h3>
         <div><span>Sin número de serie</span><span className="itam-dashboard-review-action"><strong>{data.conteos.sin_serie.toLocaleString('es-CL')}</strong><button type="button" aria-pressed={identifierField === 'serie'} onClick={() => selectIdentifier('serie')}>Revisar equipos</button></span></div>
@@ -313,6 +328,8 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
           </div>}
         </>}
       </section>}
+      </div>
+      <div className="itam-dashboard-view" hidden={activeView !== 'garantias'}>
       <section className="itam-dashboard-panel">
         <h3>Garantías de activos vigentes</h3>
         <p className="itam-dashboard-empty">Próximas: vence entre hoy y los siguientes {data.ventana_garantia_dias} días. Los equipos dados de baja se excluyen.</p>
@@ -347,6 +364,8 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
           <button type="button" disabled={warrantyLoading || warrantyPage >= warrantyData.total_pages} onClick={() => { setWarrantyData(null); setWarrantyLoading(true); setWarrantyPage(warrantyPage + 1); }}>Siguiente</button>
         </div>}
       </section>
+      </div>
+      <div className="itam-dashboard-view" hidden={activeView !== 'revision'}>
       <section className="itam-dashboard-panel">
         <h3>Equipos con custodio no activo ({data.conteos.con_custodio_inactivo.toLocaleString('es-CL')})</h3>
         {!data.conteos.con_custodio_inactivo && <p className="itam-dashboard-empty">No hay equipos en esta condición.</p>}
@@ -397,6 +416,8 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
           <button type="button" disabled={pendingLoading || pendingPage >= pendingData.total_pages} onClick={() => changePendingPage(pendingPage + 1)}>Siguiente</button>
         </div>}
       </section>
+      </div>
+      <div className="itam-dashboard-view" hidden={activeView !== 'actas'}>
       <section className="itam-dashboard-panel">
         <h3>Actas por firmar ({data.actas_pendientes_firma.toLocaleString('es-CL')})</h3>
         {!data.actas_pendientes_firma && <p className="itam-dashboard-empty">No hay actas pendientes de firma.</p>}
@@ -442,11 +463,15 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
         </article></div>}
       </section>
       <ActaArchivoPanel role={role} onUpdated={refreshDashboard} />
+      </div>
+      <div className="itam-dashboard-view" hidden={activeView !== 'resumen'}>
       <div className="itam-dashboard-distributions">
         <Distribution title="Por tipo" items={data.por_tipo} empty="Todavía no hay activos." />
         <Distribution title="Por ubicación" items={data.por_ubicacion} empty="Todavía no hay ubicaciones." />
         <Distribution title="Por área asignada" items={data.por_area} empty="Todavía no hay activos asignados." />
       </div>
+      </div>
+      <div className="itam-dashboard-view" hidden={activeView !== 'reportes'}>
       <section className="itam-dashboard-panel">
         <h3>Reporte de movimientos</h3>
         <p className="itam-dashboard-empty">Descarga el historial ITAM en CSV. Si dejas los filtros vacíos, se incluyen todos los movimientos.</p>
@@ -469,6 +494,8 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
         </form>
         {reportError && <p className="itam-dashboard-error" role="alert">{reportError}</p>}
       </section>
+      </div>
+      <div className="itam-dashboard-view" hidden={activeView !== 'resumen'}>
       <section className="itam-dashboard-panel">
         <h3>Últimos movimientos</h3>
         {!data.ultimos_movimientos.length && <p className="itam-dashboard-empty">Aún no hay movimientos en la nueva trazabilidad.</p>}
@@ -483,6 +510,7 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
           </article>)}
         </div>
       </section>
+      </div>
     </>}
   </div>{gestionActa && <ActaGestionModal initialActa={gestionActa} role={role} onClose={() => setGestionActa(null)} onUpdated={() => { refreshDashboard(); if (folioSearched) lookupActa(folioInput); }} />}</>;
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   CalendarClock,
   ChevronDown,
@@ -45,21 +45,6 @@ export default function AuditHistoryModal({
     onClose?.();
   }, [onClose]);
 
-  useEffect(() => {
-    if (!open) {
-      return undefined;
-    }
-
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        closeModal();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, closeModal]);
-
   if (!open) {
     return null;
   }
@@ -68,11 +53,6 @@ export default function AuditHistoryModal({
     <div
       className="audit-history-backdrop"
       role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          closeModal();
-        }
-      }}
     >
       <section
         className="audit-history-modal"

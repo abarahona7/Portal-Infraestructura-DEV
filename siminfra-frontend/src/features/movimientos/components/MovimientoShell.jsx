@@ -12,7 +12,6 @@ export default function MovimientoShell({ title, onClose, busy = false, children
   }, []);
 
   const handleKeyDown = (event) => {
-    if (event.key === 'Escape' && !busy) onClose();
     if (event.key !== 'Tab') return;
     const elements = dialog.current.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]');
     if (!elements.length) { event.preventDefault(); return; }

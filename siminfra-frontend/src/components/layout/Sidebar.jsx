@@ -47,7 +47,7 @@ const navigationGroups = [
       {
         id: 'departamentos',
         icon: Building2,
-        label: 'Departamentos / Subáreas',
+        label: 'Departamentos / Áreas',
       },
     ],
   },
@@ -241,7 +241,7 @@ export default function Sidebar({
             <div className="sidebar-logo">
               <img
                 src="/branding/dr-simi-logo.png"
-                alt="Farmacias Dr. Simi"
+                alt="FARMACIAS DEL DR. SIMI"
               />
             </div>
 
@@ -360,13 +360,13 @@ export default function Sidebar({
           {collapsed ? (
             <span
               className="sidebar-footer-mini"
-              title="Farmacias Dr. Simi"
+              title="FARMACIAS DEL DR. SIMI"
             >
               TI
             </span>
           ) : (
             <>
-              <strong>Farmacias Dr. Simi</strong>
+              <strong>FARMACIAS DEL DR. SIMI</strong>
               <span>Infraestructura TI</span>
             </>
           )}

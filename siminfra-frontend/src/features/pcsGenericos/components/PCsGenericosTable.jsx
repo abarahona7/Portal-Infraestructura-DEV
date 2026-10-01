@@ -109,7 +109,7 @@ export default function PCsGenericosTable({
               <th>Contraseña</th>
               <th>Hostname</th>
               <th>Dirección IP</th>
-              <th>Departamento / Subárea</th>
+              <th>Departamento / Área</th>
               <th>Marca</th>
               <th>Modelo</th>
               <th>N.º de Serie</th>
@@ -222,7 +222,7 @@ export default function PCsGenericosTable({
               />
 
               <MobileField
-                label="Departamento / Subárea"
+                label="Departamento / Área"
                 value={getOrganizationalUnit(pc)}
                 full
               />

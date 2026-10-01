@@ -139,7 +139,7 @@ export default function PerfilesTable({
               <th className="perfil-col-password">Contraseña</th>
               <th className="perfil-col-tipo">Tipo Cuenta</th>
               <th className="perfil-col-correo">Correo Asignado</th>
-              <th className="perfil-col-area">Departamento / Subárea</th>
+              <th className="perfil-col-area">Departamento / Área</th>
               <th className="perfil-col-estado">Estado</th>
               <th className="perfil-col-observaciones">Observaciones</th>
               <th className="perfiles-actions-header">Acciones</th>
@@ -175,7 +175,7 @@ export default function PerfilesTable({
                 <td className="perfil-col-area">
                   <div className="perfil-area-stack">
                     <strong>{perfil.departamento_nombre || 'Sin Departamento'}</strong>
-                    <span>{perfil.subarea_nombre || 'Sin Subárea'}</span>
+                    <span>{perfil.subarea_nombre || 'Sin Área'}</span>
                   </div>
                 </td>
 
@@ -235,8 +235,8 @@ export default function PerfilesTable({
                 value={perfil.departamento_nombre || 'Sin Departamento'}
               />
               <MobileField
-                label="Subárea"
-                value={perfil.subarea_nombre || 'Sin Subárea'}
+                label="Área"
+                value={perfil.subarea_nombre || 'Sin Área'}
               />
               <MobileField
                 label="Estado"

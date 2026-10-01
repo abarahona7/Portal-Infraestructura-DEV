@@ -5,7 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
@@ -395,7 +395,7 @@ def _build_styles():
         fontName="Helvetica",
         fontSize=10.4,
         leading=15.2,
-        alignment=TA_LEFT,
+        alignment=TA_JUSTIFY,
         textColor=TEXT_COLOR,
     )
 
@@ -421,7 +421,7 @@ def _build_styles():
         fontName="Helvetica",
         fontSize=8.2,
         leading=10.1,
-        alignment=TA_LEFT,
+        alignment=TA_CENTER,
         textColor=colors.black,
     )
 
@@ -581,12 +581,12 @@ def _build_equipment_table(
     table = Table(
         data,
         colWidths=[
-            1.25 * cm,
-            4.2 * cm,
-            2.6 * cm,
-            3.2 * cm,
-            3.2 * cm,
-            2.1 * cm,
+            1.35 * cm,
+            4.6 * cm,
+            3.1 * cm,
+            3.3 * cm,
+            3.3 * cm,
+            2.65 * cm,
         ],
         repeatRows=1,
         hAlign="CENTER",

@@ -88,18 +88,18 @@ export default function PCGenericoDepartmentFields({
 
       <div>
         <label style={labelStyle}>
-          Subárea
+          Área
         </label>
 
         <select
-          aria-label="Subárea"
+          aria-label="Área"
           value={pc.subarea ?? ''}
           disabled={!selectedDepartmentId}
           onChange={(event) => updateSubarea(event.target.value)}
           style={inputStyle}
         >
           <option value="">
-            {selectedDepartmentId ? 'Sin subárea' : 'Selecciona un departamento primero'}
+            {selectedDepartmentId ? 'Sin área' : 'Selecciona un departamento primero'}
           </option>
           {visibleSubareas.map((subarea) => (
             <option key={subarea.id} value={subarea.id}>

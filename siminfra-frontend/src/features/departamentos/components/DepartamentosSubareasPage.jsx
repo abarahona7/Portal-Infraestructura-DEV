@@ -187,7 +187,7 @@ export default function DepartamentosSubareasPage({
 
       if (duplicated) {
         showToast?.(
-          `Ya existe la subárea "${nombre}" dentro de ${department?.nombre || 'este departamento'}.`,
+          `Ya existe el área "${nombre}" dentro de ${department?.nombre || 'este departamento'}.`,
           'error'
         );
         return null;
@@ -223,12 +223,12 @@ export default function DepartamentosSubareasPage({
           nombre,
           activo: true,
         });
-        showToast?.('Subárea creada correctamente.', 'success');
+        showToast?.('Área creada correctamente.', 'success');
       }
 
       if (modal.type === 'subarea-edit') {
         await updateSubarea(modal.item.id, { nombre });
-        showToast?.('Subárea actualizada correctamente.', 'success');
+        showToast?.('Área actualizada correctamente.', 'success');
       }
 
       setModal(null);
@@ -270,7 +270,7 @@ export default function DepartamentosSubareasPage({
   const toggleSubarea = async (subarea) => {
     const nextActive = !subarea.activo;
     const confirmed = await requestConfirmation?.({
-      title: nextActive ? 'Activar subárea' : 'Desactivar subárea',
+      title: nextActive ? 'Activar área' : 'Desactivar área',
       message: nextActive
         ? `¿Deseas volver a activar "${subarea.nombre}"?`
         : `¿Deseas desactivar "${subarea.nombre}"? Los usuarios existentes conservarán su relación.`,
@@ -284,8 +284,8 @@ export default function DepartamentosSubareasPage({
       await updateSubarea(subarea.id, { activo: nextActive });
       showToast?.(
         nextActive
-          ? 'Subárea activada correctamente.'
-          : 'Subárea desactivada correctamente.',
+          ? 'Área activada correctamente.'
+          : 'Área desactivada correctamente.',
         'success'
       );
       await onRefresh?.();
@@ -296,7 +296,7 @@ export default function DepartamentosSubareasPage({
 
   const removeSubarea = async (subarea) => {
     const confirmed = await requestConfirmation?.({
-      title: 'Eliminar subárea',
+      title: 'Eliminar área',
       message: `¿Deseas eliminar definitivamente "${subarea.nombre}"? Esta acción solo se permite si no tiene usuarios asociados.`,
       confirmText: 'Eliminar',
       danger: true,
@@ -306,7 +306,7 @@ export default function DepartamentosSubareasPage({
 
     try {
       await deleteSubarea(subarea.id);
-      showToast?.('Subárea eliminada correctamente.', 'success');
+      showToast?.('Área eliminada correctamente.', 'success');
       await onRefresh?.();
     } catch (error) {
       showToast?.(getApiErrorMessage(error), 'error');
@@ -316,7 +316,7 @@ export default function DepartamentosSubareasPage({
   const removeDepartment = async (department) => {
     const confirmed = await requestConfirmation?.({
       title: 'Eliminar departamento',
-      message: `¿Deseas eliminar definitivamente "${department.nombre}"? Solo se puede eliminar si no tiene usuarios ni subáreas asociadas.`,
+      message: `¿Deseas eliminar definitivamente "${department.nombre}"? Solo se puede eliminar si no tiene usuarios ni áreas asociadas.`,
       confirmText: 'Eliminar',
       danger: true,
     });
@@ -340,9 +340,9 @@ export default function DepartamentosSubareasPage({
       case 'department-edit':
         return 'Editar Departamento';
       case 'subarea-create':
-        return `Nueva Subárea · ${modal.department?.nombre || ''}`;
+        return `Nueva Área · ${modal.department?.nombre || ''}`;
       case 'subarea-edit':
-        return 'Editar Subárea';
+        return 'Editar Área';
       default:
         return '';
     }
@@ -351,7 +351,7 @@ export default function DepartamentosSubareasPage({
   const formContent = modal && (
     <div className="department-modal-field">
       <label htmlFor="department-name">
-        {modal.type.startsWith('department') ? 'Nombre del Departamento' : 'Nombre de la Subárea'}
+        {modal.type.startsWith('department') ? 'Nombre del Departamento' : 'Nombre del Área'}
       </label>
       <input
         id="department-name"
@@ -376,7 +376,7 @@ export default function DepartamentosSubareasPage({
       <div className="departments-summary">
         <div className="departments-summary-copy">
           <span className="departments-eyebrow">Catálogo organizacional</span>
-          <h2>Departamentos y Subáreas</h2>
+          <h2>Departamentos y Áreas</h2>
           <p>
             Administra la estructura que posteriormente se utilizará en las fichas de usuarios.
           </p>
@@ -389,7 +389,7 @@ export default function DepartamentosSubareasPage({
           </div>
           <div>
             <strong>{activeSubareaCount}</strong>
-            <span>Subáreas activas</span>
+            <span>Áreas activas</span>
           </div>
         </div>
       </div>
@@ -410,7 +410,7 @@ export default function DepartamentosSubareasPage({
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Buscar departamento o subárea..."
+            placeholder="Buscar departamento o área..."
           />
         </label>
       </div>
@@ -441,7 +441,7 @@ export default function DepartamentosSubareasPage({
 
       {!filteredDepartments.length && (
         <div className="departments-empty">
-          No se encontraron departamentos o subáreas con esa búsqueda.
+          No se encontraron departamentos o áreas con esa búsqueda.
         </div>
       )}
 
@@ -458,7 +458,7 @@ export default function DepartamentosSubareasPage({
                 <p>
                   {selectedDepartment.activo ? 'Activo' : 'Inactivo'} ·{' '}
                   {(selectedDepartment.subareas || []).length}{' '}
-                  {(selectedDepartment.subareas || []).length === 1 ? 'subárea' : 'subáreas'}
+                  {(selectedDepartment.subareas || []).length === 1 ? 'área' : 'áreas'}
                 </p>
               </div>
             </div>
@@ -499,7 +499,7 @@ export default function DepartamentosSubareasPage({
           <div className="subareas-section">
             <div className="subareas-heading">
               <div>
-                <span className="departments-eyebrow">Subáreas</span>
+                <span className="departments-eyebrow">Áreas</span>
                 <h4>Estructura interna</h4>
               </div>
 
@@ -510,12 +510,12 @@ export default function DepartamentosSubareasPage({
                 disabled={!selectedDepartment.activo}
                 title={
                   selectedDepartment.activo
-                    ? 'Agregar subárea'
-                    : 'Activa el departamento antes de agregar subáreas'
+                    ? 'Agregar área'
+                    : 'Activa el departamento antes de agregar áreas'
                 }
               >
                 <Plus size={16} />
-                Agregar Subárea
+                Agregar Área
               </button>
             </div>
 
@@ -541,7 +541,7 @@ export default function DepartamentosSubareasPage({
                       <button
                         type="button"
                         onClick={() => openSubareaEdit(subarea)}
-                        title="Editar subárea"
+                        title="Editar área"
                         aria-label={`Editar ${subarea.nombre}`}
                       >
                         <Pencil size={14} />
@@ -549,7 +549,7 @@ export default function DepartamentosSubareasPage({
                       <button
                         type="button"
                         onClick={() => toggleSubarea(subarea)}
-                        title={subarea.activo ? 'Desactivar subárea' : 'Activar subárea'}
+                        title={subarea.activo ? 'Desactivar área' : 'Activar área'}
                         aria-label={
                           subarea.activo
                             ? `Desactivar ${subarea.nombre}`
@@ -563,7 +563,7 @@ export default function DepartamentosSubareasPage({
                           type="button"
                           className="is-delete"
                           onClick={() => removeSubarea(subarea)}
-                          title="Eliminar subárea definitivamente"
+                          title="Eliminar área definitivamente"
                           aria-label={`Eliminar ${subarea.nombre}`}
                         >
                           <Trash2 size={14} />
@@ -575,7 +575,7 @@ export default function DepartamentosSubareasPage({
               </div>
             ) : (
               <div className="subareas-empty">
-                Este departamento todavía no tiene subáreas registradas.
+                Este departamento todavía no tiene áreas registradas.
               </div>
             )}
           </div>

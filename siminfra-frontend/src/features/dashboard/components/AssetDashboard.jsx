@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronDown, Download, RefreshCw } from 'lucide-react';
 import apiClient from '../../../api/client';
-import { downloadActa, downloadActaFirmada, downloadReporteMovimientos, movimientoError } from '../../../api/movimientosApi';
-import ActaGestionModal from '../../movimientos/components/ActaGestionModal';
+import { downloadActa, downloadReporteMovimientos, movimientoError } from '../../../api/movimientosApi';
 import ActaArchivoPanel from './ActaArchivoPanel';
 import './AssetDashboard.css';
 
@@ -58,19 +57,12 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role, mode 
   const [pendingData, setPendingData] = useState(null);
   const [pendingLoading, setPendingLoading] = useState(false);
   const [pendingError, setPendingError] = useState('');
-  const [showAllActas, setShowAllActas] = useState(false);
-  const [actaPage, setActaPage] = useState(1);
-  const [actaData, setActaData] = useState(null);
-  const [actaLoading, setActaLoading] = useState(false);
-  const [actaError, setActaError] = useState('');
-  const [gestionActa, setGestionActa] = useState(null);
   const [showAllCustody, setShowAllCustody] = useState(false);
   const [custodyPage, setCustodyPage] = useState(1);
   const [custodyData, setCustodyData] = useState(null);
   const [custodyLoading, setCustodyLoading] = useState(false);
   const [custodyError, setCustodyError] = useState('');
   const [showWarranty, setShowWarranty] = useState(false);
-  const [showActas, setShowActas] = useState(false);
   const [warrantyStatus, setWarrantyStatus] = useState('proximas');
   const [showAllWarranty, setShowAllWarranty] = useState(false);
   const [warrantyPage, setWarrantyPage] = useState(1);
@@ -82,12 +74,6 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role, mode 
   const [reportType, setReportType] = useState('');
   const [reportBusy, setReportBusy] = useState(false);
   const [reportError, setReportError] = useState('');
-  const [folioInput, setFolioInput] = useState('');
-  const [folioResult, setFolioResult] = useState(null);
-  const [folioSearched, setFolioSearched] = useState(false);
-  const [folioBusy, setFolioBusy] = useState(false);
-  const [folioError, setFolioError] = useState('');
-
   const identifierField = ['serie', 'activo_fijo'].includes(activeReview) ? activeReview : null;
   const showUnassigned = activeReview === 'sin_custodio';
   const showCustody = activeReview === 'custodio_inactivo';
@@ -133,16 +119,6 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role, mode 
   }, [showAllPending, showTechnical, pendingPage, reloadKey]);
 
   useEffect(() => {
-    if (!showAllActas) return undefined;
-    const controller = new AbortController();
-    apiClient.get('/actas/pendientes/', {
-      params: { page: actaPage, page_size: 20 }, signal: controller.signal,
-    }).then(({ data: response }) => { setActaData(response); setActaError(''); setActaLoading(false); })
-      .catch((err) => { if (err.code !== 'ERR_CANCELED') { setActaError(movimientoError(err)); setActaLoading(false); } });
-    return () => controller.abort();
-  }, [showAllActas, actaPage, reloadKey]);
-
-  useEffect(() => {
     if (!showAllCustody || !showCustody) return undefined;
     const controller = new AbortController();
     apiClient.get('/activos/custodios-no-activos/', {
@@ -183,35 +159,11 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role, mode 
     }
   };
 
-  const lookupActa = async (folioText) => {
-    const folio = folioText.trim().toUpperCase();
-    if (!/^ATI-[0-9]{4}-[0-9]{6}$/.test(folio)) {
-      setFolioResult(null);
-      setFolioSearched(false);
-      setFolioError('Indica un folio con formato ATI-AAAA-######.');
-      return;
-    }
-    setFolioBusy(true);
-    setFolioError('');
-    try {
-      const { data: response } = await apiClient.get('/actas/', { params: { folio, page_size: 1 } });
-      setFolioResult(response.results?.[0] || null);
-      setFolioSearched(true);
-    } catch (err) {
-      setFolioResult(null);
-      setFolioSearched(false);
-      setFolioError(movimientoError(err));
-    } finally {
-      setFolioBusy(false);
-    }
-  };
-
   const refreshDashboard = () => {
     setLoading(true);
     if (identifierField) { setIdentifierPage(1); setIdentifierData(null); setIdentifierLoading(true); }
     if (showUnassigned) { setUnassignedPage(1); setUnassignedData(null); setUnassignedLoading(true); }
     if (showAllPending) { setPendingPage(1); setPendingData(null); setPendingLoading(true); }
-    if (showAllActas) { setActaPage(1); setActaData(null); setActaLoading(true); }
     if (showAllCustody) { setCustodyPage(1); setCustodyData(null); setCustodyLoading(true); }
     if (showAllWarranty) { setWarrantyPage(1); setWarrantyData(null); setWarrantyLoading(true); }
     setReloadKey((value) => value + 1);
@@ -242,14 +194,12 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role, mode 
     setShowWarranty((current) => !current);
   };
 
-  const changeActaPage = (nextPage) => { setActaData(null); setActaLoading(true); setActaPage(nextPage); };
   const changeCustodyPage = (nextPage) => { setCustodyData(null); setCustodyLoading(true); setCustodyPage(nextPage); };
   const changePendingPage = (nextPage) => { setPendingData(null); setPendingLoading(true); setPendingPage(nextPage); };
   const warrantyCount = data?.conteos[`garantias_${warrantyStatus}`] || 0;
   const warrantyRows = showAllWarranty ? (warrantyData?.results || []) :
     (data?.[`garantias_${warrantyStatus}_recientes`] || []);
   const pendingRows = showAllPending ? (pendingData?.results || []) : (data?.pendientes_tecnicos || []);
-  const actaRows = showAllActas ? (actaData?.results || []) : (data?.actas_pendientes_recientes || []);
   const custodyRows = showAllCustody ? (custodyData?.results || []) : (data?.custodios_no_activos_recientes || []);
   const reviewItems = data ? [
     ['serie', 'Sin número de serie', data.conteos.sin_serie, () => selectIdentifier('serie')],
@@ -262,7 +212,7 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role, mode 
 
   return <><div className="itam-dashboard">
     <div className="itam-dashboard-heading">
-      <div><span className="itam-dashboard-eyebrow">Inventario TI</span><h2>{showConsultas ? 'Consultas de activos' : 'Tablero de activos'}</h2><p>{showConsultas ? 'Garantías, actas, movimientos e informes de los activos TI.' : 'Estado general y equipos que requieren revisión.'}</p></div>
+      <div><span className="itam-dashboard-eyebrow">Inventario TI</span><h2>{showConsultas ? 'Actas y garantías' : 'Tablero de activos'}</h2><p>{showConsultas ? 'Encuentra tus actas y revisa las garantías de los equipos.' : 'Estado general y equipos que requieren revisión.'}</p></div>
       <button type="button" className="itam-dashboard-refresh" disabled={loading} onClick={refreshDashboard}><RefreshCw size={17} />Actualizar</button>
     </div>
     {loading && !data && <p role="status">Cargando indicadores...</p>}
@@ -395,6 +345,7 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role, mode 
       </div>}
       </>}
       {showConsultas && <>
+      <div className="itam-dashboard-view"><ActaArchivoPanel role={role} onUpdated={refreshDashboard} /></div>
       <div className="itam-dashboard-view">
       <section className="itam-dashboard-panel">
         <div className="itam-dashboard-section-heading"><h3>Garantías</h3><button type="button" aria-expanded={showWarranty} onClick={toggleWarranty}>{showWarranty ? 'Ocultar equipos' : 'Ver equipos'}</button></div>
@@ -435,35 +386,6 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role, mode 
       </div>
       <div className="itam-dashboard-view">
       <section className="itam-dashboard-panel">
-        <div className="itam-dashboard-section-heading"><h3>Actas pendientes de firma ({data.actas_pendientes_firma.toLocaleString('es-CL')})</h3>{data.actas_pendientes_firma > 0 && <button type="button" aria-expanded={showActas} onClick={() => setShowActas((current) => !current)}>{showActas ? 'Ocultar actas' : 'Ver actas'}</button>}</div>
-        {!data.actas_pendientes_firma && <p className="itam-dashboard-empty">No hay actas pendientes de firma.</p>}
-        {showActas && data.actas_pendientes_firma > 0 && <>
-        {(data.actas_pendientes_firma > actaRows.length || showAllActas) && <div className="itam-dashboard-pending-heading">
-          <p className="itam-dashboard-empty">Incluye actas generadas y enviadas a firma.</p>
-          <button type="button" onClick={() => {
-            if (showAllActas) { setShowAllActas(false); setActaData(null); }
-            else { setActaPage(1); setActaLoading(true); setShowAllActas(true); }
-          }}>{showAllActas ? 'Mostrar recientes' : `Ver todas (${data.actas_pendientes_firma})`}</button>
-        </div>}
-        {showAllActas && actaLoading && <p role="status">Cargando actas pendientes...</p>}
-        {showAllActas && actaError && <p className="itam-dashboard-error" role="alert">{actaError}</p>}
-        <div className="itam-dashboard-recent">
-          {actaRows.map((acta) => <article key={acta.id}>
-            <div><strong>{acta.folio}</strong><span>{acta.tipo_movimiento.replaceAll('_', ' ')} · {acta.estado.replaceAll('_', ' ')}</span></div>
-            <time>{new Date(acta.fecha_emision).toLocaleString('es-CL')}</time>
-            <div className="itam-dashboard-actions"><button type="button" onClick={() => setGestionActa(acta)}>Gestionar acta</button></div>
-          </article>)}
-        </div>
-        {showAllActas && actaData && actaData.total_pages > 1 && <div className="itam-dashboard-pager">
-          <button type="button" disabled={actaLoading || actaPage <= 1} onClick={() => changeActaPage(actaPage - 1)}>Anterior</button>
-          <span>Página {actaData.page} de {actaData.total_pages}</span>
-          <button type="button" disabled={actaLoading || actaPage >= actaData.total_pages} onClick={() => changeActaPage(actaPage + 1)}>Siguiente</button>
-        </div>}
-        </>}
-      </section>
-      </div>
-      <div className="itam-dashboard-view">
-      <section className="itam-dashboard-panel">
         <h3>Últimos movimientos</h3>
         {!data.ultimos_movimientos.length && <p className="itam-dashboard-empty">Aún no hay movimientos en la nueva trazabilidad.</p>}
         <div className="itam-dashboard-recent">
@@ -479,30 +401,7 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role, mode 
       </section>
       </div>
       <div className="itam-dashboard-view">
-      <div className="itam-dashboard-extra-heading"><h3>Otras consultas</h3><p>Busca actas, revisa gráficos o descarga una planilla cuando lo necesites.</p></div>
-      <details className="itam-dashboard-extra">
-        <summary>Buscar actas anteriores o consultar el archivo</summary>
-      <section className="itam-dashboard-panel">
-        <h3>Buscar acta por folio</h3>
-        <p className="itam-dashboard-empty">Consulta un acta emitida, incluso si ya fue firmada, cerrada o anulada.</p>
-        <form className="itam-dashboard-report-form" onSubmit={(event) => { event.preventDefault(); lookupActa(folioInput); }}>
-          <label>Folio<input type="text" value={folioInput} maxLength={15} placeholder="ATI-2026-000001" disabled={folioBusy} onChange={(event) => { setFolioInput(event.target.value.toUpperCase()); setFolioResult(null); setFolioSearched(false); setFolioError(''); }} /></label>
-          <button type="submit" disabled={folioBusy}>{folioBusy ? 'Buscando...' : 'Buscar acta'}</button>
-        </form>
-        {folioError && <p className="itam-dashboard-error" role="alert">{folioError}</p>}
-        {folioSearched && !folioResult && <p className="itam-dashboard-empty" role="status">No se encontró un acta con ese folio.</p>}
-        {folioResult && <div className="itam-dashboard-recent"><article>
-          <div><strong>{folioResult.folio}</strong><span>{folioResult.tipo_movimiento.replaceAll('_', ' ')} · {folioResult.estado.replaceAll('_', ' ')}</span></div>
-          <time>{new Date(folioResult.fecha_emision).toLocaleString('es-CL')}</time>
-          <div className="itam-dashboard-actions">
-            <button type="button" onClick={() => downloadActa(folioResult).catch((err) => setFolioError(movimientoError(err)))}>Descargar original</button>
-            {folioResult.tiene_copia_firmada && <button type="button" onClick={() => downloadActaFirmada(folioResult).catch((err) => setFolioError(movimientoError(err)))}>Copia firmada</button>}
-            <button type="button" onClick={() => setGestionActa(folioResult)}>Gestionar acta</button>
-          </div>
-        </article></div>}
-      </section>
-      <ActaArchivoPanel role={role} onUpdated={refreshDashboard} />
-      </details>
+      <div className="itam-dashboard-extra-heading"><h3>Otras consultas</h3><p>Revisa gráficos o descarga una planilla de movimientos cuando lo necesites.</p></div>
       </div>
       <div className="itam-dashboard-view">
       <details className="itam-dashboard-extra">
@@ -543,5 +442,5 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role, mode 
       </div>
       </>}
     </>}
-  </div>{gestionActa && <ActaGestionModal initialActa={gestionActa} role={role} onClose={() => setGestionActa(null)} onUpdated={() => { refreshDashboard(); if (folioSearched) lookupActa(folioInput); }} />}</>;
+  </div></>;
 }

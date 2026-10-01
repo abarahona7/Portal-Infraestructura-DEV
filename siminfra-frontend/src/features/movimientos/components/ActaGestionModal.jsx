@@ -4,6 +4,7 @@ import MovimientoShell from './MovimientoShell';
 
 const nextState = { GENERADA: 'PENDIENTE_FIRMA', PENDIENTE_FIRMA: 'FIRMADA', FIRMADA: 'CERRADA' };
 const labels = { PENDIENTE_FIRMA: 'Enviar a firma', FIRMADA: 'Registrar copia firmada', CERRADA: 'Cerrar acta', ANULADA: 'Anular acta' };
+const stateLabels = { GENERADA: 'Generada', PENDIENTE_FIRMA: 'Pendiente de firma', FIRMADA: 'Firmada', CERRADA: 'Cerrada', ANULADA: 'Anulada' };
 
 export default function ActaGestionModal({ initialActa, role, onClose, onUpdated }) {
   const [acta, setActa] = useState(initialActa);
@@ -48,43 +49,49 @@ export default function ActaGestionModal({ initialActa, role, onClose, onUpdated
     finally { setChecking(false); }
   };
 
+  const nextAction = nextState[acta.estado];
+  const canAnular = role === 'Administrador' && acta.estado !== 'ANULADA';
+
   return <MovimientoShell title={`Acta ${acta.folio}`} onClose={onClose} busy={busy} footer={<button type="button" className="movimiento-button" onClick={onClose} disabled={busy}>Cerrar</button>}>
-    <p className="movimiento-note">Estado actual: <strong>{acta.estado.replaceAll('_', ' ')}</strong>. El PDF original permanece disponible y no se modifica al gestionar el acta.</p>
+    <p className="movimiento-note">Situación actual: <strong>{stateLabels[acta.estado] || acta.estado}</strong>. El acta se generó automáticamente al registrar el movimiento.</p>
     <div className="movimiento-add">
-      <button type="button" className="movimiento-button" onClick={() => downloadActa(acta).catch((err) => setError(movimientoError(err)))}>Descargar original</button>
+      <button type="button" className="movimiento-button" onClick={() => downloadActa(acta).catch((err) => setError(movimientoError(err)))}>Descargar acta PDF</button>
       {acta.tiene_copia_firmada && <button type="button" className="movimiento-button" onClick={() => downloadActaFirmada(acta).catch((err) => setError(movimientoError(err)))}>Descargar copia firmada</button>}
-      <button type="button" className="movimiento-button" disabled={checking} onClick={checkIntegrity}>{checking ? 'Comprobando...' : 'Comprobar huellas de archivos'}</button>
     </div>
-    {integridad && <div className="movimiento-entry" role="status">
-      <strong>Comprobación de archivos</strong>
-      <span>PDF original: {integridad.original.coincide ? 'coincide con su huella SHA-256' : 'no coincide o falta el archivo'}.</span>
-      <span>Copia firmada: {integridad.copia_firmada ? (integridad.copia_firmada.coincide ? 'coincide con su huella SHA-256' : 'no coincide o falta el archivo') : 'aún no registrada'}.</span>
-      <span>Esta comprobación verifica los archivos guardados; no certifica la identidad del firmante.</span>
-    </div>}
-    <h4>Historial de estados</h4>
-    {eventos.length === 0 && <p className="movimiento-note">Acta generada; todavía no hay transiciones.</p>}
-    {eventos.map((item) => <article className="movimiento-entry" key={item.id}>
-      <strong>{item.estado_anterior.replaceAll('_', ' ')} → {item.estado_nuevo.replaceAll('_', ' ')}</strong>
-      <span>{new Date(item.fecha).toLocaleString('es-CL')} · {item.usuario_nombre || `Usuario #${item.usuario_id}`}</span>
-      {item.motivo && <span>Motivo: {item.motivo}</span>}
-      {item.hash_copia_firmada && <span>Huella SHA-256 de la copia: {item.hash_copia_firmada}</span>}
-    </article>)}
     {error && <p className="movimiento-error" role="alert">{error}</p>}
-    {(nextState[acta.estado] || (role === 'Administrador' && acta.estado !== 'ANULADA')) && <form onSubmit={submit} className="movimiento-entry">
-      <label>Acción
+    {(nextAction || canAnular) && <form onSubmit={submit} className="movimiento-entry">
+      {nextAction && canAnular && <label>Acción
         <select value={nuevoEstado} onChange={(event) => { setNuevoEstado(event.target.value); setArchivo(null); }} required>
-          {nextState[acta.estado] && <option value={nextState[acta.estado]}>{labels[nextState[acta.estado]]}</option>}
-          {role === 'Administrador' && acta.estado !== 'ANULADA' && <option value="ANULADA">Anular acta</option>}
+          <option value={nextAction}>{labels[nextAction]}</option>
+          <option value="ANULADA">Anular acta</option>
         </select>
-      </label>
-      {nuevoEstado === 'FIRMADA' && <label>Copia PDF firmada manualmente (máximo 10 MB)
+      </label>}
+      {nuevoEstado === 'FIRMADA' && <label>Subir copia PDF firmada (máximo 10 MB)
         <input type="file" accept="application/pdf,.pdf" required onChange={(event) => setArchivo(event.target.files?.[0] || null)} />
       </label>}
-      {nuevoEstado === 'FIRMADA' && <p className="movimiento-note">El portal conserva esta copia y su huella, pero no comprueba la autenticidad de la firma.</p>}
+      {nuevoEstado === 'FIRMADA' && <p className="movimiento-note">La copia firmada quedará guardada junto al acta original.</p>}
       {nuevoEstado === 'ANULADA' && <label>Motivo de anulación
         <textarea value={motivo} maxLength={2000} required onChange={(event) => setMotivo(event.target.value)} />
       </label>}
       <button className="movimiento-button movimiento-button-primary" type="submit" disabled={busy}>{busy ? 'Guardando...' : labels[nuevoEstado]}</button>
     </form>}
+    <details className="movimiento-acta-details">
+      <summary>Ver historial y comprobación de archivos</summary>
+      <p className="movimiento-note">El PDF original permanece guardado sin cambios. Esta comprobación revisa los archivos, pero no certifica la identidad de quien firmó.</p>
+      <button type="button" className="movimiento-button" disabled={checking} onClick={checkIntegrity}>{checking ? 'Comprobando...' : 'Comprobar archivos'}</button>
+      {integridad && <div className="movimiento-entry" role="status">
+        <strong>Resultado de la comprobación</strong>
+        <span>PDF original: {integridad.original.coincide ? 'archivo íntegro' : 'archivo faltante o modificado'}.</span>
+        <span>Copia firmada: {integridad.copia_firmada ? (integridad.copia_firmada.coincide ? 'archivo íntegro' : 'archivo faltante o modificado') : 'aún no registrada'}.</span>
+      </div>}
+      <h4>Historial de estados</h4>
+      {eventos.length === 0 && <p className="movimiento-note">Todavía no hay cambios de estado.</p>}
+      {eventos.map((item) => <article className="movimiento-entry" key={item.id}>
+        <strong>{stateLabels[item.estado_anterior] || item.estado_anterior} → {stateLabels[item.estado_nuevo] || item.estado_nuevo}</strong>
+        <span>{new Date(item.fecha).toLocaleString('es-CL')} · {item.usuario_nombre || `Usuario #${item.usuario_id}`}</span>
+        {item.motivo && <span>Motivo: {item.motivo}</span>}
+        {item.hash_copia_firmada && <span>Huella SHA-256 de la copia: {item.hash_copia_firmada}</span>}
+      </article>)}
+    </details>
   </MovimientoShell>;
 }

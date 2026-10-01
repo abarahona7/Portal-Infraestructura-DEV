@@ -33,3 +33,7 @@
   .movimiento-summary dd { margin-bottom: .5rem; }
   .movimiento-add { flex-wrap: wrap; }
 }
+.movimiento-acta-details { border-top: 1px solid #e2e8f0; padding-top: .85rem; }
+.movimiento-acta-details > summary { color: #1d4ed8; font-size: .85rem; font-weight: 600; cursor: pointer; }
+.movimiento-acta-details[open] > *:not(summary) { margin-top: .75rem; }
+.movimiento-acta-details h4 { color: #334155; font-size: .9rem; }

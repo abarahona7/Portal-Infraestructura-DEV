@@ -81,3 +81,11 @@
   .itam-dashboard-actions { width: 100%; justify-content: flex-start; margin-left: 0; }
   .itam-dashboard-section-heading { align-items: flex-start; flex-wrap: wrap; }
 }
+
+.itam-dashboard-report-form .itam-dashboard-clear-filters { border-color: transparent; background: transparent; color: #1d4ed8; }
+.itam-dashboard-report-form .itam-dashboard-clear-filters:hover { background: #eff6ff; }
+.itam-dashboard-filter-details { flex-basis: 100%; color: #475569; font-size: .85rem; }
+.itam-dashboard-filter-details > summary { width: fit-content; color: #1d4ed8; font-weight: 600; cursor: pointer; }
+.itam-dashboard-filter-details > .itam-dashboard-report-form { margin-top: .4rem; }
+.itam-dashboard-export-link { margin-top: .8rem; padding: .3rem 0; border: 0; background: transparent; color: #1d4ed8; font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; }
+.itam-dashboard-export-link:disabled { opacity: .6; cursor: default; }

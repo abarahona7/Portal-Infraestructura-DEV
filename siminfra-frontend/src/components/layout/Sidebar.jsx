@@ -73,7 +73,7 @@ const navigationGroups = [
       {
         id: 'activos-consultas',
         icon: Search,
-        label: 'Consultas de Activos',
+        label: 'Actas y Garantías',
       },
       {
         id: 'equipos-notebook',

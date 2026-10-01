@@ -125,10 +125,11 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
   const topDepartments = (data?.por_area || [])
     .filter((item) => item.nombre !== 'Otros' && item.nombre !== 'Sin registrar')
     .slice(0, 5);
+  const largestDepartmentCount = topDepartments[0]?.total || 1;
 
   return <><div className="itam-dashboard">
     <div className="itam-dashboard-heading">
-      <div><span className="itam-dashboard-eyebrow">Inventario TI</span><h2>Tablero de activos</h2><p>Departamentos con más equipos asignados y pendientes por revisar.</p></div>
+      <div><span className="itam-dashboard-eyebrow">Inventario de Tecnología</span><h2>Tablero de activos</h2><p>Departamentos con más equipos asignados y pendientes por revisar.</p></div>
       <button type="button" className="itam-dashboard-refresh" disabled={loading} onClick={refreshDashboard}><RefreshCw size={17} />Actualizar</button>
     </div>
     {loading && !data && <p role="status">Cargando indicadores...</p>}
@@ -142,8 +143,11 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
         <h3>Departamentos con más equipos asignados</h3>
         <p className="itam-dashboard-empty">Equipos que actualmente tienen un colaborador asignado.</p>
         {!topDepartments.length && <p className="itam-dashboard-empty">No hay departamentos identificados para los equipos asignados.</p>}
-        {!!topDepartments.length && <ol className="itam-dashboard-departments">
-          {topDepartments.map((item) => <li key={item.nombre}><div><span>{item.nombre}</span><strong>{item.total.toLocaleString('es-CL')} {item.total === 1 ? 'equipo' : 'equipos'}</strong></div></li>)}
+        {!!topDepartments.length && <ol className="itam-dashboard-departments" aria-label="Equipos asignados por departamento">
+          {topDepartments.map((item) => <li key={item.nombre} className="itam-dashboard-department">
+            <div className="itam-dashboard-department-label"><span>{item.nombre}</span><strong>{item.total.toLocaleString('es-CL')} {item.total === 1 ? 'equipo' : 'equipos'}</strong></div>
+            <div className="itam-dashboard-department-track" aria-hidden="true"><div className="itam-dashboard-department-bar" style={{ width: `${(item.total / largestDepartmentCount) * 100}%` }} /></div>
+          </li>)}
         </ol>}
       </section>
       <div className="itam-dashboard-view">

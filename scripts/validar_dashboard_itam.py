@@ -1,5 +1,6 @@
 """Ejecutar con `python manage.py shell < scripts/validar_dashboard_itam.py`."""
 import uuid
+from unittest.mock import patch
 from django.contrib.auth.models import Group, User
 from django.db import transaction
 from rest_framework.test import APIClient
@@ -61,6 +62,16 @@ with transaction.atomic():
     assert assigned.data['conteos']['fichas_tecnicas_incompletas'] == original['fichas_tecnicas_incompletas'] + 2
     assert assigned.data['movimientos_30_dias'] == baseline.data['movimientos_30_dias'] + 1
     assert sum(row['total'] for row in assigned.data['por_area']) == sum(row['total'] for row in baseline.data['por_area']) + 1
+    with patch.object(Equipamiento.objects, 'all', return_value=Equipamiento.objects.filter(pk=asset.pk)):
+        named = client.get('/api/activos/resumen/')
+        assert named.status_code == 200, (named.status_code, named.data)
+        assert named.data['por_area'] == [{'nombre': department.nombre, 'total': 1}]
+        department.nombre = f'Tecnología {suffix}'
+        department.save()
+        renamed = client.get('/api/activos/resumen/')
+        assert renamed.status_code == 200, (renamed.status_code, renamed.data)
+        assert renamed.data['por_area'] == [{'nombre': department.nombre, 'total': 1}]
+        assert person.dpto_area != department.nombre
     assert assigned.data['ultimos_movimientos'][0]['folio'] == movement.data['acta']['folio']
     assert 'rut' not in str(assigned.data).lower()
     licencia = Usuario.objects.create(nombre_completo='Persona en licencia', usuario_red=f'lic.{suffix}',

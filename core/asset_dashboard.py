@@ -263,7 +263,7 @@ class AssetDashboardView(APIView):
             'actas_pendientes_recientes': [resumen_acta_pendiente(acta) for acta in actas_pendientes[:8]],
             'por_tipo': distribution(assets, 'tipo'),
             'por_ubicacion': distribution(assets, 'ubicacion_actual'),
-            'por_area': distribution(assets.filter(usuario__isnull=False), 'usuario__dpto_area'),
+            'por_area': distribution(assets.filter(usuario__isnull=False), 'usuario__departamento__nombre'),
             'movimientos_30_dias': MovimientoActivo.objects.filter(
                 fecha_movimiento__gte=timezone.now() - timedelta(days=30)).count(),
             'ultimos_movimientos': movements,

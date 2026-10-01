@@ -2,7 +2,7 @@
 
 El módulo de Equipos tiene un flujo visible simple:
 
-1. **Tablero de Activos:** es la primera opción del menú Equipos y se abre al pulsar «Equipos». Muestra dos cifras generales, los cinco departamentos con más equipos asignados y los equipos que requieren revisión. Al pulsar un motivo pendiente puedes abrir los equipos afectados.
+1. **Tablero de Activos:** es la primera opción del menú Equipos y se abre al pulsar «Equipos». Muestra dos cifras generales, un gráfico con los cinco departamentos con más equipos asignados (con los nombres del portal) y los equipos que requieren revisión. Al pulsar un motivo pendiente puedes abrir los equipos afectados.
 2. **Equipos:** abre la categoría del equipo para buscarlo o editar su ficha. «Abrir ficha y QR» muestra su garantía y datos actuales. El botón «Movimientos y comprobantes» abre el historial de ese equipo.
 3. **Registrar movimiento:** selecciona tipo, equipo y colaborador cuando corresponde; revisa la vista previa y confirma. El portal guarda el movimiento, genera el folio y el PDF automáticamente. Puedes descargar el comprobante al terminar o más tarde desde el historial del equipo o del colaborador. «Cambio de equipo» aparece como tipo de movimiento y abre un formulario para elegir el equipo devuelto y el reemplazo; genera dos comprobantes vinculados.
 

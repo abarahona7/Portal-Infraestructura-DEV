@@ -1450,7 +1450,7 @@ class EquipamientoListSerializer(serializers.ModelSerializer):
             'modelo', 'numero_serie', 'hostname', 'af', 'accesorios',
             'fecha_asignacion', 'estado', 'numero_telefono', 'imei',
             'icloud_cuenta', 'icloud_password_configured', 'pin_configured',
-            'ip_asignada',
+            'ip_asignada', 'token_qr',
         ]
 
     def get_icloud_password_configured(self, obj):

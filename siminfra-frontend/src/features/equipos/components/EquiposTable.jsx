@@ -2,6 +2,7 @@ import {
   Edit,
   Trash2,
   History,
+  QrCode,
   Laptop,
   Monitor,
   Smartphone,
@@ -63,6 +64,7 @@ export default function EquiposTable({
   equipos,
   formatEquipmentType,
   onShowHistory,
+  onShowAssetQr,
   onEdit,
   onDelete,
   role,
@@ -88,6 +90,7 @@ export default function EquiposTable({
 
   const Actions = ({ equipo }) => (
     <div className="equipos-actions">
+      <button type="button" className="equipo-action equipo-action-history" onClick={() => onShowAssetQr(equipo.token_qr)} title="Abrir ficha y QR" aria-label="Abrir ficha y QR"><QrCode size={18} /></button>
       <button
         type="button"
         className="equipo-action equipo-action-history"

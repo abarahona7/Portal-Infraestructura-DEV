@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from core.views import UsuarioViewSet, EquipamientoViewSet, PerfilGenericoViewSet, IPViewSet, AnexoViewSet, PCGenericoViewSet, ServidorViewSet, DepartamentoViewSet, SubAreaViewSet, ReferenceDataView
 from core.auth_views import ActivityView, CsrfTokenView, LoginView, RefreshCookieView, LogoutView, MeView
 from core.security_views import RevealSecretView
+from core.asset_views import FichaEquipoQrView, EtiquetaEquipoQrView, ResumenEquiposView
 
 router = DefaultRouter()
 router.register(r'usuarios', UsuarioViewSet, basename='usuario')
@@ -26,5 +27,8 @@ urlpatterns = [
     path('api/auth/me/', MeView.as_view(), name='me'),
     path('api/secrets/reveal/', RevealSecretView.as_view(), name='reveal-secret'),
     path('api/reference-data/', ReferenceDataView.as_view(), name='reference-data'),
+    path('api/activos/resumen/', ResumenEquiposView.as_view(), name='resumen-equipos'),
+    path('api/activos/qr/<uuid:token>/', FichaEquipoQrView.as_view(), name='ficha-equipo-qr'),
+    path('api/activos/qr/<uuid:token>/imagen/', EtiquetaEquipoQrView.as_view(), name='etiqueta-equipo-qr'),
     path('api/', include(router.urls)),
 ]

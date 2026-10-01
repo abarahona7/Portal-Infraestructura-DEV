@@ -70,6 +70,8 @@ import Header from './components/layout/Header';
 import ModuleToolbar from './components/layout/ModuleToolbar';
 import DepartamentosSubareasPage
   from './features/departamentos/components/DepartamentosSubareasPage';
+import AssetDashboard from './features/activos/AssetDashboard';
+import FichaEquipoQrModal from './features/activos/FichaEquipoQrModal';
 
 import { formatEquipmentType } from './utils/formatEquipmentType';
 import apiClient from './api/client';
@@ -102,6 +104,7 @@ export default function App() {
   });
 
   const [secretRequest, setSecretRequest] = useState(null);
+  const [fichaQrToken, setFichaQrToken] = useState(() => window.location.pathname.match(/^\/qr\/a\/([0-9a-f-]{36})\/?$/i)?.[1] || null);
 
   const confirmResolverRef = useRef(null);
 
@@ -288,7 +291,8 @@ export default function App() {
   );
 
   const moduleDataEnabled = !(
-    (activeModuleTab === 'usuarios' && !selectedDpto && !normalizedSearch)
+    activeModuleTab === 'activos-resumen'
+    || (activeModuleTab === 'usuarios' && !selectedDpto && !normalizedSearch)
     || (activeModuleTab === 'ips' && !selectedIpSegment && !normalizedSearch)
   );
 
@@ -490,6 +494,22 @@ export default function App() {
     } catch (error) {
       console.error('Error cargando detalle:', error.response?.data || error);
       showToast('No se pudo cargar el detalle solicitado.', 'error');
+    }
+  };
+
+  const openDashboardAssetForEdit = async (item) => {
+    if (authUser?.role === 'Visualizador') return;
+    const category = {
+      Notebook: 'equipos-notebook', Celular: 'equipos-celular', Tablet: 'equipos-tablet',
+      Mac: 'equipos-mac', 'BAM / Router': 'equipos-bam-router',
+    }[item.tipo] || 'equipos-perifericos';
+    selectTab(category);
+    try {
+      await ensureReferenceData(['usuarios']);
+      const detail = await getItemDetailsByTab('equipos', item.id);
+      setEditingItem(detail);
+    } catch {
+      showToast('No se pudo abrir el equipo.', 'error');
     }
   };
 
@@ -1020,6 +1040,8 @@ export default function App() {
           />
         )}
 
+        {tab === 'activos-resumen' && <AssetDashboard onOpenQr={setFichaQrToken} onEditAsset={openDashboardAssetForEdit} />}
+
         {tab === 'departamentos' && (
           <DepartamentosSubareasPage
             departamentos={data}
@@ -1041,7 +1063,8 @@ export default function App() {
             !isEquipmentModule &&
             tab !== 'usuarios' &&
             tab !== 'ips' &&
-            tab !== 'departamentos'
+            tab !== 'departamentos' &&
+            tab !== 'activos-resumen'
           )
         ) && (
             <>
@@ -1226,6 +1249,7 @@ export default function App() {
                   onShowEquipmentHistory={
                     (item) => openDetailedItem('equipos', item, setHistoryEquipo)
                   }
+                  onShowAssetQr={setFichaQrToken}
 
                   onShowIpHistory={openIpHistory}
 
@@ -1265,6 +1289,10 @@ export default function App() {
               />
             </>
           )}
+
+        {fichaQrToken && <FichaEquipoQrModal key={fichaQrToken} token={fichaQrToken}
+          onClose={() => { setFichaQrToken(null); if (window.location.pathname.startsWith('/qr/a/')) window.history.replaceState(null, '', '/'); }}
+          onOpenHistory={(equipo) => { setFichaQrToken(null); if (window.location.pathname.startsWith('/qr/a/')) window.history.replaceState(null, '', '/'); openDetailedItem('equipos', equipo, setHistoryEquipo); }} />}
 
         {/* MODALES DE DETALLE / HISTORIAL */}
         <ModuleDetailModals

@@ -182,12 +182,13 @@ LANGUAGE_CODE = 'es-cl'
 TIME_ZONE = os.getenv('DJANGO_TIME_ZONE', 'America/Santiago')
 USE_I18N = True
 USE_TZ = True
+PORTAL_PUBLIC_URL = os.getenv('PORTAL_PUBLIC_URL', 'http://localhost:5176' if not IS_PRODUCTION else '').rstrip('/')
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 CORS_ALLOWED_ORIGINS = env_list(
     'CORS_ALLOWED_ORIGINS',
-    'http://localhost:5173,http://127.0.0.1:5173' if DEBUG else ''
+    'http://localhost:5176,http://127.0.0.1:5176' if DEBUG else ''
 )
 CORS_ALLOW_CREDENTIALS = True
 CORS_EXPOSE_HEADERS = ['X-Request-ID']

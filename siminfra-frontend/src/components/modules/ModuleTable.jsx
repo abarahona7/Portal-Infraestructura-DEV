@@ -16,6 +16,7 @@ export default function ModuleTable({
   onSelectUser,
   onShowUserHistory,
   onShowEquipmentHistory,
+  onShowAssetQr,
   onShowIpHistory,
   onShowProfileHistory,
   onEdit,
@@ -49,6 +50,7 @@ export default function ModuleTable({
         equipos={data}
         formatEquipmentType={formatEquipmentType}
         onShowHistory={onShowEquipmentHistory}
+        onShowAssetQr={onShowAssetQr}
         onEdit={onEdit}
         onDelete={onDelete}
         role={role}

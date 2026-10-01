@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Users,
   Package,
+  LayoutDashboard,
   Monitor,
   Laptop,
   Smartphone,
@@ -46,7 +47,7 @@ const navigationGroups = [
       {
         id: 'departamentos',
         icon: Building2,
-        label: 'Departamentos / Subáreas',
+        label: 'Departamentos / Áreas',
       },
     ],
   },
@@ -58,6 +59,11 @@ const navigationGroups = [
       label: 'Equipos',
     },
     children: [
+      {
+        id: 'activos-resumen',
+        icon: LayoutDashboard,
+        label: 'Tablero de activos',
+      },
       {
         id: 'pcs-genericos',
         icon: Monitor,
@@ -235,7 +241,7 @@ export default function Sidebar({
             <div className="sidebar-logo">
               <img
                 src="/branding/dr-simi-logo.png"
-                alt="Farmacias Dr. Simi"
+                alt="Farmacias del Dr. Simi"
               />
             </div>
 

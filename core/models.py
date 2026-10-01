@@ -680,6 +680,9 @@ class Equipamiento(models.Model):
         blank=True
     )
 
+    # Identificador estable de la ficha QR; conserva los UUID ya asignados en DEV.
+    token_qr = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+
     class Meta:
         indexes = [
             models.Index(
@@ -690,6 +693,7 @@ class Equipamiento(models.Model):
                 fields=['usuario', 'tipo'],
                 name='idx_equipo_usr_tipo',
             ),
+            models.Index(fields=['token_qr'], name='idx_equipo_token_qr'),
         ]
         constraints = [
             models.CheckConstraint(
@@ -1294,7 +1298,7 @@ class SecurityAuditLog(models.Model):
     object_id_text = models.CharField(max_length=80, null=True, blank=True)
     secret_type = models.CharField(max_length=80, null=True, blank=True)
     success = models.BooleanField(default=False)
-    detail = models.CharField(max_length=255, null=True, blank=True)
+    detail = models.TextField(null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

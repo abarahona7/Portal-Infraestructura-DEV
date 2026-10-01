@@ -64,8 +64,8 @@ export default function ActaArchivoPanel({ role, onUpdated }) {
   const changePage = (nextPage) => { setData(null); setLoading(true); setPage(nextPage); };
 
   return <><section className="itam-dashboard-panel">
-    <h3>Archivo de actas ITAM</h3>
-    <p className="itam-dashboard-empty">Consulta actas de cualquier estado. La lista se carga al pulsar «Consultar».</p>
+    <h3>Archivo de actas</h3>
+    <p className="itam-dashboard-empty">Filtra por estado, tipo o fecha. Sin filtros, se muestran todas las actas.</p>
     <form className="itam-dashboard-report-form" onSubmit={search}>
       <label>Estado<select value={filters.estado} onChange={(event) => changeFilter('estado', event.target.value)}>
         <option value="">Todos</option>{actaStates.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
@@ -81,7 +81,7 @@ export default function ActaArchivoPanel({ role, onUpdated }) {
     {error && <p className="itam-dashboard-error" role="alert">{error}</p>}
     {data && <>
       <p className="itam-dashboard-empty">{data.count.toLocaleString('es-CL')} actas encontradas.</p>
-      <div className="itam-dashboard-actions"><button type="button" disabled={exporting} onClick={exportReport}>{exporting ? 'Preparando CSV...' : 'Descargar CSV de la consulta'}</button></div>
+      <div className="itam-dashboard-actions"><button type="button" disabled={exporting} onClick={exportReport}>{exporting ? 'Preparando planilla...' : 'Descargar planilla CSV'}</button></div>
       <div className="itam-dashboard-recent">
         {data.results.map((acta) => <article key={acta.id}>
           <div><strong>{acta.folio}</strong><span>{acta.tipo_movimiento.replaceAll('_', ' ')} · {acta.estado.replaceAll('_', ' ')}</span></div>

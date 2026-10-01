@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Download, RefreshCw } from 'lucide-react';
+import { ChevronDown, Download, RefreshCw } from 'lucide-react';
 import apiClient from '../../../api/client';
 import { downloadActa, downloadActaFirmada, downloadReporteMovimientos, movimientoError } from '../../../api/movimientosApi';
 import ActaGestionModal from '../../movimientos/components/ActaGestionModal';
@@ -15,14 +15,6 @@ const warrantyDueLabel = (item) => {
   const remaining = days < 0 ? `${Math.abs(days)} ${days === -1 ? 'día' : 'días'} vencida` : days === 0 ? 'Vence hoy' : `${days} ${days === 1 ? 'día restante' : 'días restantes'}`;
   return `Vencimiento: ${item.fecha_vencimiento_garantia} · ${remaining}`;
 };
-
-const dashboardViews = [
-  ['resumen', 'Resumen'],
-  ['revision', 'Revisión'],
-  ['garantias', 'Garantías'],
-  ['actas', 'Actas'],
-  ['reportes', 'Reportes'],
-];
 
 const cards = [
   ['total', 'Total de activos'],
@@ -49,17 +41,15 @@ function Distribution({ title, items, empty }) {
 }
 
 export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
-  const [activeView, setActiveView] = useState('resumen');
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
-  const [identifierField, setIdentifierField] = useState(null);
+  const [activeReview, setActiveReview] = useState(null);
   const [identifierPage, setIdentifierPage] = useState(1);
   const [identifierData, setIdentifierData] = useState(null);
   const [identifierLoading, setIdentifierLoading] = useState(false);
   const [identifierError, setIdentifierError] = useState('');
-  const [showUnassigned, setShowUnassigned] = useState(false);
   const [unassignedStatus, setUnassignedStatus] = useState('');
   const [unassignedPage, setUnassignedPage] = useState(1);
   const [unassignedData, setUnassignedData] = useState(null);
@@ -81,6 +71,8 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
   const [custodyData, setCustodyData] = useState(null);
   const [custodyLoading, setCustodyLoading] = useState(false);
   const [custodyError, setCustodyError] = useState('');
+  const [showWarranty, setShowWarranty] = useState(false);
+  const [showActas, setShowActas] = useState(false);
   const [warrantyStatus, setWarrantyStatus] = useState('proximas');
   const [showAllWarranty, setShowAllWarranty] = useState(false);
   const [warrantyPage, setWarrantyPage] = useState(1);
@@ -97,6 +89,11 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
   const [folioSearched, setFolioSearched] = useState(false);
   const [folioBusy, setFolioBusy] = useState(false);
   const [folioError, setFolioError] = useState('');
+
+  const identifierField = ['serie', 'activo_fijo'].includes(activeReview) ? activeReview : null;
+  const showUnassigned = activeReview === 'sin_custodio';
+  const showCustody = activeReview === 'custodio_inactivo';
+  const showTechnical = activeReview === 'fichas';
 
   useEffect(() => {
     const controller = new AbortController();
@@ -128,14 +125,14 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
   }, [showUnassigned, unassignedStatus, unassignedPage, reloadKey]);
 
   useEffect(() => {
-    if (!showAllPending) return undefined;
+    if (!showAllPending || !showTechnical) return undefined;
     const controller = new AbortController();
     apiClient.get('/activos/pendientes-tecnicos/', {
       params: { page: pendingPage, page_size: 20 }, signal: controller.signal,
     }).then(({ data: response }) => { setPendingData(response); setPendingError(''); setPendingLoading(false); })
       .catch((err) => { if (err.code !== 'ERR_CANCELED') { setPendingError(movimientoError(err)); setPendingLoading(false); } });
     return () => controller.abort();
-  }, [showAllPending, pendingPage, reloadKey]);
+  }, [showAllPending, showTechnical, pendingPage, reloadKey]);
 
   useEffect(() => {
     if (!showAllActas) return undefined;
@@ -148,14 +145,14 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
   }, [showAllActas, actaPage, reloadKey]);
 
   useEffect(() => {
-    if (!showAllCustody) return undefined;
+    if (!showAllCustody || !showCustody) return undefined;
     const controller = new AbortController();
     apiClient.get('/activos/custodios-no-activos/', {
       params: { page: custodyPage, page_size: 20 }, signal: controller.signal,
     }).then(({ data: response }) => { setCustodyData(response); setCustodyError(''); setCustodyLoading(false); })
       .catch((err) => { if (err.code !== 'ERR_CANCELED') { setCustodyError(movimientoError(err)); setCustodyLoading(false); } });
     return () => controller.abort();
-  }, [showAllCustody, custodyPage, reloadKey]);
+  }, [showAllCustody, showCustody, custodyPage, reloadKey]);
 
   useEffect(() => {
     if (!showAllWarranty) return undefined;
@@ -222,7 +219,7 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
     setReloadKey((value) => value + 1);
   };
   const selectIdentifier = (field) => {
-    setIdentifierField((current) => current === field ? null : field);
+    setActiveReview((current) => current === field ? null : field);
     setIdentifierPage(1);
     setIdentifierData(null);
     setIdentifierError('');
@@ -230,13 +227,22 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
   };
   const changeIdentifierPage = (nextPage) => { setIdentifierData(null); setIdentifierLoading(true); setIdentifierPage(nextPage); };
   const toggleUnassigned = () => {
-    setShowUnassigned(!showUnassigned);
+    setActiveReview((current) => current === 'sin_custodio' ? null : 'sin_custodio');
     setUnassignedPage(1);
     setUnassignedData(null);
     setUnassignedError('');
     setUnassignedLoading(!showUnassigned);
   };
   const changeUnassignedPage = (nextPage) => { setUnassignedData(null); setUnassignedLoading(true); setUnassignedPage(nextPage); };
+  const toggleReview = (target) => setActiveReview((current) => current === target ? null : target);
+  const toggleWarranty = () => {
+    if (!showWarranty && !data.conteos.garantias_proximas) {
+      const firstWithResults = data.conteos.garantias_vencidas ? 'vencidas'
+        : data.conteos.garantias_sin_fecha ? 'sin_fecha' : 'proximas';
+      setWarrantyStatus(firstWithResults);
+    }
+    setShowWarranty((current) => !current);
+  };
 
   const changeActaPage = (nextPage) => { setActaData(null); setActaLoading(true); setActaPage(nextPage); };
   const changeCustodyPage = (nextPage) => { setCustodyData(null); setCustodyLoading(true); setCustodyPage(nextPage); };
@@ -247,19 +253,24 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
   const pendingRows = showAllPending ? (pendingData?.results || []) : (data?.pendientes_tecnicos || []);
   const actaRows = showAllActas ? (actaData?.results || []) : (data?.actas_pendientes_recientes || []);
   const custodyRows = showAllCustody ? (custodyData?.results || []) : (data?.custodios_no_activos_recientes || []);
+  const reviewItems = data ? [
+    ['serie', 'Sin número de serie', data.conteos.sin_serie, () => selectIdentifier('serie')],
+    ['activo_fijo', 'Sin activo fijo', data.conteos.sin_activo_fijo, () => selectIdentifier('activo_fijo')],
+    ['sin_custodio', 'Sin custodio asignado', data.conteos.sin_custodio, toggleUnassigned],
+    ['custodio_inactivo', 'Asignados a colaboradores no activos', data.conteos.con_custodio_inactivo, () => toggleReview('custodio_inactivo')],
+    ['fichas', 'Fichas técnicas incompletas', data.conteos.fichas_tecnicas_incompletas, () => toggleReview('fichas')],
+  ] : [];
+  const visibleReviewItems = reviewItems.filter(([key, , count]) => count > 0 || key === activeReview);
 
   return <><div className="itam-dashboard">
     <div className="itam-dashboard-heading">
-      <div><span className="itam-dashboard-eyebrow">Inventario TI</span><h2>Tablero de activos</h2><p>Consulta el inventario, sus pendientes y las actas desde cada sección.</p></div>
+      <div><span className="itam-dashboard-eyebrow">Inventario TI</span><h2>Tablero de activos</h2><p>Primero mira el estado general. Pulsa una fila de «Equipos por revisar» para mostrar su detalle aquí mismo.</p></div>
       <button type="button" className="itam-dashboard-refresh" disabled={loading} onClick={refreshDashboard}><RefreshCw size={17} />Actualizar</button>
     </div>
-    <nav className="itam-dashboard-navigation" aria-label="Secciones del tablero">
-      {dashboardViews.map(([view, label]) => <button key={view} type="button" aria-current={activeView === view ? 'page' : undefined} onClick={() => setActiveView(view)}>{label}</button>)}
-    </nav>
     {loading && !data && <p role="status">Cargando indicadores...</p>}
     {error && <p className="itam-dashboard-error" role="alert">{error}</p>}
     {data && <>
-      <div className="itam-dashboard-view" hidden={activeView !== 'resumen'}>
+      <div className="itam-dashboard-view">
       <div className="itam-dashboard-cards">
         {cards.map(([key, label]) => <div className="itam-dashboard-card" key={key}><span>{label}</span><strong>{data.conteos[key].toLocaleString('es-CL')}</strong></div>)}
       </div>
@@ -268,18 +279,17 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
         <span>Actualizado: {new Date(data.actualizado_en).toLocaleString('es-CL')}</span>
       </div>
       </div>
-      <div className="itam-dashboard-view" hidden={activeView !== 'revision'}>
+      <div className="itam-dashboard-view">
       <section className="itam-dashboard-panel itam-dashboard-review">
-        <h3>Datos que requieren revisión</h3>
-        <div><span>Sin número de serie</span><span className="itam-dashboard-review-action"><strong>{data.conteos.sin_serie.toLocaleString('es-CL')}</strong><button type="button" aria-pressed={identifierField === 'serie'} onClick={() => selectIdentifier('serie')}>Revisar equipos</button></span></div>
-        <div><span>Sin activo fijo</span><span className="itam-dashboard-review-action"><strong>{data.conteos.sin_activo_fijo.toLocaleString('es-CL')}</strong><button type="button" aria-pressed={identifierField === 'activo_fijo'} onClick={() => selectIdentifier('activo_fijo')}>Revisar equipos</button></span></div>
-        <div><span>Asignados a colaboradores no activos</span><strong>{data.conteos.con_custodio_inactivo.toLocaleString('es-CL')}</strong></div>
-        <div><span>Sin custodio</span><span className="itam-dashboard-review-action"><strong>{data.conteos.sin_custodio.toLocaleString('es-CL')}</strong><button type="button" aria-pressed={showUnassigned} onClick={toggleUnassigned}>Ver equipos</button></span></div>
-        <div><span>Celulares sin IMEI</span><strong>{data.conteos.sin_imei_celular.toLocaleString('es-CL')}</strong></div>
-        <div><span>Notebook o Mac sin Hostname</span><strong>{data.conteos.sin_hostname_computador.toLocaleString('es-CL')}</strong></div>
-        <div><span>Notebook o Mac sin MAC</span><strong>{data.conteos.sin_mac_computador.toLocaleString('es-CL')}</strong></div>
-        <p><strong>{data.conteos.fichas_tecnicas_incompletas.toLocaleString('es-CL')}</strong> fichas técnicas incompletas en total, sin contar dos veces un equipo al que le falten varios datos. Se excluyen los dados de baja.</p>
-        <p>Un activo sin custodio puede estar legítimamente disponible, en reparación o dado de baja; el listado permite revisar cada caso.</p>
+        <h3>Equipos por revisar</h3>
+        <p className="itam-dashboard-empty">Pulsa un motivo para ver los equipos aquí mismo. Un equipo puede aparecer en más de un motivo.</p>
+        <div className="itam-dashboard-review-list">
+          {!visibleReviewItems.length && <p className="itam-dashboard-empty">No hay equipos pendientes de revisión.</p>}
+          {visibleReviewItems.map(([key, label, count, onClick]) => <button key={key} className="itam-dashboard-review-row" type="button" aria-expanded={activeReview === key} onClick={onClick}>
+            <span>{label}</span>
+            <span className="itam-dashboard-review-count"><strong>{count.toLocaleString('es-CL')}</strong><ChevronDown size={16} aria-hidden="true" /></span>
+          </button>)}
+        </div>
       </section>
       {identifierField && <section className="itam-dashboard-panel">
         <h3>{identifierField === 'serie' ? 'Equipos sin número de serie' : 'Equipos sin activo fijo'}</h3>
@@ -329,47 +339,11 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
         </>}
       </section>}
       </div>
-      <div className="itam-dashboard-view" hidden={activeView !== 'garantias'}>
-      <section className="itam-dashboard-panel">
-        <h3>Garantías de activos vigentes</h3>
-        <p className="itam-dashboard-empty">Próximas: vence entre hoy y los siguientes {data.ventana_garantia_dias} días. Los equipos dados de baja se excluyen.</p>
-        <div className="itam-dashboard-warranty-summary">
-          <span><strong>{data.conteos.garantias_proximas.toLocaleString('es-CL')}</strong> próximas a vencer</span>
-          <span><strong>{data.conteos.garantias_vencidas.toLocaleString('es-CL')}</strong> vencidas</span>
-          <span><strong>{data.conteos.garantias_sin_fecha.toLocaleString('es-CL')}</strong> sin fecha registrada</span>
-        </div>
-        <div className="itam-dashboard-warranty-controls" role="group" aria-label="Estado de garantía">
-          {warrantyTabs.map(([status, label]) => <button key={status} type="button" aria-pressed={warrantyStatus === status} onClick={() => { setWarrantyStatus(status); setWarrantyPage(1); setWarrantyData(null); if (showAllWarranty) setWarrantyLoading(true); }}>{label}</button>)}
-        </div>
-        {!warrantyCount && <p className="itam-dashboard-empty">No hay activos en esta categoría de garantías.</p>}
-        {(warrantyCount > 0 || showAllWarranty) && <div className="itam-dashboard-pending-heading">
-          <p className="itam-dashboard-empty">{showAllWarranty ? (warrantyStatus === 'sin_fecha' ? 'Lista completa, con los registros más recientes primero.' : 'Lista completa, ordenada por fecha de vencimiento.') : 'Hasta ocho activos por revisar.'}</p>
-          <button type="button" onClick={() => {
-            if (showAllWarranty) { setShowAllWarranty(false); setWarrantyData(null); }
-            else { setWarrantyPage(1); setWarrantyLoading(true); setShowAllWarranty(true); }
-          }}>{showAllWarranty ? 'Mostrar recientes' : `Ver todos (${warrantyCount})`}</button>
-        </div>}
-        {showAllWarranty && warrantyLoading && <p role="status">Cargando garantías...</p>}
-        {showAllWarranty && warrantyError && <p className="itam-dashboard-error" role="alert">{warrantyError}</p>}
-        <div className="itam-dashboard-recent">
-          {warrantyRows.map((item) => <article key={item.id}>
-            <div><strong>{item.tipo} {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'N/I'} · AF: {item.af || 'N/I'}</span><span>{warrantyDueLabel(item)}</span></div>
-            <span>{item.estado}</span>
-            <div className="itam-dashboard-actions"><button type="button" onClick={() => onEditAsset(item)}>Editar ficha</button><button type="button" onClick={() => onOpenHistory(item)}>Historial</button></div>
-          </article>)}
-        </div>
-        {showAllWarranty && warrantyData && warrantyData.total_pages > 1 && <div className="itam-dashboard-pager">
-          <button type="button" disabled={warrantyLoading || warrantyPage <= 1} onClick={() => { setWarrantyData(null); setWarrantyLoading(true); setWarrantyPage(warrantyPage - 1); }}>Anterior</button>
-          <span>Página {warrantyData.page} de {warrantyData.total_pages}</span>
-          <button type="button" disabled={warrantyLoading || warrantyPage >= warrantyData.total_pages} onClick={() => { setWarrantyData(null); setWarrantyLoading(true); setWarrantyPage(warrantyPage + 1); }}>Siguiente</button>
-        </div>}
-      </section>
-      </div>
-      <div className="itam-dashboard-view" hidden={activeView !== 'revision'}>
+      {showCustody && <div className="itam-dashboard-view">
       <section className="itam-dashboard-panel">
         <h3>Equipos con custodio no activo ({data.conteos.con_custodio_inactivo.toLocaleString('es-CL')})</h3>
         {!data.conteos.con_custodio_inactivo && <p className="itam-dashboard-empty">No hay equipos en esta condición.</p>}
-        {(data.conteos.con_custodio_inactivo > 0 || showAllCustody) && <div className="itam-dashboard-pending-heading">
+        {(data.conteos.con_custodio_inactivo > custodyRows.length || showAllCustody) && <div className="itam-dashboard-pending-heading">
           <p className="itam-dashboard-empty">Incluye colaboradores en licencia, de baja o sin estado registrado. Revise cada caso antes de decidir un movimiento.</p>
           <button type="button" onClick={() => {
             if (showAllCustody) { setShowAllCustody(false); setCustodyData(null); }
@@ -391,10 +365,13 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
           <button type="button" disabled={custodyLoading || custodyPage >= custodyData.total_pages} onClick={() => changeCustodyPage(custodyPage + 1)}>Siguiente</button>
         </div>}
       </section>
+      </div>}
+      {showTechnical && <div className="itam-dashboard-view">
       <section className="itam-dashboard-panel">
         <h3>Fichas técnicas por completar</h3>
+        <p className="itam-dashboard-empty">Incluye {data.conteos.sin_imei_celular.toLocaleString('es-CL')} celulares sin IMEI, {data.conteos.sin_hostname_computador.toLocaleString('es-CL')} computadores sin hostname y {data.conteos.sin_mac_computador.toLocaleString('es-CL')} sin MAC. Un equipo puede tener más de un dato pendiente.</p>
         {!data.conteos.fichas_tecnicas_incompletas && <p className="itam-dashboard-empty">No hay fichas técnicas pendientes en activos vigentes.</p>}
-        {(data.conteos.fichas_tecnicas_incompletas > 0 || showAllPending) && <div className="itam-dashboard-pending-heading">
+        {(data.conteos.fichas_tecnicas_incompletas > pendingRows.length || showAllPending) && <div className="itam-dashboard-pending-heading">
           <p className="itam-dashboard-empty">{showAllPending ? 'Todos los pendientes, ordenados por registro más reciente.' : 'Diez registros recientes; el total incluye todos los pendientes.'}</p>
           <button type="button" onClick={() => {
             if (showAllPending) { setShowAllPending(false); setPendingData(null); }
@@ -416,12 +393,51 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
           <button type="button" disabled={pendingLoading || pendingPage >= pendingData.total_pages} onClick={() => changePendingPage(pendingPage + 1)}>Siguiente</button>
         </div>}
       </section>
-      </div>
-      <div className="itam-dashboard-view" hidden={activeView !== 'actas'}>
+      </div>}
+      <div className="itam-dashboard-view">
       <section className="itam-dashboard-panel">
-        <h3>Actas por firmar ({data.actas_pendientes_firma.toLocaleString('es-CL')})</h3>
+        <div className="itam-dashboard-section-heading"><h3>Garantías</h3><button type="button" aria-expanded={showWarranty} onClick={toggleWarranty}>{showWarranty ? 'Ocultar equipos' : 'Ver equipos'}</button></div>
+        <div className="itam-dashboard-warranty-summary">
+          <span><strong>{data.conteos.garantias_proximas.toLocaleString('es-CL')}</strong> próximas a vencer</span>
+          <span><strong>{data.conteos.garantias_vencidas.toLocaleString('es-CL')}</strong> vencidas</span>
+          <span><strong>{data.conteos.garantias_sin_fecha.toLocaleString('es-CL')}</strong> sin fecha registrada</span>
+        </div>
+        {showWarranty && <>
+        <p className="itam-dashboard-empty">Próximas: vencen en los siguientes {data.ventana_garantia_dias} días. No se incluyen equipos dados de baja.</p>
+        <div className="itam-dashboard-warranty-controls" role="group" aria-label="Estado de garantía">
+          {warrantyTabs.map(([status, label]) => <button key={status} type="button" aria-pressed={warrantyStatus === status} onClick={() => { setWarrantyStatus(status); setWarrantyPage(1); setWarrantyData(null); if (showAllWarranty) setWarrantyLoading(true); }}>{label}</button>)}
+        </div>
+        {!warrantyCount && <p className="itam-dashboard-empty">No hay activos en esta categoría de garantías.</p>}
+        {(warrantyCount > warrantyRows.length || showAllWarranty) && <div className="itam-dashboard-pending-heading">
+          <p className="itam-dashboard-empty">{showAllWarranty ? (warrantyStatus === 'sin_fecha' ? 'Lista completa, con los registros más recientes primero.' : 'Lista completa, ordenada por fecha de vencimiento.') : 'Hasta ocho activos por revisar.'}</p>
+          <button type="button" onClick={() => {
+            if (showAllWarranty) { setShowAllWarranty(false); setWarrantyData(null); }
+            else { setWarrantyPage(1); setWarrantyLoading(true); setShowAllWarranty(true); }
+          }}>{showAllWarranty ? 'Mostrar recientes' : `Ver todos (${warrantyCount})`}</button>
+        </div>}
+        {showAllWarranty && warrantyLoading && <p role="status">Cargando garantías...</p>}
+        {showAllWarranty && warrantyError && <p className="itam-dashboard-error" role="alert">{warrantyError}</p>}
+        <div className="itam-dashboard-recent">
+          {warrantyRows.map((item) => <article key={item.id}>
+            <div><strong>{item.tipo} {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'N/I'} · AF: {item.af || 'N/I'}</span><span>{warrantyDueLabel(item)}</span></div>
+            <span>{item.estado}</span>
+            <div className="itam-dashboard-actions"><button type="button" onClick={() => onEditAsset(item)}>Editar ficha</button><button type="button" onClick={() => onOpenHistory(item)}>Historial</button></div>
+          </article>)}
+        </div>
+        {showAllWarranty && warrantyData && warrantyData.total_pages > 1 && <div className="itam-dashboard-pager">
+          <button type="button" disabled={warrantyLoading || warrantyPage <= 1} onClick={() => { setWarrantyData(null); setWarrantyLoading(true); setWarrantyPage(warrantyPage - 1); }}>Anterior</button>
+          <span>Página {warrantyData.page} de {warrantyData.total_pages}</span>
+          <button type="button" disabled={warrantyLoading || warrantyPage >= warrantyData.total_pages} onClick={() => { setWarrantyData(null); setWarrantyLoading(true); setWarrantyPage(warrantyPage + 1); }}>Siguiente</button>
+        </div>}
+        </>}
+      </section>
+      </div>
+      <div className="itam-dashboard-view">
+      <section className="itam-dashboard-panel">
+        <div className="itam-dashboard-section-heading"><h3>Actas pendientes de firma ({data.actas_pendientes_firma.toLocaleString('es-CL')})</h3>{data.actas_pendientes_firma > 0 && <button type="button" aria-expanded={showActas} onClick={() => setShowActas((current) => !current)}>{showActas ? 'Ocultar actas' : 'Ver actas'}</button>}</div>
         {!data.actas_pendientes_firma && <p className="itam-dashboard-empty">No hay actas pendientes de firma.</p>}
-        {(data.actas_pendientes_firma > 0 || showAllActas) && <div className="itam-dashboard-pending-heading">
+        {showActas && data.actas_pendientes_firma > 0 && <>
+        {(data.actas_pendientes_firma > actaRows.length || showAllActas) && <div className="itam-dashboard-pending-heading">
           <p className="itam-dashboard-empty">Incluye actas generadas y enviadas a firma.</p>
           <button type="button" onClick={() => {
             if (showAllActas) { setShowAllActas(false); setActaData(null); }
@@ -442,7 +458,29 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
           <span>Página {actaData.page} de {actaData.total_pages}</span>
           <button type="button" disabled={actaLoading || actaPage >= actaData.total_pages} onClick={() => changeActaPage(actaPage + 1)}>Siguiente</button>
         </div>}
+        </>}
       </section>
+      </div>
+      <div className="itam-dashboard-view">
+      <section className="itam-dashboard-panel">
+        <h3>Últimos movimientos</h3>
+        {!data.ultimos_movimientos.length && <p className="itam-dashboard-empty">Aún no hay movimientos en la nueva trazabilidad.</p>}
+        <div className="itam-dashboard-recent">
+          {data.ultimos_movimientos.map((item) => <article key={item.id}>
+            <div><strong>{item.tipo_movimiento}</strong><span>{item.activo} · {item.folio || 'Sin acta'}</span></div>
+            <time>{new Date(item.fecha_movimiento).toLocaleString('es-CL')}</time>
+            <div className="itam-dashboard-actions">
+              <button type="button" onClick={() => onOpenHistory({ id: item.activo_id, tipo: item.activo })}>Historial</button>
+              {item.acta_id && <button type="button" title={`Descargar acta ${item.folio}`} onClick={() => downloadActa({ id: item.acta_id, folio: item.folio }).catch((err) => setError(movimientoError(err)))}><Download size={15} /> Acta</button>}
+            </div>
+          </article>)}
+        </div>
+      </section>
+      </div>
+      <div className="itam-dashboard-view">
+      <div className="itam-dashboard-extra-heading"><h3>Otras consultas</h3><p>Busca actas, revisa gráficos o descarga una planilla cuando lo necesites.</p></div>
+      <details className="itam-dashboard-extra">
+        <summary>Buscar actas anteriores o consultar el archivo</summary>
       <section className="itam-dashboard-panel">
         <h3>Buscar acta por folio</h3>
         <p className="itam-dashboard-empty">Consulta un acta emitida, incluso si ya fue firmada, cerrada o anulada.</p>
@@ -463,18 +501,24 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
         </article></div>}
       </section>
       <ActaArchivoPanel role={role} onUpdated={refreshDashboard} />
+      </details>
       </div>
-      <div className="itam-dashboard-view" hidden={activeView !== 'resumen'}>
+      <div className="itam-dashboard-view">
+      <details className="itam-dashboard-extra">
+        <summary>Ver gráficos por tipo, ubicación y área</summary>
       <div className="itam-dashboard-distributions">
         <Distribution title="Por tipo" items={data.por_tipo} empty="Todavía no hay activos." />
         <Distribution title="Por ubicación" items={data.por_ubicacion} empty="Todavía no hay ubicaciones." />
         <Distribution title="Por área asignada" items={data.por_area} empty="Todavía no hay activos asignados." />
       </div>
+      </details>
       </div>
-      <div className="itam-dashboard-view" hidden={activeView !== 'reportes'}>
+      <div className="itam-dashboard-view">
+      <details className="itam-dashboard-extra">
+        <summary>Descargar planilla de movimientos</summary>
       <section className="itam-dashboard-panel">
         <h3>Reporte de movimientos</h3>
-        <p className="itam-dashboard-empty">Descarga el historial ITAM en CSV. Si dejas los filtros vacíos, se incluyen todos los movimientos.</p>
+        <p className="itam-dashboard-empty">Descarga una planilla CSV que puedes abrir en Excel. Si dejas los filtros vacíos, incluye todos los movimientos registrados.</p>
         <form className="itam-dashboard-report-form" onSubmit={exportReport}>
           <label>Desde<input type="date" value={reportFrom} onChange={(event) => setReportFrom(event.target.value)} /></label>
           <label>Hasta<input type="date" value={reportTo} onChange={(event) => setReportTo(event.target.value)} /></label>
@@ -490,26 +534,11 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
             <option value="SALIDA_REPARACION">Salida de reparación</option>
             <option value="BAJA">Baja</option>
           </select></label>
-          <button type="submit" disabled={reportBusy}><Download size={16} />{reportBusy ? 'Preparando CSV...' : 'Descargar CSV'}</button>
+          <button type="submit" disabled={reportBusy}><Download size={16} />{reportBusy ? 'Preparando planilla...' : 'Descargar planilla CSV'}</button>
         </form>
         {reportError && <p className="itam-dashboard-error" role="alert">{reportError}</p>}
       </section>
-      </div>
-      <div className="itam-dashboard-view" hidden={activeView !== 'resumen'}>
-      <section className="itam-dashboard-panel">
-        <h3>Últimos movimientos</h3>
-        {!data.ultimos_movimientos.length && <p className="itam-dashboard-empty">Aún no hay movimientos en la nueva trazabilidad.</p>}
-        <div className="itam-dashboard-recent">
-          {data.ultimos_movimientos.map((item) => <article key={item.id}>
-            <div><strong>{item.tipo_movimiento}</strong><span>{item.activo} · {item.folio || 'Sin acta'}</span></div>
-            <time>{new Date(item.fecha_movimiento).toLocaleString('es-CL')}</time>
-            <div className="itam-dashboard-actions">
-              <button type="button" onClick={() => onOpenHistory({ id: item.activo_id, tipo: item.activo })}>Historial</button>
-              {item.acta_id && <button type="button" title={`Descargar acta ${item.folio}`} onClick={() => downloadActa({ id: item.acta_id, folio: item.folio }).catch((err) => setError(movimientoError(err)))}><Download size={15} /> Acta</button>}
-            </div>
-          </article>)}
-        </div>
-      </section>
+      </details>
       </div>
     </>}
   </div>{gestionActa && <ActaGestionModal initialActa={gestionActa} role={role} onClose={() => setGestionActa(null)} onUpdated={() => { refreshDashboard(); if (folioSearched) lookupActa(folioInput); }} />}</>;

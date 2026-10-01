@@ -5,15 +5,16 @@
 .itam-dashboard-heading p, .itam-dashboard-empty { color: #64748b; margin: .25rem 0 0; }
 .itam-dashboard-refresh { display: inline-flex; align-items: center; gap: .45rem; border: 1px solid #cbd5e1; border-radius: 8px; padding: .65rem .9rem; background: white; color: #0f172a; cursor: pointer; font-weight: 600; }
 .itam-dashboard-refresh:disabled { opacity: .6; cursor: wait; }
-.itam-dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: .75rem; }
-.itam-dashboard-card, .itam-dashboard-panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
-.itam-dashboard-card { display: grid; gap: .55rem; padding: 1rem; }
-.itam-dashboard-card span { color: #475569; font-size: .86rem; }
-.itam-dashboard-card strong { font-size: 1.65rem; color: #0f172a; line-height: 1; }
-.itam-dashboard-context { display: flex; justify-content: space-between; gap: .7rem; flex-wrap: wrap; color: #64748b; font-size: .85rem; }
-.itam-dashboard-context strong { color: #0f172a; }
-.itam-dashboard-panel { padding: 1.15rem; min-width: 0; }
+.itam-dashboard-panel { padding: 1.15rem; min-width: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
 .itam-dashboard-panel h3 { margin: 0 0 1rem; color: #0f172a; font-size: 1rem; }
+.itam-dashboard-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .75rem; }
+.itam-dashboard-summary-item { display: grid; gap: .45rem; }
+.itam-dashboard-summary-item span { color: #475569; font-size: .86rem; }
+.itam-dashboard-summary-item strong { color: #0f172a; font-size: 1.65rem; line-height: 1; }
+.itam-dashboard-departments { margin: 1rem 0 0; padding-left: 1.4rem; }
+.itam-dashboard-departments li { padding: .65rem 0; border-top: 1px solid #e2e8f0; color: #334155; }
+.itam-dashboard-departments li > div { display: flex; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
+.itam-dashboard-departments strong { color: #0f172a; white-space: nowrap; }
 .itam-dashboard-review { display: grid; gap: .6rem; }
 .itam-dashboard-review h3 { margin-bottom: .25rem; }
 .itam-dashboard-review-list { display: grid; border-top: 1px solid #e2e8f0; }
@@ -40,7 +41,6 @@
 .itam-dashboard-report-form { display: flex; align-items: end; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
 .itam-dashboard-report-form label { display: grid; gap: .35rem; color: #475569; font-size: .85rem; font-weight: 600; }
 .itam-dashboard-report-form input, .itam-dashboard-report-form select { min-height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: .4rem .55rem; background: #fff; color: #0f172a; }
-
 
 .itam-dashboard-view { display: grid; gap: 1rem; min-width: 0; }
 .itam-dashboard-actions { flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }

@@ -6,15 +6,6 @@ import './AssetDashboard.css';
 
 const unassignedStates = [['', 'Todos'], ['STOCK', 'Disponible'], ['MANTENCION', 'En reparación'], ['BAJA', 'Baja'], ['ASIGNADO', 'Asignado'], ['PRESTAMO', 'En préstamo']];
 
-const cards = [
-  ['total', 'Total de equipos'],
-  ['disponibles', 'Disponibles'],
-  ['asignados', 'Asignados'],
-  ['en_prestamo', 'En préstamo'],
-  ['en_reparacion', 'En reparación'],
-  ['dados_de_baja', 'De baja'],
-];
-
 export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -131,26 +122,33 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
     ['fichas', 'Fichas técnicas incompletas', data.conteos.fichas_tecnicas_incompletas, () => toggleReview('fichas')],
   ] : [];
   const visibleReviewItems = reviewItems.filter(([key, , count]) => count > 0 || key === activeReview);
+  const topDepartments = (data?.por_area || [])
+    .filter((item) => item.nombre !== 'Otros' && item.nombre !== 'Sin registrar')
+    .slice(0, 5);
 
   return <><div className="itam-dashboard">
     <div className="itam-dashboard-heading">
-      <div><span className="itam-dashboard-eyebrow">Inventario TI</span><h2>Tablero de activos</h2><p>Estado general y equipos que requieren revisión.</p></div>
+      <div><span className="itam-dashboard-eyebrow">Inventario TI</span><h2>Tablero de activos</h2><p>Departamentos con más equipos asignados y pendientes por revisar.</p></div>
       <button type="button" className="itam-dashboard-refresh" disabled={loading} onClick={refreshDashboard}><RefreshCw size={17} />Actualizar</button>
     </div>
     {loading && !data && <p role="status">Cargando indicadores...</p>}
     {error && <p className="itam-dashboard-error" role="alert">{error}</p>}
     {data && <>
-      <div className="itam-dashboard-view">
-      <div className="itam-dashboard-cards">
-        {cards.map(([key, label]) => <div className="itam-dashboard-card" key={key}><span>{label}</span><strong>{data.conteos[key].toLocaleString('es-CL')}</strong></div>)}
+      <div className="itam-dashboard-summary">
+        <div className="itam-dashboard-panel itam-dashboard-summary-item"><span>Equipos registrados</span><strong>{data.conteos.total.toLocaleString('es-CL')}</strong></div>
+        <div className="itam-dashboard-panel itam-dashboard-summary-item"><span>Con colaborador asignado</span><strong>{(data.conteos.total - data.conteos.sin_custodio).toLocaleString('es-CL')}</strong></div>
       </div>
-      <div className="itam-dashboard-context">
-        <span>Actualizado: {new Date(data.actualizado_en).toLocaleString('es-CL')}</span>
-      </div>
-      </div>
+      <section className="itam-dashboard-panel">
+        <h3>Departamentos con más equipos asignados</h3>
+        <p className="itam-dashboard-empty">Equipos que actualmente tienen un colaborador asignado.</p>
+        {!topDepartments.length && <p className="itam-dashboard-empty">No hay departamentos identificados para los equipos asignados.</p>}
+        {!!topDepartments.length && <ol className="itam-dashboard-departments">
+          {topDepartments.map((item) => <li key={item.nombre}><div><span>{item.nombre}</span><strong>{item.total.toLocaleString('es-CL')} {item.total === 1 ? 'equipo' : 'equipos'}</strong></div></li>)}
+        </ol>}
+      </section>
       <div className="itam-dashboard-view">
       <section className="itam-dashboard-panel itam-dashboard-review">
-        <h3>Equipos por revisar</h3>
+        <h3>Pendientes por revisar</h3>
         <p className="itam-dashboard-empty">Pulsa un motivo para ver los equipos aquí mismo. Un equipo puede aparecer en más de un motivo.</p>
         <div className="itam-dashboard-review-list">
           {!visibleReviewItems.length && <p className="itam-dashboard-empty">No hay equipos pendientes de revisión.</p>}

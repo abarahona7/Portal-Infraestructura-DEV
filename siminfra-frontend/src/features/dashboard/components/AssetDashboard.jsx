@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown, RefreshCw } from 'lucide-react';
+import { Boxes, ChevronDown, RefreshCw, UserRoundCheck } from 'lucide-react';
 import apiClient from '../../../api/client';
 import { movimientoError } from '../../../api/movimientosApi';
 import './AssetDashboard.css';
@@ -135,21 +135,32 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset }) {
     {loading && !data && <p role="status">Cargando indicadores...</p>}
     {error && <p className="itam-dashboard-error" role="alert">{error}</p>}
     {data && <>
-      <div className="itam-dashboard-summary">
-        <div className="itam-dashboard-panel itam-dashboard-summary-item"><span>Equipos registrados</span><strong>{data.conteos.total.toLocaleString('es-CL')}</strong></div>
-        <div className="itam-dashboard-panel itam-dashboard-summary-item"><span>Con colaborador asignado</span><strong>{(data.conteos.total - data.conteos.sin_custodio).toLocaleString('es-CL')}</strong></div>
+      <div className="itam-dashboard-overview">
+        <div className="itam-dashboard-summary" aria-label="Resumen de equipos">
+          <div className="itam-dashboard-panel itam-dashboard-summary-item">
+            <span className="itam-dashboard-summary-icon" aria-hidden="true"><Boxes size={19} /></span>
+            <span>Equipos registrados</span>
+            <strong>{data.conteos.total.toLocaleString('es-CL')}</strong>
+          </div>
+          <div className="itam-dashboard-panel itam-dashboard-summary-item">
+            <span className="itam-dashboard-summary-icon" aria-hidden="true"><UserRoundCheck size={19} /></span>
+            <span>Con colaborador asignado</span>
+            <strong>{(data.conteos.total - data.conteos.sin_custodio).toLocaleString('es-CL')}</strong>
+          </div>
+        </div>
+        <section className="itam-dashboard-panel itam-dashboard-department-panel">
+          <h3>Departamentos con más equipos asignados</h3>
+          <p className="itam-dashboard-empty">Equipos que actualmente tienen un colaborador asignado.</p>
+          {!topDepartments.length && <p className="itam-dashboard-empty">No hay departamentos identificados para los equipos asignados.</p>}
+          {!!topDepartments.length && <ol className="itam-dashboard-departments" aria-label="Equipos asignados por departamento">
+            {topDepartments.map((item) => <li key={item.nombre} className="itam-dashboard-department">
+              <span className="itam-dashboard-department-name">{item.nombre}</span>
+              <div className="itam-dashboard-department-track" aria-hidden="true"><div className="itam-dashboard-department-bar" style={{ width: `${(item.total / largestDepartmentCount) * 100}%` }} /></div>
+              <strong className="itam-dashboard-department-count">{item.total.toLocaleString('es-CL')} <span className="itam-dashboard-sr-only">{item.total === 1 ? 'equipo' : 'equipos'}</span></strong>
+            </li>)}
+          </ol>}
+        </section>
       </div>
-      <section className="itam-dashboard-panel">
-        <h3>Departamentos con más equipos asignados</h3>
-        <p className="itam-dashboard-empty">Equipos que actualmente tienen un colaborador asignado.</p>
-        {!topDepartments.length && <p className="itam-dashboard-empty">No hay departamentos identificados para los equipos asignados.</p>}
-        {!!topDepartments.length && <ol className="itam-dashboard-departments" aria-label="Equipos asignados por departamento">
-          {topDepartments.map((item) => <li key={item.nombre} className="itam-dashboard-department">
-            <div className="itam-dashboard-department-label"><span>{item.nombre}</span><strong>{item.total.toLocaleString('es-CL')} {item.total === 1 ? 'equipo' : 'equipos'}</strong></div>
-            <div className="itam-dashboard-department-track" aria-hidden="true"><div className="itam-dashboard-department-bar" style={{ width: `${(item.total / largestDepartmentCount) * 100}%` }} /></div>
-          </li>)}
-        </ol>}
-      </section>
       <div className="itam-dashboard-view">
       <section className="itam-dashboard-panel itam-dashboard-review">
         <h3>Pendientes por revisar</h3>

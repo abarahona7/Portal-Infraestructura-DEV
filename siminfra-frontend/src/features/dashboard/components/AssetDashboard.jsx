@@ -7,6 +7,7 @@ import ActaArchivoPanel from './ActaArchivoPanel';
 import './AssetDashboard.css';
 
 const warrantyTabs = [['proximas', 'Próximas'], ['vencidas', 'Vencidas'], ['sin_fecha', 'Sin fecha']];
+const unassignedStates = [['', 'Todos'], ['STOCK', 'Disponible'], ['MANTENCION', 'En reparación'], ['BAJA', 'Baja'], ['ASIGNADO', 'Asignado'], ['PRESTAMO', 'En préstamo']];
 
 const warrantyDueLabel = (item) => {
   if (!item.fecha_vencimiento_garantia) return 'Sin fecha de garantía registrada';
@@ -49,6 +50,12 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
   const [identifierData, setIdentifierData] = useState(null);
   const [identifierLoading, setIdentifierLoading] = useState(false);
   const [identifierError, setIdentifierError] = useState('');
+  const [showUnassigned, setShowUnassigned] = useState(false);
+  const [unassignedStatus, setUnassignedStatus] = useState('');
+  const [unassignedPage, setUnassignedPage] = useState(1);
+  const [unassignedData, setUnassignedData] = useState(null);
+  const [unassignedLoading, setUnassignedLoading] = useState(false);
+  const [unassignedError, setUnassignedError] = useState('');
   const [showAllPending, setShowAllPending] = useState(false);
   const [pendingPage, setPendingPage] = useState(1);
   const [pendingData, setPendingData] = useState(null);
@@ -99,6 +106,17 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
       .catch((err) => { if (err.code !== 'ERR_CANCELED') { setIdentifierError(movimientoError(err)); setIdentifierLoading(false); } });
     return () => controller.abort();
   }, [identifierField, identifierPage, reloadKey]);
+
+  useEffect(() => {
+    if (!showUnassigned) return undefined;
+    const controller = new AbortController();
+    apiClient.get('/activos/sin-custodio/', {
+      params: { ...(unassignedStatus && { estado: unassignedStatus }), page: unassignedPage, page_size: 20 },
+      signal: controller.signal,
+    }).then(({ data: response }) => { setUnassignedData(response); setUnassignedError(''); setUnassignedLoading(false); })
+      .catch((err) => { if (err.code !== 'ERR_CANCELED') { setUnassignedError(movimientoError(err)); setUnassignedLoading(false); } });
+    return () => controller.abort();
+  }, [showUnassigned, unassignedStatus, unassignedPage, reloadKey]);
 
   useEffect(() => {
     if (!showAllPending) return undefined;
@@ -187,6 +205,7 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
   const refreshDashboard = () => {
     setLoading(true);
     if (identifierField) { setIdentifierPage(1); setIdentifierData(null); setIdentifierLoading(true); }
+    if (showUnassigned) { setUnassignedPage(1); setUnassignedData(null); setUnassignedLoading(true); }
     if (showAllPending) { setPendingPage(1); setPendingData(null); setPendingLoading(true); }
     if (showAllActas) { setActaPage(1); setActaData(null); setActaLoading(true); }
     if (showAllCustody) { setCustodyPage(1); setCustodyData(null); setCustodyLoading(true); }
@@ -201,6 +220,15 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
     setIdentifierLoading(identifierField !== field);
   };
   const changeIdentifierPage = (nextPage) => { setIdentifierData(null); setIdentifierLoading(true); setIdentifierPage(nextPage); };
+  const toggleUnassigned = () => {
+    setShowUnassigned(!showUnassigned);
+    setUnassignedPage(1);
+    setUnassignedData(null);
+    setUnassignedError('');
+    setUnassignedLoading(!showUnassigned);
+  };
+  const changeUnassignedPage = (nextPage) => { setUnassignedData(null); setUnassignedLoading(true); setUnassignedPage(nextPage); };
+
   const changeActaPage = (nextPage) => { setActaData(null); setActaLoading(true); setActaPage(nextPage); };
   const changeCustodyPage = (nextPage) => { setCustodyData(null); setCustodyLoading(true); setCustodyPage(nextPage); };
   const changePendingPage = (nextPage) => { setPendingData(null); setPendingLoading(true); setPendingPage(nextPage); };
@@ -231,11 +259,12 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
         <div><span>Sin número de serie</span><span className="itam-dashboard-review-action"><strong>{data.conteos.sin_serie.toLocaleString('es-CL')}</strong><button type="button" aria-pressed={identifierField === 'serie'} onClick={() => selectIdentifier('serie')}>Revisar equipos</button></span></div>
         <div><span>Sin activo fijo</span><span className="itam-dashboard-review-action"><strong>{data.conteos.sin_activo_fijo.toLocaleString('es-CL')}</strong><button type="button" aria-pressed={identifierField === 'activo_fijo'} onClick={() => selectIdentifier('activo_fijo')}>Revisar equipos</button></span></div>
         <div><span>Asignados a colaboradores no activos</span><strong>{data.conteos.con_custodio_inactivo.toLocaleString('es-CL')}</strong></div>
+        <div><span>Sin custodio</span><span className="itam-dashboard-review-action"><strong>{data.conteos.sin_custodio.toLocaleString('es-CL')}</strong><button type="button" aria-pressed={showUnassigned} onClick={toggleUnassigned}>Ver equipos</button></span></div>
         <div><span>Celulares sin IMEI</span><strong>{data.conteos.sin_imei_celular.toLocaleString('es-CL')}</strong></div>
         <div><span>Notebook o Mac sin Hostname</span><strong>{data.conteos.sin_hostname_computador.toLocaleString('es-CL')}</strong></div>
         <div><span>Notebook o Mac sin MAC</span><strong>{data.conteos.sin_mac_computador.toLocaleString('es-CL')}</strong></div>
         <p><strong>{data.conteos.fichas_tecnicas_incompletas.toLocaleString('es-CL')}</strong> fichas técnicas incompletas en total, sin contar dos veces un equipo al que le falten varios datos. Se excluyen los dados de baja.</p>
-        <p>Los activos sin custodio incluyen equipos disponibles, en reparación y dados de baja: {data.conteos.sin_custodio.toLocaleString('es-CL')}.</p>
+        <p>Un activo sin custodio puede estar legítimamente disponible, en reparación o dado de baja; el listado permite revisar cada caso.</p>
       </section>
       {identifierField && <section className="itam-dashboard-panel">
         <h3>{identifierField === 'serie' ? 'Equipos sin número de serie' : 'Equipos sin activo fijo'}</h3>
@@ -255,6 +284,32 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
             <button type="button" disabled={identifierLoading || identifierPage <= 1} onClick={() => changeIdentifierPage(identifierPage - 1)}>Anterior</button>
             <span>Página {identifierData.page} de {identifierData.total_pages}</span>
             <button type="button" disabled={identifierLoading || identifierPage >= identifierData.total_pages} onClick={() => changeIdentifierPage(identifierPage + 1)}>Siguiente</button>
+          </div>}
+        </>}
+      </section>}
+      {showUnassigned && <section className="itam-dashboard-panel">
+        <h3>Activos sin custodio</h3>
+        <p className="itam-dashboard-empty">Consulta el inventario sin usuario asignado. Para asignar o cambiar la custodia, registra un nuevo movimiento.</p>
+        <div className="itam-dashboard-report-form">
+          <label>Estado operativo<select value={unassignedStatus} onChange={(event) => { setUnassignedStatus(event.target.value); setUnassignedPage(1); setUnassignedData(null); setUnassignedLoading(true); }}>
+            {unassignedStates.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select></label>
+        </div>
+        {unassignedLoading && <p role="status">Cargando activos...</p>}
+        {unassignedError && <p className="itam-dashboard-error" role="alert">{unassignedError}</p>}
+        {unassignedData && <>
+          <p className="itam-dashboard-empty">{unassignedData.count.toLocaleString('es-CL')} activos encontrados.</p>
+          <div className="itam-dashboard-recent">
+            {unassignedData.results.map((item) => <article key={item.id}>
+              <div><strong>{item.tipo} {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'N/I'} · AF: {item.af || 'N/I'} · ID: {item.id}</span><span>Ubicación: {item.ubicacion_actual}</span></div>
+              <span>{item.estado}</span>
+              <div className="itam-dashboard-actions"><button type="button" onClick={() => onOpenHistory(item)}>Historial</button><button type="button" onClick={() => onEditAsset(item)}>Editar ficha</button></div>
+            </article>)}
+          </div>
+          {unassignedData.total_pages > 1 && <div className="itam-dashboard-pager">
+            <button type="button" disabled={unassignedLoading || unassignedPage <= 1} onClick={() => changeUnassignedPage(unassignedPage - 1)}>Anterior</button>
+            <span>Página {unassignedData.page} de {unassignedData.total_pages}</span>
+            <button type="button" disabled={unassignedLoading || unassignedPage >= unassignedData.total_pages} onClick={() => changeUnassignedPage(unassignedPage + 1)}>Siguiente</button>
           </div>}
         </>}
       </section>}

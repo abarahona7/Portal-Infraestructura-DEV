@@ -7,7 +7,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Equipamiento, MovimientoActivo
+from .models import ESTADOS_EQUIPO, Equipamiento, MovimientoActivo
 from .pagination import PortalPageNumberPagination
 from .permissions import PortalRolePermission
 from .services.acta_estado_service import actas_pendientes_firma, resumen_acta_pendiente
@@ -95,6 +95,31 @@ class AssetInactiveCustodianView(APIView):
         queryset = _inactive_custody_assets(Equipamiento.objects.all())
         page = paginator.paginate_queryset(queryset, request, view=self)
         response = paginator.get_paginated_response([_serialize_inactive_custody(asset) for asset in page])
+        response['Cache-Control'] = 'no-store, private'
+        return response
+
+
+class AssetUnassignedView(APIView):
+    permission_classes = [PortalRolePermission]
+
+    def get(self, request):
+        queryset = Equipamiento.objects.filter(usuario__isnull=True)
+        state = request.query_params.get('estado')
+        if state is not None:
+            state = state.strip().upper()
+            if state not in dict(ESTADOS_EQUIPO):
+                raise ValidationError({'estado': 'Seleccione un estado operativo válido.'})
+            queryset = queryset.filter(estado=state)
+        queryset = queryset.only(
+            'id', 'tipo', 'marca', 'modelo', 'numero_serie', 'af', 'estado', 'ubicacion_actual',
+        ).order_by('-pk')
+        paginator = PortalPageNumberPagination()
+        page = paginator.paginate_queryset(queryset, request, view=self)
+        response = paginator.get_paginated_response([{
+            'id': asset.pk, 'tipo': asset.tipo, 'marca': asset.marca, 'modelo': asset.modelo,
+            'numero_serie': asset.numero_serie, 'af': asset.af,
+            'estado': asset.estado, 'ubicacion_actual': asset.ubicacion_actual,
+        } for asset in page])
         response['Cache-Control'] = 'no-store, private'
         return response
 

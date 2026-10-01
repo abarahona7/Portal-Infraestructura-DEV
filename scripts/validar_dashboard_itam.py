@@ -83,16 +83,35 @@ with transaction.atomic():
     assert 'rut' not in str(custody_page.data).lower() and 'correo_corp' not in str(custody_page.data).lower()
     custody_next = client.get('/api/activos/custodios-no-activos/?page=2&page_size=1')
     assert custody_next.status_code == 200 and custody_next.data['results'][0]['id'] == en_revision[0].pk
+    mantenimiento = Equipamiento.objects.create(tipo='Monitor', marca='Prueba', modelo='Taller',
+        numero_serie=f'MAN-{suffix}', estado='MANTENCION', ubicacion_actual='Taller TI')
+    unassigned_summary = client.get('/api/activos/resumen/')
+    assert unassigned_summary.data['conteos']['sin_custodio'] == original['sin_custodio'] + 3
+    unassigned = client.get('/api/activos/sin-custodio/?page=1&page_size=2')
+    assert unassigned.status_code == 200, (unassigned.status_code, unassigned.data)
+    assert unassigned.data['count'] == unassigned_summary.data['conteos']['sin_custodio']
+    assert [row['id'] for row in unassigned.data['results']] == [mantenimiento.pk, baja.pk]
+    assert unassigned['Cache-Control'] == 'no-store, private'
+    unassigned_next = client.get('/api/activos/sin-custodio/?page=2&page_size=2')
+    assert unassigned_next.status_code == 200 and unassigned_next.data['results'][0]['id'] == celular.pk
+    in_repair = client.get('/api/activos/sin-custodio/', {'estado': 'MANTENCION', 'page_size': 1})
+    assert in_repair.status_code == 200 and in_repair.data['results'][0]['id'] == mantenimiento.pk
+    assert asset.pk not in [row['id'] for row in unassigned.data['results']]
+    assert 'rut' not in str(unassigned.data).lower() and 'correo' not in str(unassigned.data).lower()
+    invalid_state = client.get('/api/activos/sin-custodio/', {'estado': 'INVENTADO'})
+    assert invalid_state.status_code == 400 and 'estado' in invalid_state.data
     anonymous = APIClient(SERVER_NAME='127.0.0.1', HTTP_HOST='127.0.0.1')
     assert anonymous.get('/api/activos/resumen/').status_code in (401, 403)
     assert anonymous.get('/api/activos/pendientes-tecnicos/').status_code in (401, 403)
     assert anonymous.get('/api/activos/custodios-no-activos/').status_code in (401, 403)
+    assert anonymous.get('/api/activos/sin-custodio/').status_code in (401, 403)
     viewer = User.objects.create_user(username=f'dashboard_view_{suffix}', password='temporary-only')
     viewer.groups.add(Group.objects.get_or_create(name='Visualizador')[0])
     client.force_authenticate(user=viewer)
     assert client.get('/api/activos/resumen/').status_code == 403
     assert client.get('/api/activos/pendientes-tecnicos/').status_code == 403
     assert client.get('/api/activos/custodios-no-activos/').status_code == 403
+    assert client.get('/api/activos/sin-custodio/').status_code == 403
     transaction.set_rollback(True)
 assert not Usuario.objects.filter(usuario_red=f'dash.{suffix}').exists()
-print('Dashboard ITAM: conteos, distribución, movimientos y permisos OK; rollback confirmado')
+print('Dashboard ITAM: conteos, activos sin custodio, distribución y permisos OK; rollback confirmado')

@@ -15,6 +15,8 @@ with transaction.atomic():
                                     correo_corp=f'clean.{suffix}@example.com', departamento=depto)
     client = APIClient(SERVER_NAME='127.0.0.1', HTTP_HOST='127.0.0.1')
     client.force_authenticate(user=admin)
+    previous_summary = client.get('/api/activos/resumen/')
+    assert previous_summary.status_code == 200
     created = client.post('/api/equipos/', {'tipo': 'Notebook', 'marca': 'Prueba', 'modelo': 'Limpio',
                                            'numero_serie': f'CLEAN-{suffix}', 'estado': 'STOCK'}, format='json')
     assert created.status_code == 201, (created.status_code, created.data)
@@ -25,7 +27,8 @@ with transaction.atomic():
     assert assigned.status_code == 200, (assigned.status_code, assigned.data)
     summary = client.get('/api/activos/resumen/')
     assert summary.status_code == 200
-    assert any(row['id'] == depto.pk for row in summary.data['departamentos'])
+    assert summary.data['conteos']['total'] == previous_summary.data['conteos']['total'] + 1
+    assert summary.data['conteos']['asignados'] == previous_summary.data['conteos']['asignados'] + 1
     department_assets = client.get('/api/equipos/', {'departamento_id': depto.pk})
     assert department_assets.status_code == 200 and department_assets.data['count'] == 1
     qr_path = f'/api/activos/qr/{asset.token_qr}/'

@@ -20,9 +20,6 @@ const cards = [
   ['total', 'Total de activos'],
   ['disponibles', 'Disponibles'],
   ['asignados', 'Asignados'],
-  ['en_reparacion', 'En reparación'],
-  ['en_prestamo', 'En préstamo'],
-  ['dados_de_baja', 'Dados de baja'],
 ];
 
 function Distribution({ title, items, empty }) {
@@ -40,7 +37,8 @@ function Distribution({ title, items, empty }) {
   </section>;
 }
 
-export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
+export default function AssetDashboard({ onOpenHistory, onEditAsset, role, mode = 'overview' }) {
+  const showConsultas = mode === 'queries';
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -256,7 +254,7 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
   const reviewItems = data ? [
     ['serie', 'Sin número de serie', data.conteos.sin_serie, () => selectIdentifier('serie')],
     ['activo_fijo', 'Sin activo fijo', data.conteos.sin_activo_fijo, () => selectIdentifier('activo_fijo')],
-    ['sin_custodio', 'Sin custodio asignado', data.conteos.sin_custodio, toggleUnassigned],
+    ['sin_custodio', 'Sin custodio (incluye stock)', data.conteos.sin_custodio, toggleUnassigned],
     ['custodio_inactivo', 'Asignados a colaboradores no activos', data.conteos.con_custodio_inactivo, () => toggleReview('custodio_inactivo')],
     ['fichas', 'Fichas técnicas incompletas', data.conteos.fichas_tecnicas_incompletas, () => toggleReview('fichas')],
   ] : [];
@@ -264,18 +262,19 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
 
   return <><div className="itam-dashboard">
     <div className="itam-dashboard-heading">
-      <div><span className="itam-dashboard-eyebrow">Inventario TI</span><h2>Tablero de activos</h2><p>Primero mira el estado general. Pulsa una fila de «Equipos por revisar» para mostrar su detalle aquí mismo.</p></div>
+      <div><span className="itam-dashboard-eyebrow">Inventario TI</span><h2>{showConsultas ? 'Consultas de activos' : 'Tablero de activos'}</h2><p>{showConsultas ? 'Garantías, actas, movimientos e informes de los activos TI.' : 'Estado general y equipos que requieren revisión.'}</p></div>
       <button type="button" className="itam-dashboard-refresh" disabled={loading} onClick={refreshDashboard}><RefreshCw size={17} />Actualizar</button>
     </div>
     {loading && !data && <p role="status">Cargando indicadores...</p>}
     {error && <p className="itam-dashboard-error" role="alert">{error}</p>}
     {data && <>
+      {!showConsultas && <>
       <div className="itam-dashboard-view">
       <div className="itam-dashboard-cards">
         {cards.map(([key, label]) => <div className="itam-dashboard-card" key={key}><span>{label}</span><strong>{data.conteos[key].toLocaleString('es-CL')}</strong></div>)}
       </div>
       <div className="itam-dashboard-context">
-        <span><strong>{data.movimientos_30_dias.toLocaleString('es-CL')}</strong> movimientos en los últimos 30 días</span>
+        <span>En reparación: <strong>{data.conteos.en_reparacion.toLocaleString('es-CL')}</strong> · En préstamo: <strong>{data.conteos.en_prestamo.toLocaleString('es-CL')}</strong> · De baja: <strong>{data.conteos.dados_de_baja.toLocaleString('es-CL')}</strong></span>
         <span>Actualizado: {new Date(data.actualizado_en).toLocaleString('es-CL')}</span>
       </div>
       </div>
@@ -394,6 +393,8 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
         </div>}
       </section>
       </div>}
+      </>}
+      {showConsultas && <>
       <div className="itam-dashboard-view">
       <section className="itam-dashboard-panel">
         <div className="itam-dashboard-section-heading"><h3>Garantías</h3><button type="button" aria-expanded={showWarranty} onClick={toggleWarranty}>{showWarranty ? 'Ocultar equipos' : 'Ver equipos'}</button></div>
@@ -540,6 +541,7 @@ export default function AssetDashboard({ onOpenHistory, onEditAsset, role }) {
       </section>
       </details>
       </div>
+      </>}
     </>}
   </div>{gestionActa && <ActaGestionModal initialActa={gestionActa} role={role} onClose={() => setGestionActa(null)} onUpdated={() => { refreshDashboard(); if (folioSearched) lookupActa(folioInput); }} />}</>;
 }

@@ -301,6 +301,7 @@ export default function App() {
 
   const moduleDataEnabled = !(
     activeModuleTab === 'activos-resumen' ||
+    activeModuleTab === 'activos-consultas' ||
     (activeModuleTab === 'usuarios' && !selectedDpto && !normalizedSearch)
     || (activeModuleTab === 'ips' && !selectedIpSegment && !normalizedSearch)
   );
@@ -1047,7 +1048,7 @@ export default function App() {
           />
         )}
 
-        {tab === 'activos-resumen' && <React.Suspense fallback={<p role="status">Cargando tablero de activos...</p>}><AssetDashboard onOpenHistory={setHistorialActivo} onEditAsset={openDashboardAssetForEdit} role={authUser?.role} /></React.Suspense>}
+        {(tab === 'activos-resumen' || tab === 'activos-consultas') && <React.Suspense fallback={<p role="status">Cargando activos...</p>}><AssetDashboard key={tab} mode={tab === 'activos-consultas' ? 'queries' : 'overview'} onOpenHistory={setHistorialActivo} onEditAsset={openDashboardAssetForEdit} role={authUser?.role} /></React.Suspense>}
 
         {tab === 'departamentos' && (
           <DepartamentosSubareasPage
@@ -1071,7 +1072,8 @@ export default function App() {
             tab !== 'usuarios' &&
             tab !== 'ips' &&
             tab !== 'departamentos' &&
-            tab !== 'activos-resumen'
+            tab !== 'activos-resumen' &&
+            tab !== 'activos-consultas'
           )
         ) && (
             <>

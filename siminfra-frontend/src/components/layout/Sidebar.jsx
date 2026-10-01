@@ -8,6 +8,7 @@ import {
   Users,
   Package,
   BarChart3,
+  Search,
   Monitor,
   Laptop,
   Smartphone,
@@ -60,14 +61,19 @@ const navigationGroups = [
     },
     children: [
       {
+        id: 'pcs-genericos',
+        icon: Monitor,
+        label: 'PCs Genéricos',
+      },
+      {
         id: 'activos-resumen',
         icon: BarChart3,
         label: 'Tablero de Activos',
       },
       {
-        id: 'pcs-genericos',
-        icon: Monitor,
-        label: 'PCs Genéricos',
+        id: 'activos-consultas',
+        icon: Search,
+        label: 'Consultas de Activos',
       },
       {
         id: 'equipos-notebook',

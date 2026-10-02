@@ -11,9 +11,10 @@ accesos y respaldos; no se debe apuntar un despliegue productivo a
 definitiva, el proxy, la base de QA/producción y la ventana de despliegue.
 
 Verificación técnica del 2 de octubre de 2026: pasaron 112 pruebas existentes
-y seis pruebas nuevas en SQLite temporal; ocho casos seleccionados (incluidas
-las dos pruebas de concurrencia de IP) pasaron en un MySQL 8 temporal que se
-retiró al terminar. El ejemplo Nginx pasó una prueba aislada de sintaxis,
+y seis pruebas nuevas en SQLite temporal; nueve casos seleccionados (incluidas
+las dos pruebas de concurrencia de IP y el flujo HTTPS de sesión/QR) pasaron
+en MySQL 8 temporal que se retiró al terminar. El ejemplo Nginx pasó una
+prueba aislada de sintaxis,
 HTTPS, carga directa de QR, archivos, estáticos y proxy de API/admin. Esta
 evidencia aún no reemplaza la prueba funcional en QA ni la revisión del
 entorno productivo definitivo.
@@ -56,12 +57,12 @@ Antes de continuar, validar la conexión:
 En una instancia MySQL aislada para pruebas, ejecutar también:
 
 ```powershell
-.\venv\Scripts\python.exe manage.py test core.test_ip_assignment_service --settings=config.settings_production
+.\venv\Scripts\python.exe manage.py test core.test_ip_assignment_service core.test_https_release_flow --settings=config.settings_production
 ```
 
-Esta suite incluye rollback con fallos inyectados y dos asignaciones simultáneas
-sobre una misma IP. No debe ejecutarse contra la base productiva; Django crea y
-elimina una base de pruebas temporal.
+Esta suite incluye rollback con fallos inyectados, dos asignaciones simultáneas
+sobre una misma IP y el flujo de sesión/QR bajo HTTPS. No debe ejecutarse contra
+la base productiva; Django crea y elimina una base de pruebas temporal.
 
 ## 3. Preparar los datos de producción
 

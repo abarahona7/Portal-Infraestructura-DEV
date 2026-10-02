@@ -10,6 +10,14 @@ accesos y respaldos; no se debe apuntar un despliegue productivo a
 `portalinfra_dev`. Antes de liberar, confirmar con Infraestructura la URL HTTPS
 definitiva, el proxy, la base de QA/producción y la ventana de despliegue.
 
+Verificación técnica del 2 de octubre de 2026: pasaron 112 pruebas existentes
+y seis pruebas nuevas en SQLite temporal; ocho casos seleccionados (incluidas
+las dos pruebas de concurrencia de IP) pasaron en un MySQL 8 temporal que se
+retiró al terminar. El ejemplo Nginx pasó una prueba aislada de sintaxis,
+HTTPS, carga directa de QR, archivos, estáticos y proxy de API/admin. Esta
+evidencia aún no reemplaza la prueba funcional en QA ni la revisión del
+entorno productivo definitivo.
+
 ## 1. Preparar el servidor
 
 1. Instalar Python, las dependencias de `requirements.txt`, Node.js y MySQL 8.
@@ -130,10 +138,21 @@ npm run build
 El proxy HTTPS debe servir `dist`, enviar `/api` al backend y servir
 `staticfiles` como contenido estático. Mantener frontend y API bajo el mismo
 origen permite que Axios envíe el token CSRF sin exponerlo a otros dominios.
+En Linux, después de compilar, ejecutar
+`python3 scripts/validar_proxy_publicacion.py`: levanta un Nginx temporal en
+puertos locales y comprueba HTTPS, assets, `/api` y la ruta QR sin tocar el
+servicio activo ni la base de datos.
 También debe entregar `dist/index.html` para rutas del frontend como
 `/qr/a/<uuid>`; de lo contrario, el código QR abrirá una página 404 al
 escanearlo. Definir `PORTAL_PUBLIC_URL` con la URL HTTPS real del frontend,
 sin ruta final. El perfil productivo rechaza una URL HTTP o mal formada.
+El ejemplo [deploy/nginx.portal.conf.example](deploy/nginx.portal.conf.example)
+incluye las rutas necesarias; reemplazar dominio, directorios y certificados
+antes de instalarlo. Validar la configuración con `nginx -t` antes de recargar
+el servicio, sin modificar los otros sitios del host. Tras publicarlo, abrir
+directamente `https://<dominio>/qr/a/<uuid>` en una ventana nueva: debe cargar
+el frontend y pedir autenticación, no devolver 404. Comprobar además que
+`/api/auth/me/` llega a Django y que el puerto interno 8000 no es público.
 
 ## 6. Ejecutar el backend
 

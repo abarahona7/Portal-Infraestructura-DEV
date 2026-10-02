@@ -4,6 +4,12 @@ Este procedimiento publica el portal con MySQL 8, HTTPS y el perfil
 `config.settings_production`. Los secretos reales se guardan únicamente en el
 `.env` del servidor y nunca se agregan a Git.
 
+Estado actual de la reconstrucción: la migración 0058 y las pruebas funcionales
+se validaron en MySQL **DEV**. QA y producción necesitan sus propias bases,
+accesos y respaldos; no se debe apuntar un despliegue productivo a
+`portalinfra_dev`. Antes de liberar, confirmar con Infraestructura la URL HTTPS
+definitiva, el proxy, la base de QA/producción y la ventana de despliegue.
+
 ## 1. Preparar el servidor
 
 1. Instalar Python, las dependencias de `requirements.txt`, Node.js y MySQL 8.
@@ -49,7 +55,13 @@ Esta suite incluye rollback con fallos inyectados y dos asignaciones simultánea
 sobre una misma IP. No debe ejecutarse contra la base productiva; Django crea y
 elimina una base de pruebas temporal.
 
-## 3. Migrar desde SQLite
+## 3. Preparar los datos de producción
+
+Si la instalación productiva comienza con una base MySQL nueva, crear una base
+separada y ejecutar únicamente `migrate` sobre ella. Si ya existe una base
+productiva, respaldarla y revisar `migrate --plan` antes de aplicar cambios;
+no ejecutar `loaddata` sobre datos existentes. Los pasos siguientes de esta
+sección aplican **solo** a una instalación que todavía migra desde SQLite.
 
 Realizar esta operación durante una ventana sin modificaciones en el portal.
 El procedimiento ampliado, su validación por huellas y la vuelta atrás están en
@@ -118,6 +130,10 @@ npm run build
 El proxy HTTPS debe servir `dist`, enviar `/api` al backend y servir
 `staticfiles` como contenido estático. Mantener frontend y API bajo el mismo
 origen permite que Axios envíe el token CSRF sin exponerlo a otros dominios.
+También debe entregar `dist/index.html` para rutas del frontend como
+`/qr/a/<uuid>`; de lo contrario, el código QR abrirá una página 404 al
+escanearlo. Definir `PORTAL_PUBLIC_URL` con la URL HTTPS real del frontend,
+sin ruta final. El perfil productivo rechaza una URL HTTP o mal formada.
 
 ## 6. Ejecutar el backend
 
@@ -127,6 +143,12 @@ servidor WSGI; debe escuchar solamente en la interfaz accesible por el proxy:
 ```powershell
 $env:DJANGO_SETTINGS_MODULE='config.settings_production'
 .\venv\Scripts\waitress-serve.exe --listen=127.0.0.1:8000 --threads=8 config.wsgi:application
+```
+
+En Linux, el comando equivalente es:
+
+```bash
+DJANGO_SETTINGS_MODULE=config.settings_production .venv/bin/waitress-serve --listen=127.0.0.1:8000 --threads=8 config.wsgi:application
 ```
 
 El proxy debe reemplazar `X-Forwarded-Proto` y evitar que el cliente se conecte
@@ -146,6 +168,13 @@ restringir el acceso a los registros.
 4. Asignar un notebook y confirmar la IP sincronizada.
 5. Revelar un secreto con reautenticación.
 6. Revisar que los registros de auditoría no contengan claves ni tokens.
+7. Abrir el tablero de activos y comprobar que cada pendiente lleva a los
+   mismos equipos que cuenta el resumen; abrir también un departamento.
+8. Escanear un QR de un equipo asignado y otro sin usuario: la ficha debe
+   requerir sesión, mostrar el departamento correcto o «Sin departamento
+   asignado» y conservar el mismo QR tras una edición.
+9. Descargar el acta tradicional y comprobar el espacio de RUT manuscrito.
+10. Confirmar las mismas operaciones en QA antes de programar producción.
 
 ## 8. Respaldos y recuperación
 

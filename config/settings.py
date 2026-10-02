@@ -3,6 +3,7 @@ import re
 import secrets
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from cryptography.fernet import Fernet
 from django.core.exceptions import ImproperlyConfigured
@@ -183,6 +184,28 @@ TIME_ZONE = os.getenv('DJANGO_TIME_ZONE', 'America/Santiago')
 USE_I18N = True
 USE_TZ = True
 PORTAL_PUBLIC_URL = os.getenv('PORTAL_PUBLIC_URL', 'http://localhost:5176' if not IS_PRODUCTION else '').rstrip('/')
+if IS_PRODUCTION:
+    try:
+        public_url = urlsplit(PORTAL_PUBLIC_URL)
+        public_port_is_valid = public_url.port is None or 1 <= public_url.port <= 65535
+    except ValueError as exc:
+        raise ImproperlyConfigured(
+            'PORTAL_PUBLIC_URL debe ser la URL HTTPS pública del frontend, sin ruta ni parámetros.'
+        ) from exc
+    if (
+        public_url.scheme != 'https'
+        or not public_url.hostname
+        or not public_port_is_valid
+        or public_url.username is not None
+        or public_url.password is not None
+        or public_url.path
+        or public_url.query
+        or public_url.fragment
+        or any(character.isspace() for character in PORTAL_PUBLIC_URL)
+    ):
+        raise ImproperlyConfigured(
+            'PORTAL_PUBLIC_URL debe ser la URL HTTPS pública del frontend, sin ruta ni parámetros.'
+        )
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 

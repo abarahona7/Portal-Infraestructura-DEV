@@ -111,13 +111,24 @@ http://10.0.0.28:5178
 
 ## Acceso desde otro equipo
 
-1. Conectar el equipo a la misma red.
+1. Conectar el equipo a la misma VPC de Google Cloud o a una VPN con ruta hacia
+   `10.0.0.28`. La red interna de una oficina no es automáticamente esta VPC.
 2. Abrir `http://10.0.0.28:5178` en el navegador.
 3. Iniciar sesión normalmente.
 
 Si la página no abre, comprobar que el otro equipo tenga ruta hacia
-`10.0.0.28`. En Windows, revisar la regla `SimInfra Vite LAN (TCP 5178)`; en
-esta VM, pedir a Infraestructura que revise la regla de VPC descrita arriba.
+`10.0.0.28` y pedir a Infraestructura que revise la regla de VPC descrita arriba.
+Desde el PC Windows, `ipconfig` muestra su IPv4 y este comando comprueba el
+puerto sin depender del navegador:
+
+```powershell
+Test-NetConnection 10.0.0.28 -Port 5178
+```
+
+Si `TcpTestSucceeded` es `False` mientras el portal responde dentro de la VM,
+falta ruta privada o una regla de entrada; cambiar CORS o el código del portal
+no resolverá ese timeout. Para una oficina sin VPN, Infraestructura debe
+habilitar una ruta privada o publicar un proxy HTTPS restringido a la oficina.
 
 ## Si cambia la dirección IP
 

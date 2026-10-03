@@ -4,7 +4,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$ruleName = 'SimInfra Vite LAN (TCP 5176)'
+$ruleName = 'SimInfra Vite LAN (TCP 5178)'
+$legacyRuleName = 'SimInfra Vite LAN (TCP 5176)'
 
 $currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principal = [Security.Principal.WindowsPrincipal]::new($currentIdentity)
@@ -19,14 +20,19 @@ if (-not $isAdministrator) {
 $existingRule = Get-NetFirewallRule `
     -DisplayName $ruleName `
     -ErrorAction SilentlyContinue
+$legacyRule = Get-NetFirewallRule `
+    -DisplayName $legacyRuleName `
+    -ErrorAction SilentlyContinue
 
 if ($Remove) {
-    if ($existingRule) {
-        $existingRule | Remove-NetFirewallRule
-        Write-Host "Regla eliminada: $ruleName"
+    foreach ($rule in @($existingRule, $legacyRule)) {
+        if ($rule) {
+            $rule | Remove-NetFirewallRule
+            Write-Host "Regla eliminada: $($rule.DisplayName)"
+        }
     }
-    else {
-        Write-Host "La regla no existe: $ruleName"
+    if (-not $existingRule -and -not $legacyRule) {
+        Write-Host 'No existen reglas de Vite para los puertos 5178 o 5176.'
     }
     return
 }
@@ -35,6 +41,9 @@ $nodePath = (Get-Command node.exe -ErrorAction Stop).Source
 
 if ($existingRule) {
     $existingRule | Remove-NetFirewallRule
+}
+if ($legacyRule) {
+    $legacyRule | Remove-NetFirewallRule
 }
 
 $ruleParameters = @{
@@ -46,7 +55,7 @@ $ruleParameters = @{
     Profile = @('Domain', 'Private')
     Program = $nodePath
     Protocol = 'TCP'
-    LocalPort = 5176
+    LocalPort = 5178
     RemoteAddress = 'LocalSubnet'
 }
 
@@ -54,5 +63,5 @@ New-NetFirewallRule @ruleParameters | Out-Null
 
 Write-Host "Regla configurada: $ruleName"
 Write-Host "Programa: $nodePath"
-Write-Host 'Puerto: TCP 5176'
+Write-Host 'Puerto: TCP 5178'
 Write-Host 'Origen permitido: subred local en perfiles Dominio y Privado'

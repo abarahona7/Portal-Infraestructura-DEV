@@ -53,11 +53,13 @@ Get-NetFirewallRule -DisplayName 'Portal DEV puente SSH 5178' | Remove-NetFirewa
 ## 3. Abrir el puente SSH desde el PC
 
 En otra ventana de **PowerShell del PC**, ejecutar el siguiente comando y dejar
-la ventana abierta. Reemplazar `ALIAS_SSH_SIMIDEV` por el mismo alias o destino
-que ya se usa para conectar por SSH a `simidev` desde ese PC:
+la ventana abierta. La IP externa de `simidev` se confirmó el 3 de octubre de
+2026; si cambia, reemplazarla. Si Windows se conecta a la VM mediante un alias
+o configuración especial de SSH, usar ese alias en lugar de
+`tiangelo@34.176.207.177`:
 
 ```powershell
-ssh -N -T -g -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -L 172.23.1.92:5178:10.0.0.28:5178 ALIAS_SSH_SIMIDEV
+ssh -N -T -g -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -L 172.23.1.92:5178:10.0.0.28:5178 tiangelo@34.176.207.177
 ```
 
 `-L` enlaza **la IP del PC** con Vite en la VM; `-g` permite que otros PC de la
@@ -86,7 +88,8 @@ PC no llega, revisar firewall, perfil de red, aislamiento de clientes o rutas
 entre subredes. Si el túnel abre pero aparece una página de error, comprobar que
 Django y Vite siguen funcionando en la VM.
 
-Una vez confirmado el acceso, si se van a generar etiquetas QR para uso desde
-la oficina, cambiar `PORTAL_PUBLIC_URL` del `.env` local a
-`http://172.23.1.92:5178` y reiniciar Django. Las etiquetas ya impresas con
-`10.0.0.28:5178` seguirán apuntando a esa dirección privada de la VPC.
+El `.env` local de DEV ya usa `PORTAL_PUBLIC_URL=http://172.23.1.92:5178` para
+las etiquetas QR nuevas. Las etiquetas ya impresas con `10.0.0.28:5178`
+seguirán apuntando a esa dirección privada de la VPC. Si cambia la IP del PC,
+actualizar también `PORTAL_PUBLIC_URL`, los orígenes CORS/CSRF y la regla de
+firewall; luego reiniciar Django y el túnel SSH.

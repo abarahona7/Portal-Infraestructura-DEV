@@ -1,0 +1,74 @@
+name: Validación del portal
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/itam-reinicio-limpio]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Django y MySQL 8
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci_only_password
+          MYSQL_DATABASE: portal_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -pci_only_password --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DJANGO_ENV: test
+      DATABASE_ENGINE: mysql
+      DATABASE_NAME: portal_ci
+      DATABASE_USER: root
+      DATABASE_PASSWORD: ci_only_password
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_PORT: "3306"
+      PORTAL_PUBLIC_URL: https://portal.example.test
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: pip
+      - name: Instalar bibliotecas de MySQL
+        run: sudo apt-get update && sudo apt-get install -y default-libmysqlclient-dev pkg-config
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements.txt
+      - name: Generar clave de cifrado temporal
+        run: python -c 'from cryptography.fernet import Fernet; print("FIELD_ENCRYPTION_KEY=" + Fernet.generate_key().decode())' >> "$GITHUB_ENV"
+      - name: Ejecutar suite completa de core
+        run: python manage.py test core --noinput
+
+  frontend:
+    name: Lint y compilación de React
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: siminfra-frontend
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: siminfra-frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+        env:
+          VITE_API_URL: /api

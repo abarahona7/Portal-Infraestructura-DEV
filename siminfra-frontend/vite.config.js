@@ -1,5 +1,5 @@
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 
 const apiProxy = {
   '/api': {
@@ -11,11 +11,12 @@ const apiProxy = {
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const isLanDevelopment = mode === 'lan'
+  const { PORTAL_LAN_HOST } = loadEnv(mode, process.cwd(), 'PORTAL_LAN_HOST')
 
   return {
     plugins: [react()],
     server: {
-      host: isLanDevelopment ? '0.0.0.0' : '127.0.0.1',
+      host: isLanDevelopment ? (PORTAL_LAN_HOST || '127.0.0.1') : '127.0.0.1',
       port: 5178,
       strictPort: true,
       proxy: apiProxy,

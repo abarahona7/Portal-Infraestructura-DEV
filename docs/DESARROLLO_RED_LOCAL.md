@@ -5,25 +5,27 @@ portal desde sus navegadores. Está pensado únicamente para pruebas internas.
 
 ## Configuración de este equipo
 
-La dirección IPv4 al preparar este perfil era `172.23.1.92`. Reemplázala por
-la IP actual del servidor; con esa IP, el portal queda disponible en:
+La IP privada actual de la VM DEV es `10.0.0.28`. Si cambia, actualiza las
+variables indicadas abajo; el portal queda disponible en:
 
 ```text
-http://172.23.1.92:5178
+http://10.0.0.28:5178
 ```
 
 El archivo local `.env` debe incluir la IP en estas variables:
 
 ```env
-DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost,172.23.1.92
-CORS_ALLOWED_ORIGINS=http://localhost:5178,http://127.0.0.1:5178,http://172.23.1.92:5178
-CSRF_TRUSTED_ORIGINS=http://localhost:5178,http://127.0.0.1:5178,http://172.23.1.92:5178
+DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost,simidev,10.0.0.28
+CORS_ALLOWED_ORIGINS=http://localhost:5178,http://127.0.0.1:5178,http://10.0.0.28:5178
+CSRF_TRUSTED_ORIGINS=http://localhost:5178,http://127.0.0.1:5178,http://10.0.0.28:5178
+PORTAL_PUBLIC_URL=http://10.0.0.28:5178
 ```
 
 `siminfra-frontend/.env.local` debe conservar esta configuración:
 
 ```env
 VITE_API_URL=/api
+PORTAL_LAN_HOST=10.0.0.28
 ```
 
 De esta manera el navegador se comunica con la API mediante el proxy de Vite.
@@ -50,8 +52,9 @@ Abrir una segunda terminal en `siminfra-frontend` e iniciar el perfil LAN:
 npm run dev:lan
 ```
 
-Vite escuchará en `0.0.0.0:5178`, pero la API continuará accesible solamente
-desde el equipo servidor a través del proxy.
+Vite escuchará solo en `10.0.0.28:5178`; la API continuará accesible solamente
+desde el equipo servidor a través del proxy. Si falta `PORTAL_LAN_HOST`, el
+perfil LAN escuchará solo en `127.0.0.1` para evitar una exposición accidental.
 
 ## Autorizar el puerto en Windows
 
@@ -72,21 +75,55 @@ Para eliminar posteriormente la regla:
 .\scripts\configurar_firewall_lan.ps1 -Remove
 ```
 
+## Acceso a la VM DEV desde la subred privada
+
+Esta VM está en la subred `10.0.0.0/24` de la VPC `vpc-drsimi-db-ws` y tiene la
+etiqueta `simidev`. En Google Cloud debe existir una regla de entrada que permita
+**solo TCP 5178** desde `10.0.0.0/24` hacia esa etiqueta. No se necesita abrir
+TCP 8005: Django escucha únicamente en `127.0.0.1` y Vite reenvía `/api`.
+Infraestructura debe comprobar también que ninguna regla más amplia permita
+TCP 5178 desde Internet. La cuenta de esta VM no tiene los permisos necesarios
+para consultar o modificar esas reglas. Referencia:
+[reglas de firewall de VPC](https://cloud.google.com/firewall/docs/using-firewalls).
+Si la regla aún no existe, Infraestructura puede crearla con una cuenta autorizada:
+
+```bash
+gcloud compute firewall-rules create allow-simidev-dev-5178 \
+  --project=simidata-project-db-ws \
+  --network=vpc-drsimi-db-ws \
+  --direction=INGRESS \
+  --action=ALLOW \
+  --rules=tcp:5178 \
+  --source-ranges=10.0.0.0/24 \
+  --target-tags=simidev
+```
+
+Antes de ejecutarlo deben revisar las reglas existentes y confirmar que la
+etiqueta `simidev` identifique solo las VM previstas. Si los usuarios entran
+por una VPN cuyo rango de origen no es `10.0.0.0/24`, Infraestructura debe usar
+el rango privado de esa VPN.
+
+Desde otro equipo con ruta a esa VPC, comprobar:
+
+```text
+http://10.0.0.28:5178
+```
+
 ## Acceso desde otro equipo
 
 1. Conectar el equipo a la misma red.
-2. Abrir `http://172.23.1.92:5178` en el navegador.
+2. Abrir `http://10.0.0.28:5178` en el navegador.
 3. Iniciar sesión normalmente.
 
-Si la página no abre, comprobar que ambos equipos estén en la misma red y que
-la regla `SimInfra Vite LAN (TCP 5178)` esté habilitada. La red corporativa de
-este equipo utiliza actualmente el perfil Dominio.
+Si la página no abre, comprobar que el otro equipo tenga ruta hacia
+`10.0.0.28`. En Windows, revisar la regla `SimInfra Vite LAN (TCP 5178)`; en
+esta VM, pedir a Infraestructura que revise la regla de VPC descrita arriba.
 
 ## Si cambia la dirección IP
 
-Ejecutar `ipconfig`, identificar la dirección IPv4 activa y reemplazar
-`172.23.1.92` en las tres variables del `.env`. Reiniciar Django y Vite después
-del cambio.
+En Windows ejecutar `ipconfig`; en Linux, `ip -4 addr show`. Reemplazar
+`10.0.0.28` en las cuatro variables del `.env` y en `PORTAL_LAN_HOST` de
+`siminfra-frontend/.env.local`. Reiniciar Django y Vite después del cambio.
 
 No se deben usar valores como `*` en `DJANGO_ALLOWED_HOSTS` ni habilitar todos
 los orígenes CORS para resolver cambios de IP.

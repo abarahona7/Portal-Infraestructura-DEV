@@ -10,14 +10,21 @@ accesos y respaldos; no se debe apuntar un despliegue productivo a
 `portalinfra_dev`. Antes de liberar, confirmar con Infraestructura la URL HTTPS
 definitiva, el proxy, la base de QA/producción y la ventana de despliegue.
 
-Verificación técnica del 2 de octubre de 2026: pasaron 112 pruebas existentes
-y seis pruebas nuevas en SQLite temporal; nueve casos seleccionados (incluidas
-las dos pruebas de concurrencia de IP y el flujo HTTPS de sesión/QR) pasaron
-en MySQL 8 temporal que se retiró al terminar. El ejemplo Nginx pasó una
-prueba aislada de sintaxis,
-HTTPS, carga directa de QR, archivos, estáticos y proxy de API/admin. Esta
-evidencia aún no reemplaza la prueba funcional en QA ni la revisión del
-entorno productivo definitivo.
+Verificación técnica al 3 de octubre de 2026: **las 119 pruebas de `core`
+pasaron completas en MySQL 8 temporal**, incluidas concurrencia de IP y
+sesión/QR por HTTPS; la base y el contenedor se retiraron al terminar. El
+ejemplo Nginx pasó una prueba aislada de sintaxis, HTTPS, carga directa de QR,
+archivos, estáticos y proxy de API/admin. Esta evidencia aún no reemplaza la
+prueba funcional en QA ni la revisión del entorno productivo definitivo.
+También se restauró un respaldo actual de DEV en MySQL 8 aislado: los 365
+equipos conservaron sus ID y QR, no faltaron migraciones y pasaron las 21
+reglas de integridad; la instancia temporal se retiró.
+
+Para habilitar QA faltan, como mínimo: una base MySQL independiente con permisos
+para aplicar migraciones, URL y certificado HTTPS propios, `PORTAL_PUBLIC_URL`
+apuntando a esa URL, acceso al servidor y una cuenta con rol de prueba. En QA
+se debe ejecutar la sección 4 y completar la sección 7 antes de proponer una
+fecha de producción.
 
 ## 1. Preparar el servidor
 
@@ -54,15 +61,16 @@ Antes de continuar, validar la conexión:
 .\venv\Scripts\python.exe manage.py check --database default --settings=config.settings_production
 ```
 
-En una instancia MySQL aislada para pruebas, ejecutar también:
+En una instancia MySQL aislada para pruebas, ejecutar la suite completa:
 
 ```powershell
-.\venv\Scripts\python.exe manage.py test core.test_ip_assignment_service core.test_https_release_flow --settings=config.settings_production
+.\venv\Scripts\python.exe manage.py test core --settings=config.settings_production
 ```
 
-Esta suite incluye rollback con fallos inyectados, dos asignaciones simultáneas
-sobre una misma IP y el flujo de sesión/QR bajo HTTPS. No debe ejecutarse contra
-la base productiva; Django crea y elimina una base de pruebas temporal.
+La suite incluye rollback con fallos inyectados, dos asignaciones simultáneas
+sobre una misma IP y el flujo de sesión/QR bajo HTTPS. Usar solo una instancia
+aislada con permiso para crear y eliminar la base de pruebas; no apuntar este
+comando a DEV compartido ni a producción.
 
 ## 3. Preparar los datos de producción
 

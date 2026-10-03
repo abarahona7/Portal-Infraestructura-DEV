@@ -129,6 +129,8 @@ Si `TcpTestSucceeded` es `False` mientras el portal responde dentro de la VM,
 falta ruta privada o una regla de entrada; cambiar CORS o el código del portal
 no resolverá ese timeout. Para una oficina sin VPN, Infraestructura debe
 habilitar una ruta privada o publicar un proxy HTTPS restringido a la oficina.
+Para la publicación HTTPS de esta VM, consulte
+[`ACCESO_OFICINA_DEV.md`](ACCESO_OFICINA_DEV.md).
 
 ## Si cambia la dirección IP
 

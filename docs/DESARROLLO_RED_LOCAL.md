@@ -131,6 +131,8 @@ no resolverá ese timeout. Para una oficina sin VPN, Infraestructura debe
 habilitar una ruta privada o publicar un proxy HTTPS restringido a la oficina.
 Para la publicación HTTPS de esta VM, consulte
 [`ACCESO_OFICINA_DEV.md`](ACCESO_OFICINA_DEV.md).
+Si se utilizará el PC Windows como puente temporal para la oficina, siga
+[`PUENTE_PC_OFICINA_DEV.md`](PUENTE_PC_OFICINA_DEV.md).
 
 ## Si cambia la dirección IP
 

@@ -73,7 +73,7 @@ respaldos.
 - [Modelo de datos y relaciones](docs/MODELO_DATOS.md)
 - [Migración verificada de SQLite a MySQL](docs/MIGRACION_MYSQL.md)
 - [Desarrollo en red local](docs/DESARROLLO_RED_LOCAL.md)
-- [Continuidad y actualización del host de desarrollo](docs/CONTINUIDAD_HOST_DESARROLLO.md)
+- [Acceso al entorno DEV desde la oficina](docs/ACCESO_OFICINA_DEV.md)
 - [Histórico de importación v1.1](docs/historico/importacion/IMPORTACION_V11.md)
 - [Histórico de rendimiento v1.1](docs/historico/rendimiento/RENDIMIENTO_V11.md)
 

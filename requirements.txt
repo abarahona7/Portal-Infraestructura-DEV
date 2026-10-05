@@ -24,4 +24,3 @@ redis==8.1.0
 six==1.17.0
 sqlparse==0.6.0
 tzdata==2026.3
-waitress==3.0.2

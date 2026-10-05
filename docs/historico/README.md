@@ -7,7 +7,9 @@ raíz del proyecto.
 - `rendimiento/`: metodología, resultados y métricas antes/después de la
   optimización.
 
-Los reportes con datos operacionales y los respaldos SQLite se guardan
-localmente en `.local/`, que está excluida de Git. La base activa de desarrollo
-continúa en `db.sqlite3` en la raíz porque esa es la ubicación predeterminada de
-Django.
+Los reportes con datos operacionales y los respaldos de la base se guardan
+localmente en `.local/`, que está excluida de Git. La base activa de DEV se
+configura en `.env`; no forma parte del repositorio. Los respaldos previos a la
+reconstrucción ITAM están comprimidos en
+`.local/backups/historial_itam_20260929_20261001.tar.gz`; los respaldos de
+reconstrucción y prueba de restauración permanecen como archivos SQL separados.

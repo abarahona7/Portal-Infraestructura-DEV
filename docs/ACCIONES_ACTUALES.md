@@ -4,18 +4,6 @@ Este documento resume las acciones implementadas en la interfaz y las reglas
 que el backend vuelve a validar. Las diferencias detectadas para QA están en
 [la revisión de ambigüedades](REVISION_AMBIGUEDADES_PRODUCCION.md).
 
-## Diagrama histórico (29-09-2026)
-
-Estas imágenes y su fuente son anteriores a la reconstrucción del Tablero de
-activos y la Ficha QR. No deben utilizarse como mapa completo de permisos ni
-como documentación gráfica definitiva hasta regenerarlas. Las acciones
-vigentes se describen en el texto siguiente.
-
-[Abrir imagen PNG](diagramas/mapa_acciones_actuales.png) ·
-[Abrir PNG de alta resolución](diagramas/mapa_acciones_actuales_alta_resolucion.png) ·
-[Abrir imagen SVG](diagramas/mapa_acciones_actuales.svg) ·
-[Editar fuente Mermaid](diagramas/fuentes/mapa_acciones_actuales.mmd)
-
 ## Acciones según el rol
 
 | Rol | Consulta | Crear/editar/asignar | Exportar | Eliminar | Revelar secretos |

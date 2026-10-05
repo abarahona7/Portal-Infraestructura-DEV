@@ -4,6 +4,7 @@ import os
 import secrets
 import subprocess
 import sys
+from pathlib import Path
 
 from cryptography.fernet import Fernet
 from django.test import SimpleTestCase
@@ -37,7 +38,7 @@ class ProductionQrUrlSettingsTests(SimpleTestCase):
         })
         return subprocess.run(
             [sys.executable, '-c', 'from django.conf import settings; print(settings.PORTAL_PUBLIC_URL)'],
-            cwd=os.path.dirname(os.path.dirname(__file__)),
+            cwd=Path(__file__).resolve().parents[2],
             env=environment,
             capture_output=True,
             text=True,

@@ -56,6 +56,18 @@ inicia con `npm run dev:lan` y mantiene la API detrás del proxy de Vite.
 
 No reutilizar una `FIELD_ENCRYPTION_KEY` distinta sobre una base que ya contenga secretos `ENC2::`; los secretos existentes solo pueden descifrarse con la clave con la que fueron cifrados.
 
+## Pruebas
+
+Las pruebas del backend están agrupadas en `core/tests/`. Se ejecutan sobre
+una base SQLite temporal, sin modificar la base DEV:
+
+```bash
+.venv/bin/python scripts/run_qa_sqlite.py core
+```
+
+Las pruebas del frontend se ejecutan con `npm test` dentro de
+`siminfra-frontend/`.
+
 ## Producción
 
 El perfil productivo es `config.settings_production`. Exige MySQL, desactiva

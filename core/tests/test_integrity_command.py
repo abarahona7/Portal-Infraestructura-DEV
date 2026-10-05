@@ -4,7 +4,7 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase
 
-from .models import Departamento, SubArea, Usuario
+from core.models import Departamento, SubArea, Usuario
 
 
 class ValidatePortalIntegrityCommandTests(TestCase):

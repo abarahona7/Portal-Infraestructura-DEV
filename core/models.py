@@ -1,4 +1,5 @@
 import uuid
+import unicodedata
 
 from django.db import models, transaction
 from django.core.exceptions import ValidationError
@@ -62,7 +63,8 @@ def _normalize_spaces(value):
 
 def _normalize_key(value):
     value = _normalize_spaces(value) or ""
-    return value.casefold()
+    folded = unicodedata.normalize('NFKD', value.casefold())
+    return ''.join(character for character in folded if not unicodedata.combining(character))
 
 
 def _normalize_optional_key(value):
@@ -1300,6 +1302,7 @@ class SecurityAuditLog(models.Model):
     success = models.BooleanField(default=False)
     detail = models.TextField(null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
+    request_id = models.CharField(max_length=32, null=True, blank=True, db_index=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

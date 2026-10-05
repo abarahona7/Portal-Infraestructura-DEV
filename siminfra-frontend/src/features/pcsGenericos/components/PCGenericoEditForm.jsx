@@ -197,7 +197,7 @@ export default function PCGenericoEditForm({
 
               updateField('activo_fijo', value);
             }}
-            placeholder="Ej: 102401000300 o SINAF"
+            placeholder="Ej: 102401000300"
             style={inputStyle}
           />
         </div>

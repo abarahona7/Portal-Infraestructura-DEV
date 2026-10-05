@@ -27,6 +27,7 @@ def _audit(request, success, module, object_id, secret_type, detail=''):
         event='SECRET_REVEAL', actor=request.user.get_username(), module=module,
         object_id_text=str(object_id), secret_type=secret_type, success=success,
         detail=detail[:255], ip_address=_client_ip(request),
+        request_id=getattr(request, 'request_id', None),
     )
 
 

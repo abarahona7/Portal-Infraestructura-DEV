@@ -38,6 +38,14 @@ después del cambio.
 No continuar si alguno falla. En particular, cambiar `FIELD_ENCRYPTION_KEY`
 haría ilegibles los secretos `ENC2::` existentes.
 
+La migración `core.0059` recalcula los identificadores normalizados sin
+acentos y agrega el ID de solicitud a la auditoría. Antes de aplicarla al
+origen, ensayarla sobre una copia aislada: si dos registros pasan a tener la
+misma clave, se detiene e informa sus ID sin fusionar ni borrar datos. Resolver
+esa colisión con el responsable de los datos antes de continuar. El comando
+`verify_secrets` ahora intenta descifrar cada valor `ENC2::` y falla si la
+clave no corresponde; no muestra las contraseñas ni los valores descifrados.
+
 ## 3. Crear la auditoría del origen
 
 ```powershell

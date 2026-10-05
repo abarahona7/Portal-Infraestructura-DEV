@@ -1,0 +1,20 @@
+{
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "views.py": "asset_views.py,auth_views.py,security_views.py",
+    "models.py": "serializers.py,equipment_categories.py",
+    "authentication.py": "session_auth.py,permissions.py,middleware.py"
+  },
+  "files.exclude": {
+    "**/.agents": true,
+    "**/.aws": true,
+    "**/.codex": true,
+    "**/.local": true,
+    "**/.venv": true,
+    "**/.vscode": true,
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/__pycache__": true
+  }
+}

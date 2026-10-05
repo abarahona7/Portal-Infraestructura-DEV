@@ -1,24 +1,27 @@
 # Acciones actuales del Portal Infraestructura TI
 
-Este documento resume las acciones implementadas actualmente en la interfaz y
-las reglas que el backend vuelve a validar. El diagrama sirve como mapa de uso
-del portal; no incluye funcionalidades futuras.
+Este documento resume las acciones implementadas en la interfaz y las reglas
+que el backend vuelve a validar. Las diferencias detectadas para QA están en
+[la revisión de ambigüedades](REVISION_AMBIGUEDADES_PRODUCCION.md).
 
-## Diagrama
+## Diagrama histórico (29-09-2026)
+
+Estas imágenes y su fuente son anteriores a la reconstrucción del Tablero de
+activos y la Ficha QR. No deben utilizarse como mapa completo de permisos ni
+como documentación gráfica definitiva hasta regenerarlas. Las acciones
+vigentes se describen en el texto siguiente.
 
 [Abrir imagen PNG](diagramas/mapa_acciones_actuales.png) ·
 [Abrir PNG de alta resolución](diagramas/mapa_acciones_actuales_alta_resolucion.png) ·
 [Abrir imagen SVG](diagramas/mapa_acciones_actuales.svg) ·
 [Editar fuente Mermaid](diagramas/fuentes/mapa_acciones_actuales.mmd)
 
-![Mapa de acciones actuales](diagramas/mapa_acciones_actuales.png)
-
 ## Acciones según el rol
 
 | Rol | Consulta | Crear/editar/asignar | Exportar | Eliminar | Revelar secretos |
 | --- | --- | --- | --- | --- | --- |
 | Visualizador | Solo Anexos: listado, búsqueda, filtros, paginación e historial | No | No | No | No |
-| Operador Infraestructura | Todos los módulos habilitados | Sí | Sí | No | No |
+| Operador Infraestructura | Usuarios, Departamentos/Áreas, Equipos, Tablero de activos, Ficha QR, PCs genéricos, Gestión de IP, Servidores, Anexos y Perfiles genéricos | Donde existe la acción; Tablero y QR son de consulta | Donde existe la exportación | No | No |
 | Administrador | Todos los módulos | Sí | Sí | Sí, según las reglas del módulo | Sí, tras reautenticación |
 | Superusuario | Igual que Administrador | Sí | Sí | Sí, según las reglas del módulo | Sí, tras reautenticación |
 
@@ -42,9 +45,16 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
   existe esa relación, la interfaz lo explica y el backend responde `409`.
 - Cambiar el estado con una advertencia previa: `LICENCIA` libera solamente la
   IP; `BAJA` libera la IP, desasigna equipos y libera el anexo.
+- Al reactivar un usuario desde `BAJA`, la IP y el anexo no se restauran. Un
+  Notebook o Mac en stock puede volver a asociarse si su hostname coincide con
+  el del usuario; los demás equipos no se restauran desde el historial. Este
+  comportamiento requiere validación funcional en QA.
 
 ### Equipos
 
+- Abrir el Tablero de activos desde el menú lateral: consultar estado general,
+  departamentos con más equipos asignados y pendientes; desde estos últimos
+  se puede ir al detalle de los equipos afectados.
 - Entrar directamente a Notebook, Celular, Tablet, Mac, BAM / Router o
   Periféricos desde el menú lateral.
 - Buscar, filtrar por estado, paginar y exportar.
@@ -53,6 +63,9 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
 - Ver en Notebook la IP que pertenece al usuario asignado.
 - Revelar PIN u otro secreto admitido como administrador, previa
   reautenticación.
+- Abrir la ficha mediante el QR del equipo para consultar sus datos. Tablero y
+  Ficha QR exigen sesión y rol Operador o Administrador; el Visualizador no
+  tiene acceso a estas vistas.
 
 ### Gestión de IP
 
@@ -64,7 +77,10 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
 - Mantener un único propietario: usuario, servidor, PC genérico u otro uso.
 - Sincronizar automáticamente la dirección, el propietario y el estado.
 - Liberar una IP desde el módulo que posee la asignación.
-- Eliminar como administrador solo cuando la IP está libre.
+- Eliminar como administrador cuando no existe un vínculo activo con usuario,
+  servidor, PC genérico u otra asignación activa. El endpoint aún no verifica
+  explícitamente `estado=LIBRE` si el estado quedó desincronizado; esta brecha
+  está registrada para corregirla antes de producción.
 
 ### Anexos
 
@@ -103,7 +119,8 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
 
 - Buscar, paginar y exportar.
 - Agregar y editar seleccionando una IP disponible de `172.23.1.0/24`.
-- Cambiar o liberar la IP y sincronizar su estado en Gestión de IP.
+- Cambiar la IP y sincronizar su estado en Gestión de IP. La API exige una IP
+  al crear o editar; eliminar el servidor libera su IP.
 - Consultar historial y eliminar con permiso administrativo.
 
 ## Flujo común al confirmar
@@ -118,4 +135,5 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
    seguridad.
 5. La interfaz informa el resultado y actualiza los registros afectados.
 
-Mapa contrastado con la implementación actual del repositorio al 29-09-2026.
+Texto contrastado con la implementación del repositorio al 05-10-2026. El
+diagrama histórico conserva su fecha original hasta su actualización.

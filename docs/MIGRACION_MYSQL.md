@@ -93,7 +93,12 @@ Comprobar la conexión con el perfil productivo:
 ## 6. Crear el esquema e importar
 
 El destino debe estar vacío. No iniciar todavía el frontend ni el backend para
-usuarios.
+usuarios. Antes de ejecutar `loaddata`, comprobar y registrar que la base
+destino no contiene datos operacionales. El proyecto no tiene por ahora una
+protección técnica que impida ejecutar ese comando estándar sobre una base con
+datos; incorporar una validación automática de vacío o un comando de carga
+protegido antes de una importación de producción. Nunca usar `loaddata` para
+actualizar una base productiva existente.
 
 ```powershell
 .\venv\Scripts\python.exe manage.py migrate --settings=config.settings_production

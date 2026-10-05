@@ -9,6 +9,8 @@ se validaron en MySQL **DEV**. QA y producción necesitan sus propias bases,
 accesos y respaldos; no se debe apuntar un despliegue productivo a
 `portalinfra_dev`. Antes de liberar, confirmar con Infraestructura la URL HTTPS
 definitiva, el proxy, la base de QA/producción y la ventana de despliegue.
+Las decisiones y comprobaciones aún abiertas se registran en
+[la revisión de ambigüedades](docs/REVISION_AMBIGUEDADES_PRODUCCION.md).
 
 Verificación técnica al 3 de octubre de 2026: **las 119 pruebas de `core`
 pasaron completas en MySQL 8 temporal**, incluidas concurrencia de IP y
@@ -79,6 +81,10 @@ separada y ejecutar únicamente `migrate` sobre ella. Si ya existe una base
 productiva, respaldarla y revisar `migrate --plan` antes de aplicar cambios;
 no ejecutar `loaddata` sobre datos existentes. Los pasos siguientes de esta
 sección aplican **solo** a una instalación que todavía migra desde SQLite.
+El proyecto no incluye actualmente una protección técnica que detenga
+`loaddata` si se invoca sobre un destino con datos: antes de una importación,
+registrar la comprobación de que no contiene datos operacionales e incorporar
+una validación automática de vacío o un comando de carga protegido.
 
 Realizar esta operación durante una ventana sin modificaciones en el portal.
 El procedimiento ampliado, su validación por huellas y la vuelta atrás están en
@@ -95,7 +101,8 @@ El procedimiento ampliado, su validación por huellas y la vuelta atrás están 
 .\venv\Scripts\python.exe manage.py dumpdata --natural-foreign --natural-primary --exclude contenttypes --exclude auth.permission --exclude admin.logentry --exclude sessions.session --exclude token_blacklist --exclude core.portalsession --indent 2 --output portal-pre-mysql.json
 ```
 
-4. Activar el `.env` productivo y crear el esquema e importar:
+4. Activar el `.env` productivo, comprobar y registrar que el destino no tiene
+   datos operacionales, y solo entonces crear el esquema e importar:
 
 ```powershell
 .\venv\Scripts\python.exe manage.py migrate --settings=config.settings_production
@@ -192,17 +199,30 @@ restringir el acceso a los registros.
 
 1. Iniciar sesión y recargar la página sin perder la sesión.
 2. Esperar cinco minutos sin actividad y comprobar el cierre automático.
-3. Crear, cambiar y liberar una IP de usuario y servidor.
+3. Crear, cambiar y liberar una IP de usuario; crear y cambiar la IP de un
+   servidor de prueba, y confirmar que al eliminar ese servidor se libera.
 4. Asignar un notebook y confirmar la IP sincronizada.
 5. Revelar un secreto con reautenticación.
 6. Revisar que los registros de auditoría no contengan claves ni tokens.
 7. Abrir el tablero de activos y comprobar que cada pendiente lleva a los
    mismos equipos que cuenta el resumen; abrir también un departamento.
-8. Escanear un QR de un equipo asignado y otro sin usuario: la ficha debe
-   requerir sesión, mostrar el departamento correcto o «Sin departamento
-   asignado» y conservar el mismo QR tras una edición.
-9. Descargar el acta tradicional y comprobar el espacio de RUT manuscrito.
-10. Confirmar las mismas operaciones en QA antes de programar producción.
+8. Escanear físicamente, desde un dispositivo real, un QR de un equipo asignado
+   y otro sin usuario: la ficha debe requerir sesión, mostrar el departamento
+   correcto o «Sin departamento asignado» y conservar el mismo QR tras una
+   edición. Probar acceso directo
+   con los roles Operador, Administrador y Visualizador.
+9. Descargar el acta tradicional, abrir el PDF y revisar visualmente su diseño
+   y el espacio de RUT manuscrito.
+10. Exportar Excel desde los módulos disponibles y abrir los archivos en una
+    hoja de cálculo; revisar encabezados, filas y caracteres especiales.
+11. Probar el dominio y certificado HTTPS reales con un navegador externo al
+    servidor. Verificar el proxy, el inicio de sesión, `/api` y la carga directa
+    de `/qr/a/<uuid>`; comprobar que el backend interno no sea accesible
+    directamente.
+12. Probar una baja y reactivación de usuario: confirmar qué sucede con IP,
+    anexo y equipos, incluido el posible re-enlace por hostname de Notebook/Mac.
+13. Resolver las puertas de salida de la revisión de ambigüedades y confirmar
+    las mismas operaciones en QA antes de programar producción.
 
 ## 8. Respaldos y recuperación
 
@@ -211,5 +231,7 @@ restringir el acceso a los registros.
 - Probar periódicamente la restauración en una base aislada.
 - Antes de cada despliegue: respaldar, ejecutar migraciones, validar el portal y
   conservar un procedimiento para volver al commit anterior.
-- Confirmar y subir cada cambio significativo a `origin/main` después de pasar
-  sus validaciones.
+- La reconstrucción se trabaja actualmente en `feature/itam-reinicio-limpio`.
+  Después de QA y revisión de los cambios locales pendientes, integrar el
+  commit aprobado en `main` y verificar `origin/main` antes de desplegarlo.
+  No asumir que la rama de trabajo ya está incluida en producción.

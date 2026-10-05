@@ -67,10 +67,9 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
 - Mantener un único propietario: usuario, servidor, PC genérico u otro uso.
 - Sincronizar automáticamente la dirección, el propietario y el estado.
 - Liberar una IP desde el módulo que posee la asignación.
-- Eliminar como administrador cuando no existe un vínculo activo con usuario,
-  servidor, PC genérico u otra asignación activa. El endpoint aún no verifica
-  explícitamente `estado=LIBRE` si el estado quedó desincronizado; esta brecha
-  está registrada para corregirla antes de producción.
+- Eliminar como administrador solo cuando su estado es `LIBRE` y no existe un
+  vínculo activo con usuario, servidor, PC genérico u otra asignación. Una
+  asignación activa impide además el borrado directo por ORM.
 
 ### Anexos
 

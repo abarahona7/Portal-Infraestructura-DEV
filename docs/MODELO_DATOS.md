@@ -52,7 +52,7 @@ Django agrega las tablas de `auth`, `contenttypes`, `sessions`,
 | Usuario | IP heredada/proyección | 0..1:0..1 | La IP se libera con `SET_NULL`. |
 | Servidor | IP | 0..1:0..1 | `PROTECT` evita borrar una IP usada. |
 | PC genérico | IP | 0..1:0..1 | `PROTECT` evita borrar una IP usada. |
-| IP | Asignación IP | 1:0..1 | `CASCADE`; borrar la IP elimina su asignación formal. |
+| IP | Asignación IP | 1:0..1 | `PROTECT`; una IP con asignación formal no puede borrarse por ORM. |
 | Propietario | Asignación IP | 0..1:0..1 | `CASCADE`; el servicio libera y registra antes de borrar. |
 | Entidad | Su historial | 1:N opcional | El historial permanece con `SET_NULL`. |
 | `auth.User` | PortalSession | 1:N | `CASCADE`. |

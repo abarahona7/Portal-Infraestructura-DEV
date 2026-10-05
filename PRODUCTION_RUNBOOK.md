@@ -5,19 +5,22 @@ Este procedimiento publica el portal con MySQL 8, HTTPS y el perfil
 `.env` del servidor y nunca se agregan a Git.
 
 Estado actual de la reconstrucción: la migración 0058 y las pruebas funcionales
-se validaron en MySQL **DEV**. QA y producción necesitan sus propias bases,
+se validaron en MySQL **DEV**. La migración 0060 se probó en MySQL aislado y aún
+debe aplicarse en el ambiente correspondiente. QA y producción necesitan sus propias bases,
 accesos y respaldos; no se debe apuntar un despliegue productivo a
 `portalinfra_dev`. Antes de liberar, confirmar con Infraestructura la URL HTTPS
 definitiva, el proxy, la base de QA/producción y la ventana de despliegue.
 Las decisiones y comprobaciones aún abiertas se registran en
 [la revisión de ambigüedades](docs/REVISION_AMBIGUEDADES_PRODUCCION.md).
 
-Verificación técnica al 3 de octubre de 2026: **las 119 pruebas de `core`
-pasaron completas en MySQL 8 temporal**, incluidas concurrencia de IP y
+Verificación técnica actual: **161 pruebas de `core` ejecutadas en MySQL 8.4
+temporal, sin fallos (2 omisiones)**, incluidas concurrencia de IP y
 sesión/QR por HTTPS; la base y el contenedor se retiraron al terminar. El
 ejemplo Nginx pasó una prueba aislada de sintaxis, HTTPS, carga directa de QR,
 archivos, estáticos y proxy de API/admin. Esta evidencia aún no reemplaza la
-prueba funcional en QA ni la revisión del entorno productivo definitivo.
+prueba funcional en QA ni la revisión del entorno productivo definitivo. La
+suite incluye la migración 0060, el bloqueo del borrado de IP asignada y la
+protección de `loaddata` sobre bases con datos operacionales.
 También se restauró un respaldo actual de DEV en MySQL 8 aislado: los 365
 equipos conservaron sus ID y QR, no faltaron migraciones y pasaron las 21
 reglas de integridad; la instancia temporal se retiró.
@@ -81,10 +84,9 @@ separada y ejecutar únicamente `migrate` sobre ella. Si ya existe una base
 productiva, respaldarla y revisar `migrate --plan` antes de aplicar cambios;
 no ejecutar `loaddata` sobre datos existentes. Los pasos siguientes de esta
 sección aplican **solo** a una instalación que todavía migra desde SQLite.
-El proyecto no incluye actualmente una protección técnica que detenga
-`loaddata` si se invoca sobre un destino con datos: antes de una importación,
-registrar la comprobación de que no contiene datos operacionales e incorporar
-una validación automática de vacío o un comando de carga protegido.
+El comando `loaddata` del portal rechaza bases con usuarios o registros de
+`core`; antes de una importación, verificar igualmente que el destino es el
+correcto y registrar la comprobación de vacío.
 
 Realizar esta operación durante una ventana sin modificaciones en el portal.
 El procedimiento ampliado, su validación por huellas y la vuelta atrás están en

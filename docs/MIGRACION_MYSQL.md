@@ -102,11 +102,10 @@ Comprobar la conexión con el perfil productivo:
 
 El destino debe estar vacío. No iniciar todavía el frontend ni el backend para
 usuarios. Antes de ejecutar `loaddata`, comprobar y registrar que la base
-destino no contiene datos operacionales. El proyecto no tiene por ahora una
-protección técnica que impida ejecutar ese comando estándar sobre una base con
-datos; incorporar una validación automática de vacío o un comando de carga
-protegido antes de una importación de producción. Nunca usar `loaddata` para
-actualizar una base productiva existente.
+destino no contiene datos operacionales. El comando `loaddata` del portal
+rechaza una base con usuarios o registros de `core`, pero la revisión manual
+del destino sigue siendo obligatoria. Nunca usar `loaddata` para actualizar
+una base productiva existente.
 
 ```powershell
 .\venv\Scripts\python.exe manage.py migrate --settings=config.settings_production

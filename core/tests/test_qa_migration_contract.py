@@ -5,7 +5,6 @@ from importlib import import_module
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
-from unittest import expectedFailure
 
 from django.apps import apps
 from django.contrib.auth.models import User
@@ -60,7 +59,6 @@ class QAEsquemaYFixtureTests(TestCase):
         self.assertEqual(len(equipment_rows), 1)
         self.assertEqual(equipment_rows[0]['fields']['token_qr'], str(asset.token_qr))
 
-    @expectedFailure  # Brecha conocida #6 de REVISION_AMBIGUEDADES_PRODUCCION.md
     def test_brecha_6_loaddata_debe_rechazar_base_con_datos_operacionales(self):
         Departamento.objects.create(nombre='Departamento existente QA')
         with TemporaryDirectory() as directory:
@@ -68,6 +66,15 @@ class QAEsquemaYFixtureTests(TestCase):
             call_command('dumpdata', 'core.Departamento', output=str(path), verbosity=0)
             with self.assertRaises(CommandError):
                 call_command('loaddata', str(path), verbosity=0)
+
+    def test_loaddata_admite_base_operacional_vacia(self):
+        department = Departamento.objects.create(nombre='Departamento de fixture QA')
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / 'departamentos.json'
+            call_command('dumpdata', 'core.Departamento', output=str(path), verbosity=0)
+            department.delete()
+            call_command('loaddata', str(path), verbosity=0)
+        self.assertTrue(Departamento.objects.filter(nombre='Departamento de fixture QA').exists())
 
 
 class QANormalizacionDocumentadaTests(TestCase):

@@ -454,7 +454,7 @@ def data_model():
         Node("equipment", 110, 800, 530, 305, "Equipamiento", ["PK id · FK usuario SET_NULL", "tipo · marca · modelo", "UQ serie / hostname / AF", "estado · PIN/clave ENC2::"], "green"),
         Node("extension", 110, 1175, 530, 200, "Anexo", ["PK id · UQ número", "O2O usuario SET_NULL", "estado coherente con dueño"], "green"),
         Node("ip", 850, 800, 520, 270, "IP", ["PK id · UQ dirección", "O2O usuario SET_NULL", "LIBRE o RESERVADA", "proyección compatible"], "green"),
-        Node("assignment", 1510, 760, 650, 390, "AsignacionIP", ["PK id · O2O ip CASCADE", "un solo propietario:", "usuario | servidor | pc | otro", "UQ por cada propietario", "check de exclusividad"], "amber"),
+        Node("assignment", 1510, 760, 650, 390, "AsignacionIP", ["PK id · O2O ip PROTECT", "un solo propietario:", "usuario | servidor | pc | otro", "UQ por cada propietario", "check de exclusividad"], "amber"),
         Node("server", 2250, 760, 300, 240, "Servidor", ["PK id", "UQ hostname", "O2O ip PROTECT"], "green", True),
         Node("pc", 2250, 1090, 300, 280, "PCGenérico", ["PK id", "FK depto/subárea", "UQ identificadores", "O2O ip PROTECT"], "green", True),
         Node("huser", 110, 1585, 420, 305, "HistorialUsuario", ["FK usuario SET_NULL", "módulo + objeto", "actor · fecha · acción", "antes / después"], "violet", True),

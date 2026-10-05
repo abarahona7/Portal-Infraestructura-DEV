@@ -1,9 +1,9 @@
 """Casos límite de IP, Servidores y resumen de activos."""
 
-from unittest import expectedFailure
 from uuid import uuid4
 
 from django.contrib.auth.models import Group, User
+from django.db.models.deletion import ProtectedError
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
@@ -82,7 +82,7 @@ class QAIpServidorTests(TestCase):
                 self.assertTrue(IP.objects.filter(pk=ip.pk).exists())
                 self.assertTrue(AsignacionIP.objects.filter(ip=ip).exists())
 
-    def test_borrado_directo_por_orm_aplica_cascade_a_asignacion(self):
+    def test_borrado_directo_por_orm_conserva_asignacion_activa(self):
         ip = IP.objects.create(
             direccion_ip='172.23.1.247', asignado_otro='Equipo de prueba QA',
         )
@@ -90,14 +90,13 @@ class QAIpServidorTests(TestCase):
         history_count = HistorialAsignacionIP.objects.filter(ip=ip).count()
         self.assertGreater(history_count, 0)
 
-        ip.delete()
+        with self.assertRaises(ProtectedError):
+            ip.delete()
 
-        self.assertFalse(AsignacionIP.objects.filter(pk=assignment_id).exists())
-        self.assertTrue(HistorialAsignacionIP.objects.filter(
-            ip__isnull=True, direccion_ip='172.23.1.247',
-        ).exists())
+        self.assertTrue(IP.objects.filter(pk=ip.pk).exists())
+        self.assertTrue(AsignacionIP.objects.filter(pk=assignment_id).exists())
+        self.assertEqual(HistorialAsignacionIP.objects.filter(ip=ip).count(), history_count)
 
-    @expectedFailure  # Brecha conocida #5 de REVISION_AMBIGUEDADES_PRODUCCION.md
     def test_brecha_5_no_debe_borrar_ip_reservada_aunque_falte_asignacion_central(self):
         ip = IP.objects.create(
             direccion_ip='172.23.1.248', asignado_otro='Reserva heredada QA',

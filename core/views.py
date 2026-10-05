@@ -213,22 +213,24 @@ class IPViewSet(
         return queryset.order_by('direccion_ip')
 
     def perform_destroy(self, instance):
-        if (
-            instance.usuario_id
-            or hasattr(instance, 'servidor')
-            or hasattr(instance, 'pc_generico')
-            or hasattr(instance, 'asignacion_activa')
-        ):
-            raise serializers.ValidationError({
-                'detail': (
-                    'No se puede eliminar una IP asignada. Libérala primero '
-                    'desde el módulo que administra su asignación.'
-                )
-            })
-
         with transaction.atomic():
-            schedule_change(instance, 'deleted')
-            instance.delete()
+            ip = IP.objects.select_for_update().get(pk=instance.pk)
+            if (
+                ip.estado != 'LIBRE'
+                or ip.usuario_id
+                or ip.asignado_otro
+                or hasattr(ip, 'servidor')
+                or hasattr(ip, 'pc_generico')
+                or hasattr(ip, 'asignacion_activa')
+            ):
+                raise serializers.ValidationError({
+                    'detail': (
+                        'No se puede eliminar una IP reservada o asignada. '
+                        'Libérala primero desde el módulo que administra su asignación.'
+                    )
+                })
+            schedule_change(ip, 'deleted')
+            ip.delete()
 
     @action(detail=True, methods=['get'], url_path='historial')
     def assignment_history(self, request, pk=None):

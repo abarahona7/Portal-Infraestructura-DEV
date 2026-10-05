@@ -17,7 +17,7 @@ En la VM, abrir una terminal para Django:
 
 ```bash
 cd /opt/Portal-Infraestructura-DEV
-.venv/bin/python manage.py runserver 127.0.0.1:8005
+.venv/bin/daphne -b 127.0.0.1 -p 8005 config.asgi:application
 ```
 
 En otra terminal, iniciar Vite:

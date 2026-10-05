@@ -90,6 +90,44 @@ class AssetDashboardQrTests(TestCase):
         self.client.force_authenticate(user=viewer)
         self.assertEqual(self.client.get(path).status_code, 403)
 
+    def test_ficha_interna_del_equipo_muestra_departamento_sin_depender_del_qr(self):
+        assigned = self.client.get(f'/api/equipos/{self.assigned.pk}/')
+        self.assertEqual(assigned.status_code, 200)
+        self.assertEqual(assigned.data['departamento_nombre'], 'Tecnología')
+        self.assertEqual(assigned.data['usuario_nombre'], 'Persona Activa')
+
+        stock = self.client.get(f'/api/equipos/{self.unassigned.pk}/')
+        self.assertEqual(stock.status_code, 200)
+        self.assertIsNone(stock.data['departamento_nombre'])
+        self.assertIsNone(stock.data.get('usuario_nombre'))
+
+    def test_tipo_de_equipo_debe_corresponder_a_categoria_de_creacion_y_edicion(self):
+        wrong_create = self.client.post('/api/equipos/?categoria=Notebook', {
+            'tipo': 'Celular', 'marca': 'Samsung', 'modelo': 'A2',
+        }, format='json')
+        self.assertEqual(wrong_create.status_code, 400)
+        self.assertIn('tipo', wrong_create.data)
+
+        wrong_edit = self.client.patch(
+            f'/api/equipos/{self.assigned.pk}/?categoria=Notebook',
+            {'tipo': 'Mouse'}, format='json',
+        )
+        self.assertEqual(wrong_edit.status_code, 400)
+        self.assertIn('tipo', wrong_edit.data)
+        self.assigned.refresh_from_db()
+        self.assertEqual(self.assigned.tipo, 'Notebook')
+
+        wrong_peripheral = self.client.post('/api/equipos/?categoria=PERIFERICOS', {
+            'tipo': 'Mac', 'marca': 'Apple', 'modelo': 'Mini',
+        }, format='json')
+        self.assertEqual(wrong_peripheral.status_code, 400)
+        self.assertIn('tipo', wrong_peripheral.data)
+
+        valid_peripheral = self.client.post('/api/equipos/?categoria=PERIFERICOS', {
+            'tipo': 'Mouse', 'marca': 'Logitech', 'modelo': 'M100', 'estado': 'STOCK',
+        }, format='json')
+        self.assertEqual(valid_peripheral.status_code, 201)
+
     @override_settings(PORTAL_PUBLIC_URL='http://portal.example.cl')
     def test_qr_rejects_http_url_in_production(self):
         path = f'/api/activos/qr/{self.assigned.token_qr}/'

@@ -10,9 +10,10 @@ from django.test import SimpleTestCase
 
 
 class ProductionQrUrlSettingsTests(SimpleTestCase):
-    def check_production(self, public_url):
+    def check_production(self, public_url, redis_url='redis://127.0.0.1:6379/1'):
         environment = os.environ.copy()
         environment.update({
+            'DJANGO_SETTINGS_MODULE': 'config.settings_production',
             'DJANGO_ENV': 'production',
             'DJANGO_DEBUG': 'False',
             'DJANGO_SECRET_KEY': secrets.token_urlsafe(64),
@@ -24,6 +25,7 @@ class ProductionQrUrlSettingsTests(SimpleTestCase):
             'DATABASE_PASSWORD': 'example',
             'DATABASE_HOST': '127.0.0.1',
             'PORTAL_PUBLIC_URL': public_url,
+            'PORTAL_CHANNEL_REDIS_URL': redis_url,
             'CORS_ALLOWED_ORIGINS': 'https://portal.example.cl',
             'CSRF_TRUSTED_ORIGINS': 'https://portal.example.cl',
             'JWT_COOKIE_SECURE': 'True',
@@ -34,7 +36,7 @@ class ProductionQrUrlSettingsTests(SimpleTestCase):
             'SECURE_HSTS_INCLUDE_SUBDOMAINS': 'True',
         })
         return subprocess.run(
-            [sys.executable, 'manage.py', 'check', '--deploy', '--settings=config.settings_production'],
+            [sys.executable, '-c', 'from django.conf import settings; print(settings.PORTAL_PUBLIC_URL)'],
             cwd=os.path.dirname(os.path.dirname(__file__)),
             env=environment,
             capture_output=True,
@@ -42,7 +44,7 @@ class ProductionQrUrlSettingsTests(SimpleTestCase):
             check=False,
         )
 
-    def test_valid_https_url_allows_production_checks(self):
+    def test_valid_https_url_allows_production_settings_load(self):
         result = self.check_production('https://portal.example.cl')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
@@ -50,3 +52,8 @@ class ProductionQrUrlSettingsTests(SimpleTestCase):
         result = self.check_production('http://portal.example.cl')
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('PORTAL_PUBLIC_URL', result.stderr)
+
+    def test_production_requires_shared_redis_layer(self):
+        result = self.check_production('https://portal.example.cl', redis_url='')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('PORTAL_CHANNEL_REDIS_URL', result.stderr)

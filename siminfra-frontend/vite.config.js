@@ -6,6 +6,11 @@ const apiProxy = {
     target: 'http://127.0.0.1:8005',
     changeOrigin: true,
   },
+  '/ws': {
+    target: 'ws://127.0.0.1:8005',
+    ws: true,
+    changeOrigin: true,
+  },
 }
 
 // https://vite.dev/config/

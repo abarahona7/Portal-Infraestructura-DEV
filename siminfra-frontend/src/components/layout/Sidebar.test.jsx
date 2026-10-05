@@ -27,7 +27,7 @@ describe('Navegación por rol', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Equipos' }));
     expect(onSelectTab).toHaveBeenCalledWith('equipos');
     fireEvent.click(screen.getByRole('button', { name: 'Expandir Equipos' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Tablero de activos' }));
-    expect(onSelectTab).toHaveBeenCalledWith('activos-resumen');
+    expect(screen.queryByRole('button', { name: 'Tablero de activos' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Notebook' })).toBeInTheDocument();
   });
 });

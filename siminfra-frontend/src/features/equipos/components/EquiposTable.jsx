@@ -2,7 +2,6 @@ import {
   Edit,
   Trash2,
   History,
-  QrCode,
   Laptop,
   Monitor,
   Smartphone,
@@ -64,7 +63,7 @@ export default function EquiposTable({
   equipos,
   formatEquipmentType,
   onShowHistory,
-  onShowAssetQr,
+  onSelectEquipment,
   onEdit,
   onDelete,
   role,
@@ -90,11 +89,10 @@ export default function EquiposTable({
 
   const Actions = ({ equipo }) => (
     <div className="equipos-actions">
-      <button type="button" className="equipo-action equipo-action-history" onClick={() => onShowAssetQr(equipo.token_qr)} title="Abrir ficha y QR" aria-label="Abrir ficha y QR"><QrCode size={18} /></button>
       <button
         type="button"
         className="equipo-action equipo-action-history"
-        onClick={() => onShowHistory(equipo)}
+        onClick={(event) => { event.stopPropagation(); onShowHistory(equipo); }}
         title="Ver Historial Auditoría"
         aria-label="Ver historial"
       >
@@ -104,7 +102,7 @@ export default function EquiposTable({
       <button
         type="button"
         className="equipo-action equipo-action-edit"
-        onClick={() => onEdit(equipo)}
+        onClick={(event) => { event.stopPropagation(); onEdit(equipo); }}
         title="Editar"
         aria-label="Editar equipo"
       >
@@ -114,13 +112,14 @@ export default function EquiposTable({
       <button
         type="button"
         className="equipo-action equipo-action-delete"
-        onClick={() =>
+        onClick={(event) => {
+          event.stopPropagation();
           onDelete(
             equipo.id,
             `${equipo.marca || ''} ${equipo.modelo || ''
             }`
-          )
-        }
+          );
+        }}
         title="Eliminar"
         aria-label="Eliminar equipo"
       >
@@ -303,11 +302,14 @@ export default function EquiposTable({
           <button
             type="button"
             className="equipo-secret-reveal"
-            onClick={() => onRevealSecret?.({
-              module: 'equipamiento',
-              object_id: equipo.id,
-              secret_type: 'pin',
-            })}
+            onClick={(event) => {
+              event.stopPropagation();
+              onRevealSecret?.({
+                module: 'equipamiento',
+                object_id: equipo.id,
+                secret_type: 'pin',
+              });
+            }}
             aria-label={`Revelar PIN de ${equipo.marca || ''} ${equipo.modelo || ''}`.trim()}
             title="Revelar PIN"
           >
@@ -376,7 +378,19 @@ export default function EquiposTable({
 
           <tbody>
             {equipos.map((equipo) => (
-              <tr key={equipo.id}>
+              <tr
+                key={equipo.id}
+                onClick={() => onSelectEquipment(equipo)}
+                onKeyDown={(event) => {
+                  if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                    event.preventDefault();
+                    onSelectEquipment(equipo);
+                  }
+                }}
+                tabIndex={0}
+                role="button"
+                aria-label={`Abrir ficha de ${equipo.marca || ''} ${equipo.modelo || ''}`.trim()}
+              >
 
                 {/* TIPO */}
 
@@ -495,6 +509,16 @@ export default function EquiposTable({
             <article
               key={equipo.id}
               className="equipo-card"
+              onClick={() => onSelectEquipment(equipo)}
+              onKeyDown={(event) => {
+                if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                  event.preventDefault();
+                  onSelectEquipment(equipo);
+                }
+              }}
+              tabIndex={0}
+              role="button"
+              aria-label={`Abrir ficha de ${equipo.marca || ''} ${equipo.modelo || ''}`.trim()}
             >
               {/* HEADER */}
 

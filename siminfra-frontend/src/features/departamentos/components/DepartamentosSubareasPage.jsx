@@ -59,6 +59,7 @@ export default function DepartamentosSubareasPage({
 }) {
   const [selectedDepartmentId, setSelectedDepartmentId] = useState(null);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [modal, setModal] = useState(null);
   const [saving, setSaving] = useState(false);
   const canDelete = role === 'Administrador';
@@ -76,21 +77,23 @@ export default function DepartamentosSubareasPage({
           return departmentMatch || subareaMatch;
         });
 
-    return [...matches].sort((left, right) =>
+    return matches.filter((department) => (
+      !statusFilter || (statusFilter === 'ACTIVO' ? department.activo : !department.activo)
+    )).sort((left, right) =>
       (left.nombre || '').localeCompare(right.nombre || '', 'es', {
         sensitivity: 'base',
       })
     );
-  }, [departamentos, search]);
+  }, [departamentos, search, statusFilter]);
 
   const selectedDepartment = useMemo(() => (
-    departamentos.find(
+    filteredDepartments.find(
       (department) => department.id === selectedDepartmentId
     )
-    || departamentos.find((department) => department.activo)
-    || departamentos[0]
+    || filteredDepartments.find((department) => department.activo)
+    || filteredDepartments[0]
     || null
-  ), [departamentos, selectedDepartmentId]);
+  ), [filteredDepartments, selectedDepartmentId]);
 
   const effectiveSelectedDepartmentId = selectedDepartment?.id ?? null;
 
@@ -395,6 +398,16 @@ export default function DepartamentosSubareasPage({
       </div>
 
       <div className="departments-actions">
+        <select
+          className="departments-status-filter"
+          aria-label="Filtrar departamentos por estado"
+          value={statusFilter}
+          onChange={(event) => setStatusFilter(event.target.value)}
+        >
+          <option value="">Todos los estados</option>
+          <option value="ACTIVO">Activos</option>
+          <option value="INACTIVO">Inactivos</option>
+        </select>
         <button
           type="button"
           className="departments-primary-action"

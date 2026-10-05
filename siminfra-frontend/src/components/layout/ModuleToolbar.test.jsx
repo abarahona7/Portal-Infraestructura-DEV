@@ -31,3 +31,19 @@ describe('Acciones visibles en Anexos', () => {
     expect(onExport).toHaveBeenCalledOnce();
   });
 });
+
+describe('Filtros de estado', () => {
+  it('ofrece los estados de Usuarios y Perfiles según su modelo', () => {
+    const onGeneralStatusChange = vi.fn();
+    const view = render(<ModuleToolbar {...props} activeTab="usuarios"
+      selectedGeneralStatus="" onGeneralStatusChange={onGeneralStatusChange} />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Filtrar usuarios por estado' }), {
+      target: { value: 'LICENCIA' },
+    });
+    expect(onGeneralStatusChange).toHaveBeenCalledWith('LICENCIA');
+    view.rerender(<ModuleToolbar {...props} activeTab="perfiles"
+      selectedGeneralStatus="" onGeneralStatusChange={onGeneralStatusChange} />);
+    expect(screen.getByRole('option', { name: 'Inactivo' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Licencia médica' })).not.toBeInTheDocument();
+  });
+});

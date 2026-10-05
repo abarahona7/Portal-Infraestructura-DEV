@@ -1,13 +1,13 @@
-# Portal Infraestructura TI
+# Portal de Infraestructura TI Chile
 
-Versión funcional definitiva del Portal Infraestructura TI.
+Portal de gestión de usuarios, equipos, direcciones IP y recursos de Infraestructura.
 
 ## Stack
 
-- Backend: Django + Django REST Framework
+- Backend: Django REST Framework + Channels (HTTP y WebSocket mediante Daphne)
 - Autenticación: JWT con access token en memoria y refresh token en cookie HttpOnly
 - Frontend: React + Vite
-- Base de datos: SQLite para desarrollo; MySQL preparado para producción
+- Base de datos: MySQL en DEV y producción; SQLite temporal para pruebas automatizadas
 - Cifrado: Fernet para campos sensibles (`ENC2::`)
 - UI: Inter + Lucide React
 
@@ -20,6 +20,11 @@ Versión funcional definitiva del Portal Infraestructura TI.
 - Servidores
 - Perfiles Genéricos
 - PCs Genéricos
+- Tablero de activos al abrir Equipos; ficha de equipo desde el listado
+
+Los cambios se guardan mediante la API REST. El WebSocket avisa a las otras
+sesiones qué módulos deben actualizar; no transmite datos del equipo ni
+reemplaza las validaciones del backend.
 
 ## Roles
 
@@ -35,14 +40,15 @@ Versión funcional definitiva del Portal Infraestructura TI.
 3. Crear `.env` desde `.env.example` y generar una `FIELD_ENCRYPTION_KEY`
    estable. Django carga este archivo automáticamente y las variables definidas
    por el sistema tienen prioridad.
-4. Ejecutar migraciones y `python manage.py runserver`.
+4. Ejecutar migraciones y levantar el backend ASGI con
+   `.venv/bin/daphne -b 127.0.0.1 -p 8005 config.asgi:application`.
 5. En `siminfra-frontend`, instalar dependencias con `npm ci` y crear `.env.local` con:
 
 ```env
 VITE_API_URL=/api
 ```
 
-6. Ejecutar `npm run dev`.
+6. Ejecutar `npm run dev`. Abrir `http://127.0.0.1:5178`.
 
 Para permitir pruebas desde otros equipos de la misma red, seguir
 [Desarrollo en red local](docs/DESARROLLO_RED_LOCAL.md). El perfil LAN se

@@ -73,7 +73,7 @@ if IS_PRODUCTION and DEBUG:
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY') or (secrets.token_urlsafe(50) if DEBUG else '')
 if not SECRET_KEY:
-    raise RuntimeError('DJANGO_SECRET_KEY es obligatorio cuando DJANGO_DEBUG=False')
+    raise RuntimeError('DJANGO_SECRET_KEY es obligatorio cuando DJANGO_DEBUG=False.')
 if IS_PRODUCTION and (
     len(SECRET_KEY) < 50
     or len(set(SECRET_KEY)) < 5
@@ -89,6 +89,7 @@ if IS_PRODUCTION and not ALLOWED_HOSTS:
     raise ImproperlyConfigured('DJANGO_ALLOWED_HOSTS es obligatorio en producción.')
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -126,6 +127,19 @@ TEMPLATES = [{
     ]},
 }]
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
+CHANNEL_REDIS_URL = os.getenv('PORTAL_CHANNEL_REDIS_URL', '').strip()
+if IS_PRODUCTION and not CHANNEL_REDIS_URL:
+    raise ImproperlyConfigured('PORTAL_CHANNEL_REDIS_URL es obligatorio para WebSockets en producción.')
+CHANNEL_LAYERS = {'default': (
+    {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {'hosts': [CHANNEL_REDIS_URL], 'prefix': 'siminfra'},
+    }
+    if CHANNEL_REDIS_URL else
+    {'BACKEND': 'channels.layers.InMemoryChannelLayer'}
+)}
 
 DB_ENGINE = os.getenv('DATABASE_ENGINE', 'mysql' if IS_PRODUCTION else 'sqlite').lower()
 if IS_PRODUCTION and DB_ENGINE not in {'mysql', 'django.db.backends.mysql'}:

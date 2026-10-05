@@ -7,6 +7,11 @@ export const EQUIPMENT_NAV_ITEMS = [
   { id: 'equipos-perifericos', category: 'PERIFERICOS', label: 'Periféricos' },
 ];
 
+export const PERIPHERAL_TYPES = [
+  'Monitor', 'Adaptador', 'Audífonos', 'Teclado', 'Mouse',
+  'Docking', 'Otro Periférico',
+];
+
 export const isEquipmentTab = (tab) => (
   EQUIPMENT_NAV_ITEMS.some((item) => item.id === tab)
 );

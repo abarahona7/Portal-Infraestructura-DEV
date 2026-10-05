@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Users,
   Package,
-  LayoutDashboard,
   Monitor,
   Laptop,
   Smartphone,
@@ -59,11 +58,6 @@ const navigationGroups = [
       label: 'Equipos',
     },
     children: [
-      {
-        id: 'activos-resumen',
-        icon: LayoutDashboard,
-        label: 'Tablero de activos',
-      },
       {
         id: 'pcs-genericos',
         icon: Monitor,
@@ -168,6 +162,7 @@ export default function Sidebar({
   const groupContainsActiveTab = (group) => (
     group.parent.id === activeTab ||
     group.children.some((child) => child.id === activeTab)
+    || (group.id === 'equipos-group' && activeTab === 'activos-resumen')
   );
 
   const isGroupOpen = (group) => {
@@ -300,7 +295,8 @@ export default function Sidebar({
                     <button
                       type="button"
                       className={`sidebar-module-button sidebar-group-parent ${
-                        activeTab === group.parent.id
+                        (activeTab === group.parent.id
+                          || (group.parent.id === 'equipos' && activeTab === 'activos-resumen'))
                           ? 'sidebar-module-active'
                           : ''
                       }`}
@@ -316,7 +312,8 @@ export default function Sidebar({
                           {group.parent.label}
                         </span>
 
-                        {activeTab === group.parent.id &&
+                        {(activeTab === group.parent.id ||
+                          (group.parent.id === 'equipos' && activeTab === 'activos-resumen')) &&
                           activeCount !== undefined && (
                             <span className="sidebar-module-count">
                               {activeCount}
@@ -360,13 +357,13 @@ export default function Sidebar({
           {collapsed ? (
             <span
               className="sidebar-footer-mini"
-              title="Farmacias Dr. Simi"
+              title="Farmacias del Dr. Simi"
             >
               TI
             </span>
           ) : (
             <>
-              <strong>Farmacias Dr. Simi</strong>
+              <strong>Farmacias del Dr. Simi</strong>
               <span>Infraestructura TI</span>
             </>
           )}

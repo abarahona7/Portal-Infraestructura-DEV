@@ -52,20 +52,22 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
 
 ### Equipos
 
-- Abrir el Tablero de activos desde el menú lateral: consultar estado general,
+- Pulsar Equipos en el menú lateral para abrir el Tablero de activos: consultar estado general,
   departamentos con más equipos asignados y pendientes; desde estos últimos
   se puede ir al detalle de los equipos afectados.
 - Entrar directamente a Notebook, Celular, Tablet, Mac, BAM / Router o
   Periféricos desde el menú lateral.
-- Buscar, filtrar por estado, paginar y exportar.
+- Buscar, filtrar por estado, paginar y exportar. Al crear un equipo desde una
+  categoría, el tipo queda fijado; en Periféricos solo se ofrecen tipos de
+  periférico. El backend valida la misma relación al guardar.
 - Agregar, editar, eliminar con permiso administrativo y consultar historial.
 - Asignar o desasignar un usuario.
 - Ver en Notebook la IP que pertenece al usuario asignado.
 - Revelar PIN u otro secreto admitido como administrador, previa
   reautenticación.
-- Abrir la ficha mediante el QR del equipo para consultar sus datos. Tablero y
-  Ficha QR exigen sesión y rol Operador o Administrador; el Visualizador no
-  tiene acceso a estas vistas.
+- Pulsar un equipo del listado o de los pendientes para abrir su ficha. Los QR
+  históricos siguen abriendo esa ficha mediante `/qr/a/<uuid>`, con sesión y
+  rol Operador o Administrador. El Visualizador no tiene acceso a estas vistas.
 
 ### Gestión de IP
 

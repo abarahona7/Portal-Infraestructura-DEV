@@ -3,13 +3,13 @@ import apiClient from '../../api/client';
 import './AssetDashboard.css';
 
 const reasons = [
-  ['sin_serie', 'Sin número de serie', 'sin_serie'],
-  ['sin_activo_fijo', 'Sin activo fijo', 'sin_activo_fijo'],
-  ['sin_custodio', 'Sin usuario asignado', 'sin_custodio'],
-  ['custodio_no_activo', 'Asignados a usuarios no activos', 'custodio_no_activo'],
+  ['sin_serie', 'SIN NÚMERO DE SERIE', 'sin_serie'],
+  ['sin_activo_fijo', 'SIN ACTIVO FIJO', 'sin_activo_fijo'],
+  ['sin_custodio', 'SIN USUARIO ASIGNADO', 'sin_custodio'],
+  ['custodio_no_activo', 'ASIGNADOS A USUARIOS NO ACTIVOS', 'custodio_no_activo'],
 ];
 
-export default function AssetDashboard({ onOpenQr, onEditAsset }) {
+export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 }) {
   const [summary, setSummary] = useState(null);
   const [summaryError, setSummaryError] = useState('');
   const [reload, setReload] = useState(0);
@@ -25,7 +25,7 @@ export default function AssetDashboard({ onOpenQr, onEditAsset }) {
       .then(({ data }) => { setSummary(data); setSummaryError(''); })
       .catch((error) => { if (error.code !== 'ERR_CANCELED') setSummaryError('No se pudo cargar el tablero.'); });
     return () => controller.abort();
-  }, [reload]);
+  }, [reload, revision]);
 
   useEffect(() => {
     if (!selection) return undefined;
@@ -37,7 +37,7 @@ export default function AssetDashboard({ onOpenQr, onEditAsset }) {
       .then(({ data }) => { setList(data); setListError(''); })
       .catch((error) => { if (error.code !== 'ERR_CANCELED') setListError('No se pudo cargar la lista de equipos.'); });
     return () => controller.abort();
-  }, [selection, page, reload]);
+  }, [selection, page, reload, revision]);
 
   useEffect(() => {
     if (selection) detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -96,11 +96,20 @@ export default function AssetDashboard({ onOpenQr, onEditAsset }) {
       {listError && <p role="alert" className="asset-overview-error">{listError}</p>}
       {!list && !listError && <p role="status">Cargando equipos...</p>}
       {list && <>
-        <p className="asset-overview-help">{list.count} equipos</p>
+        <p className="asset-overview-help">{list.count} equipos · Pulsa un equipo para ver su ficha.</p>
         <div className="asset-overview-items">
-          {list.results.map((item) => <article key={item.id}>
+          {list.results.map((item) => <article key={item.id}
+            onClick={() => onOpenAsset(item)}
+            onKeyDown={(event) => {
+              if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                event.preventDefault();
+                onOpenAsset(item);
+              }
+            }}
+            role="button" tabIndex={0}
+            aria-label={`Abrir ficha de ${item.marca || ''} ${item.modelo || ''}`.trim()}>
             <div><strong>{item.tipo} · {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'Sin registrar'} · Activo fijo: {item.af || 'Sin registrar'}</span><span>{item.usuario_nombre || 'Sin usuario asignado'} · {item.estado}</span></div>
-            <div><button type="button" onClick={() => onOpenQr(item.token_qr)}>Ver ficha QR</button><button type="button" onClick={() => onEditAsset(item)}>Editar</button></div>
+            <div><button type="button" onClick={(event) => { event.stopPropagation(); onEditAsset(item); }}>Editar</button></div>
           </article>)}
         </div>
         {list.total_pages > 1 && <div className="asset-overview-pages"><button type="button" disabled={page <= 1} onClick={() => { setPage(page - 1); setList(null); }}>Anterior</button><span>Página {list.page} de {list.total_pages}</span><button type="button" disabled={page >= list.total_pages} onClick={() => { setPage(page + 1); setList(null); }}>Siguiente</button></div>}

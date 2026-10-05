@@ -3,6 +3,7 @@ import re
 from rest_framework import serializers
 from django.db import transaction
 from django.db.models.functions import Lower, Trim
+from .equipment_categories import EQUIPMENT_CATEGORY_TYPES
 
 from .models import (
     Usuario,
@@ -537,6 +538,8 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
         source='usuario.nombre_completo'
     )
 
+    departamento_nombre = serializers.SerializerMethodField()
+
     historial = HistorialEquipoSerializer(
         many=True,
         read_only=True
@@ -554,6 +557,9 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
 
     def get_icloud_password_configured(self, obj):
         return bool(obj.icloud_password)
+
+    def get_departamento_nombre(self, obj):
+        return obj.usuario.departamento.nombre if obj.usuario_id else None
 
     def get_pin_configured(self, obj):
         return bool(obj.pin)
@@ -587,6 +593,13 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
             'tipo',
             getattr(instance, 'tipo', None)
         )
+
+        request = self.context.get('request')
+        category = request.query_params.get('categoria', '').strip() if request else ''
+        if category and tipo not in EQUIPMENT_CATEGORY_TYPES.get(category, ()):
+            raise serializers.ValidationError({
+                'tipo': 'El tipo de equipo no corresponde a la categoría seleccionada.'
+            })
 
         usuario = attrs.get(
             'usuario',

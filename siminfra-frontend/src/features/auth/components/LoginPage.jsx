@@ -34,17 +34,17 @@ export default function LoginPage({
           <div className="login-logo">
             <img
               src="/branding/dr-simi-logo.png"
-              alt="Farmacias Dr. Simi"
+              alt="Farmacias del Dr. Simi"
             />
           </div>
 
           <div className="login-brand-text">
             <span className="login-company">
-              Farmacias Dr. Simi
+              Farmacias del Dr. Simi
             </span>
 
             <h1>
-              Portal Infraestructura TI Chile
+              Portal de Infraestructura TI Chile
             </h1>
 
             <p>

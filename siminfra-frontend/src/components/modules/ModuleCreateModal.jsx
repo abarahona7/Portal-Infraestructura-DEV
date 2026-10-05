@@ -47,6 +47,7 @@ export default function ModuleCreateModal({
   availableIps,
   formatEquipmentType,
   onHostnameChange,
+  equipmentCategory,
   onIpChange,
 }) {
   if (!newItem) return null;
@@ -73,6 +74,7 @@ export default function ModuleCreateModal({
           usuarios={usuarios}
           formatEquipmentType={formatEquipmentType}
           onHostnameChange={onHostnameChange}
+          category={equipmentCategory}
         />
       )}
 

@@ -30,6 +30,13 @@ El recorrido normal de una operación es:
 7. El cambio funcional queda en su historial. Las operaciones sensibles, como
    revelar una contraseña, generan además un `SecurityAuditLog`.
 
+Tras confirmar una escritura REST, Channels emite un aviso mínimo con el módulo
+afectado. Cada navegador conectado por `/ws/changes/` vuelve a consultar solo
+los datos visibles que necesita. Daphne sirve HTTP y WebSocket; en DEV se usa
+una capa de canales en memoria y en producción se requiere Redis privado para
+compartir los avisos entre procesos. El cliente reconecta con espera progresiva
+si se interrumpe la conexión.
+
 ### Autenticación y sesión
 
 - El access token JWT vive en memoria del frontend.

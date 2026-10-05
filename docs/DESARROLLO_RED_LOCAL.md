@@ -37,13 +37,13 @@ origen del portal.
 Abrir una terminal en la raíz e iniciar Django:
 
 ```powershell
-.\venv\Scripts\python.exe manage.py runserver 127.0.0.1:8005
+.\venv\Scripts\daphne.exe -b 127.0.0.1 -p 8005 config.asgi:application
 ```
 
 En Linux, el comando equivalente es:
 
 ```bash
-.venv/bin/python manage.py runserver 127.0.0.1:8005
+.venv/bin/daphne -b 127.0.0.1 -p 8005 config.asgi:application
 ```
 
 Abrir una segunda terminal en `siminfra-frontend` e iniciar el perfil LAN:
@@ -55,6 +55,12 @@ npm run dev:lan
 Vite escuchará solo en `10.0.0.28:5178`; la API continuará accesible solamente
 desde el equipo servidor a través del proxy. Si falta `PORTAL_LAN_HOST`, el
 perfil LAN escuchará solo en `127.0.0.1` para evitar una exposición accidental.
+
+Vite también reenvía `/ws/changes/` a Daphne. En DEV, sin
+`PORTAL_CHANNEL_REDIS_URL`, se usa una capa de canales en memoria con un solo
+proceso ASGI. Para varias instancias o producción se requiere Redis privado;
+configurar `PORTAL_CHANNEL_REDIS_URL` y comprobar la reconexión tras reiniciar
+Daphne. No exponer Redis ni el puerto 8005 a los navegadores.
 
 ## Autorizar el puerto en Windows
 

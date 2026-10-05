@@ -47,8 +47,8 @@ export const useModuleData = ({
   selectedEstadoEquipo,
   selectedEstadoIP,
   selectedEstadoAnexo,
+  selectedEstadoGeneral,
   onUnauthorized,
-  autoRefreshMs = 0,
   enabled = true,
 }) => {
   const [data, setData] = useState([]);
@@ -102,6 +102,9 @@ export const useModuleData = ({
     if (selectedEstadoAnexo && tab === 'anexos') {
       params.estado = selectedEstadoAnexo;
     }
+    if (selectedEstadoGeneral && ['usuarios', 'perfiles'].includes(tab)) {
+      params.estado = selectedEstadoGeneral;
+    }
 
     return params;
   }, [
@@ -113,6 +116,7 @@ export const useModuleData = ({
     selectedEstadoEquipo,
     selectedEstadoIP,
     selectedEstadoAnexo,
+    selectedEstadoGeneral,
   ]);
 
   const filterKey = useMemo(
@@ -261,21 +265,6 @@ export const useModuleData = ({
     loadData,
     applyData,
   ]);
-
-  useEffect(() => {
-    if (!token || !enabled || !autoRefreshMs) {
-      return undefined;
-    }
-
-    const intervalId = window.setInterval(refreshData, autoRefreshMs);
-    const onFocus = () => refreshData();
-    window.addEventListener('focus', onFocus);
-
-    return () => {
-      window.clearInterval(intervalId);
-      window.removeEventListener('focus', onFocus);
-    };
-  }, [token, enabled, autoRefreshMs, refreshData]);
 
   return {
     data: token && enabled ? data : [],

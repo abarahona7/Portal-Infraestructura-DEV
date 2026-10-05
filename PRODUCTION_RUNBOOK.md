@@ -151,13 +151,17 @@ npm run lint
 npm run build
 ```
 
-El proxy HTTPS debe servir `dist`, enviar `/api` al backend y servir
+El proxy HTTPS debe servir `dist`, enviar `/api` y `/ws/` al backend y servir
 `staticfiles` como contenido estático. Mantener frontend y API bajo el mismo
 origen permite que Axios envíe el token CSRF sin exponerlo a otros dominios.
 En Linux, después de compilar, ejecutar
 `python3 scripts/validar_proxy_publicacion.py`: levanta un Nginx temporal en
 puertos locales y comprueba HTTPS, assets, `/api` y la ruta QR sin tocar el
 servicio activo ni la base de datos.
+Antes de publicar, ejecutar además
+`.venv/bin/python scripts/verify_realtime_sqlite.py`: crea una base temporal,
+edita un equipo por REST y verifica que dos clientes WebSocket reciben un solo
+aviso y que un origen ajeno no puede conectarse.
 También debe entregar `dist/index.html` para rutas del frontend como
 `/qr/a/<uuid>`; de lo contrario, el código QR abrirá una página 404 al
 escanearlo. Definir `PORTAL_PUBLIC_URL` con la URL HTTPS real del frontend,
@@ -172,22 +176,26 @@ el frontend y pedir autenticación, no devolver 404. Comprobar además que
 
 ## 6. Ejecutar el backend
 
-No utilizar `runserver` en producción. En Windows se incluye Waitress como
-servidor WSGI; debe escuchar solamente en la interfaz accesible por el proxy:
+Configurar `PORTAL_CHANNEL_REDIS_URL` con una instancia Redis privada antes de
+arrancar. El perfil productivo rechaza su ausencia; Redis permite compartir
+eventos entre procesos ASGI. No publicar Redis a los navegadores.
+
+No utilizar `runserver` en producción. Daphne sirve HTTP y WebSockets desde
+la misma aplicación ASGI; debe escuchar solamente en la interfaz del proxy:
 
 ```powershell
 $env:DJANGO_SETTINGS_MODULE='config.settings_production'
-.\venv\Scripts\waitress-serve.exe --listen=127.0.0.1:8000 --threads=8 config.wsgi:application
+.\venv\Scripts\daphne.exe -b 127.0.0.1 -p 8000 config.asgi:application
 ```
 
 En Linux, el comando equivalente es:
 
 ```bash
-DJANGO_SETTINGS_MODULE=config.settings_production .venv/bin/waitress-serve --listen=127.0.0.1:8000 --threads=8 config.wsgi:application
+DJANGO_SETTINGS_MODULE=config.settings_production .venv/bin/daphne -b 127.0.0.1 -p 8000 config.asgi:application
 ```
 
 El proxy debe reemplazar `X-Forwarded-Proto` y evitar que el cliente se conecte
-directamente a Waitress. Solo después de confirmar HTTPS en todo el sitio se
+directamente a Daphne. `/ws/` debe admitir el upgrade de WebSocket. Solo después de confirmar HTTPS en todo el sitio se
 debe habilitar HSTS.
 
 En producción los logs se escriben como JSON en la salida estándar. Cada
@@ -202,6 +210,9 @@ restringir el acceso a los registros.
 3. Crear, cambiar y liberar una IP de usuario; crear y cambiar la IP de un
    servidor de prueba, y confirmar que al eliminar ese servidor se libera.
 4. Asignar un notebook y confirmar la IP sincronizada.
+   Con otra sesión abierta en el listado, confirmar que la ficha y el listado
+   muestran el cambio sin F5. Cortar y restablecer la red para comprobar la
+   reconexión, y verificar que cerrar sesión detiene los avisos.
 5. Revelar un secreto con reautenticación.
 6. Revisar que los registros de auditoría no contengan claves ni tokens.
 7. Abrir el tablero de activos y comprobar que cada pendiente lleva a los

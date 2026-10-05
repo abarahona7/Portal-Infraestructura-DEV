@@ -47,6 +47,7 @@ import { useReferenceData } from './hooks/useReferenceData';
 import { useModuleData } from './hooks/useModuleData';
 import { useModuleFilters } from './hooks/useModuleFilters';
 import { useModuleNavigation } from './hooks/useModuleNavigation';
+import { useRealtimeChanges } from './hooks/useRealtimeChanges';
 
 import {
   buildEquipmentStateFromHostname,
@@ -71,7 +72,7 @@ import ModuleToolbar from './components/layout/ModuleToolbar';
 import DepartamentosSubareasPage
   from './features/departamentos/components/DepartamentosSubareasPage';
 import AssetDashboard from './features/activos/AssetDashboard';
-import FichaEquipoQrModal from './features/activos/FichaEquipoQrModal';
+import EquipoDetailModal from './features/equipos/components/EquipoDetailModal';
 
 import { formatEquipmentType } from './utils/formatEquipmentType';
 import apiClient from './api/client';
@@ -104,7 +105,10 @@ export default function App() {
   });
 
   const [secretRequest, setSecretRequest] = useState(null);
-  const [fichaQrToken, setFichaQrToken] = useState(() => window.location.pathname.match(/^\/qr\/a\/([0-9a-f-]{36})\/?$/i)?.[1] || null);
+  const [legacyQrToken, setLegacyQrToken] = useState(() => window.location.pathname.match(/^\/qr\/a\/([0-9a-f-]{36})\/?$/i)?.[1] || null);
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState(null);
+  const [dashboardRevision, setDashboardRevision] = useState(0);
+  const [equipmentDetailRevision, setEquipmentDetailRevision] = useState(0);
 
   const confirmResolverRef = useRef(null);
 
@@ -213,6 +217,9 @@ export default function App() {
     selectedEstadoAnexo,
     setSelectedEstadoAnexo,
 
+    selectedEstadoGeneral,
+    setSelectedEstadoGeneral,
+
     resetFilters,
   } = useModuleFilters();
 
@@ -282,7 +289,7 @@ export default function App() {
   const isGlobalUserSearch = (
     activeModuleTab === 'usuarios'
     && !selectedDpto
-    && Boolean(normalizedSearch)
+    && Boolean(normalizedSearch || selectedEstadoGeneral)
   );
   const isGlobalIpSearch = (
     activeModuleTab === 'ips'
@@ -292,7 +299,7 @@ export default function App() {
 
   const moduleDataEnabled = !(
     activeModuleTab === 'activos-resumen'
-    || (activeModuleTab === 'usuarios' && !selectedDpto && !normalizedSearch)
+    || (activeModuleTab === 'usuarios' && !selectedDpto && !normalizedSearch && !selectedEstadoGeneral)
     || (activeModuleTab === 'ips' && !selectedIpSegment && !normalizedSearch)
   );
 
@@ -313,12 +320,51 @@ export default function App() {
     selectedEstadoEquipo,
     selectedEstadoIP,
     selectedEstadoAnexo,
+    selectedEstadoGeneral,
     onUnauthorized: logout,
     enabled: moduleDataEnabled,
-    autoRefreshMs:
-      authUser?.role === 'Visualizador' && tab === 'anexos'
-        ? 30000
-        : 0,
+  });
+
+  const refreshVisibleChanges = (modules) => {
+    if (modules.includes(activeModuleTab)) refreshData();
+    if (modules.includes('activos-resumen') && tab === 'activos-resumen') {
+      setDashboardRevision((value) => value + 1);
+    }
+    if (modules.includes('equipos') && selectedEquipmentId) {
+      setEquipmentDetailRevision((value) => value + 1);
+    }
+    const referenceSections = new Set();
+    if (modules.includes(activeModuleTab)) {
+      const primarySections = {
+        usuarios: ['usuarios_stats'],
+        ips: ['ips_stats'],
+        perfiles: ['perfiles'],
+        departamentos: ['departamentos'],
+      }[activeModuleTab] || [];
+      primarySections.forEach((section) => referenceSections.add(section));
+    }
+    if (modules.includes('departamentos') && ['usuarios', 'perfiles', 'pcs-genericos'].includes(activeModuleTab)) {
+      referenceSections.add('departamentos');
+    }
+    if (modules.includes('usuarios') && ['equipos', 'anexos'].includes(activeModuleTab) && (newItem || editingItem)) {
+      referenceSections.add('usuarios');
+    }
+    if (modules.includes('ips') && ['usuarios', 'servidores', 'pcs-genericos'].includes(activeModuleTab) && (newItem || editingItem)) {
+      referenceSections.add('ips');
+    }
+    if (referenceSections.size) {
+      refreshReferenceData([...referenceSections]);
+    }
+  };
+
+  useRealtimeChanges({
+    enabled: Boolean(token),
+    onChanges: refreshVisibleChanges,
+    onReconnect: () => refreshVisibleChanges([
+      activeModuleTab,
+      ...(tab === 'activos-resumen' ? ['activos-resumen'] : []),
+    ]),
+    onUnauthorized: logout,
   });
 
   const isViewer = authUser?.role === 'Visualizador';
@@ -388,6 +434,7 @@ export default function App() {
     handleDelete,
   } = useModuleCrud({
     tab: activeModuleTab,
+    equipmentCategory,
     data,
     newItem,
     editingItem,
@@ -924,7 +971,7 @@ export default function App() {
         isOpen={sidebarOpen}
         collapsed={sidebarCollapsed}
         activeTab={tab}
-        activeCount={sidebarActiveCount}
+        activeCount={tab === 'activos-resumen' ? undefined : sidebarActiveCount}
         onClose={closeSidebar}
         onToggleCollapse={toggleSidebarCollapsed}
         onSelectTab={handleSelectTab}
@@ -975,6 +1022,8 @@ export default function App() {
         {tab === 'usuarios' && !selectedDpto && (
           <ModuleToolbar
             activeTab={tab}
+            selectedGeneralStatus={selectedEstadoGeneral}
+            onGeneralStatusChange={setSelectedEstadoGeneral}
             readOnly={isViewer}
             departments={dptosList}
 
@@ -1030,7 +1079,9 @@ export default function App() {
             onIpStatusChange={setSelectedEstadoIP}
 
             selectedAnexoStatus={selectedEstadoAnexo}
-            onAnexoStatusChange={setSelectedEstadoAnexo}
+                  onAnexoStatusChange={setSelectedEstadoAnexo}
+                  selectedGeneralStatus={selectedEstadoGeneral}
+                  onGeneralStatusChange={setSelectedEstadoGeneral}
 
             search={search}
             onSearchChange={setSearch}
@@ -1040,7 +1091,7 @@ export default function App() {
           />
         )}
 
-        {tab === 'activos-resumen' && <AssetDashboard onOpenQr={setFichaQrToken} onEditAsset={openDashboardAssetForEdit} />}
+        {tab === 'activos-resumen' && <AssetDashboard revision={dashboardRevision} onOpenAsset={(item) => setSelectedEquipmentId(item.id)} onEditAsset={openDashboardAssetForEdit} />}
 
         {tab === 'departamentos' && (
           <DepartamentosSubareasPage
@@ -1107,13 +1158,13 @@ export default function App() {
                   <div>
                     <span className="equipment-results-eyebrow">
                       {isGlobalUserSearch
-                        ? 'Búsqueda global de usuarios'
+                        ? 'Consulta global de usuarios'
                         : 'Departamento / Área seleccionada'}
                     </span>
 
                     <h2>
                       {isGlobalUserSearch
-                        ? `Resultados para "${normalizedSearch}"`
+                        ? (normalizedSearch ? `Resultados para "${normalizedSearch}"` : 'Usuarios por estado')
                         : selectedDepartmentLabel}
                     </h2>
                   </div>
@@ -1249,7 +1300,7 @@ export default function App() {
                   onShowEquipmentHistory={
                     (item) => openDetailedItem('equipos', item, setHistoryEquipo)
                   }
-                  onShowAssetQr={setFichaQrToken}
+                  onSelectEquipment={(item) => setSelectedEquipmentId(item.id)}
 
                   onShowIpHistory={openIpHistory}
 
@@ -1290,9 +1341,22 @@ export default function App() {
             </>
           )}
 
-        {fichaQrToken && <FichaEquipoQrModal key={fichaQrToken} token={fichaQrToken}
-          onClose={() => { setFichaQrToken(null); if (window.location.pathname.startsWith('/qr/a/')) window.history.replaceState(null, '', '/'); }}
-          onOpenHistory={(equipo) => { setFichaQrToken(null); if (window.location.pathname.startsWith('/qr/a/')) window.history.replaceState(null, '', '/'); openDetailedItem('equipos', equipo, setHistoryEquipo); }} />}
+        {(selectedEquipmentId || legacyQrToken) && <EquipoDetailModal
+          key={selectedEquipmentId || legacyQrToken}
+          id={selectedEquipmentId}
+          revision={equipmentDetailRevision}
+          token={legacyQrToken}
+          onClose={() => {
+            setSelectedEquipmentId(null);
+            setLegacyQrToken(null);
+            if (window.location.pathname.startsWith('/qr/a/')) window.history.replaceState(null, '', '/');
+          }}
+          onOpenHistory={(equipo) => {
+            setSelectedEquipmentId(null);
+            setLegacyQrToken(null);
+            if (window.location.pathname.startsWith('/qr/a/')) window.history.replaceState(null, '', '/');
+            openDetailedItem('equipos', equipo, setHistoryEquipo);
+          }} />}
 
         {/* MODALES DE DETALLE / HISTORIAL */}
         <ModuleDetailModals
@@ -1375,6 +1439,7 @@ export default function App() {
         {!isViewer && (
         <ModuleCreateModal
           tab={activeModuleTab}
+          equipmentCategory={equipmentCategory}
           newItem={newItem}
           setNewItem={setNewItem}
 
@@ -1426,6 +1491,7 @@ export default function App() {
         {!isViewer && (
         <ModuleEditModal
           tab={activeModuleTab}
+          equipmentCategory={equipmentCategory}
 
           editingItem={
             editingItem

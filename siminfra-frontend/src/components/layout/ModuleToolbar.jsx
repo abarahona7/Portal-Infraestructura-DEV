@@ -19,6 +19,8 @@ export default function ModuleToolbar({
   onIpStatusChange,
   selectedAnexoStatus,
   onAnexoStatusChange,
+  selectedGeneralStatus,
+  onGeneralStatusChange,
   search,
   onSearchChange,
   onCreate,
@@ -85,6 +87,31 @@ export default function ModuleToolbar({
   return (
     <div className="module-toolbar">
       <div className="module-toolbar-actions">
+
+        {['usuarios', 'perfiles'].includes(activeTab) && (
+          <div className="module-toolbar-filter">
+            <Filter size={16} />
+            <select
+              aria-label={`Filtrar ${activeTab} por estado`}
+              value={selectedGeneralStatus || ''}
+              onChange={(event) => onGeneralStatusChange(event.target.value)}
+            >
+              <option value="">Todos los estados</option>
+              {activeTab === 'usuarios' ? (
+                <>
+                  <option value="ACTIVO">Activo</option>
+                  <option value="LICENCIA">Licencia médica</option>
+                  <option value="BAJA">Dado de baja</option>
+                </>
+              ) : (
+                <>
+                  <option value="ACTIVO">Activo</option>
+                  <option value="INACTIVO">Inactivo</option>
+                </>
+              )}
+            </select>
+          </div>
+        )}
 
         {/* BOTÓN AGREGAR */}
         {!readOnly && (

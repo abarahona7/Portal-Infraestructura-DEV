@@ -3,6 +3,7 @@ import {
   equipmentUsesMobileLine,
   normalizeEquipmentFieldsByType,
 } from '../../../utils/equipmentHelpers';
+import { PERIPHERAL_TYPES } from '../../../utils/equipmentNavigation';
 
 export default function EquipoCreateForm({
   equipo,
@@ -10,6 +11,7 @@ export default function EquipoCreateForm({
   usuarios,
   formatEquipmentType,
   onHostnameChange,
+  category,
 }) {
   const updateField = (field, value) => {
     onChange({
@@ -77,12 +79,17 @@ export default function EquipoCreateForm({
         <select
           aria-label="Tipo de equipo"
           value={tipoActual}
+          disabled={category !== 'PERIFERICOS'}
           onChange={(e) =>
             handleTipoChange(e.target.value)
           }
           style={inputStyle}
         >
-          <optgroup label="Equipos principales">
+          {category !== 'PERIFERICOS' ? <option value={category}>{category}</option> : null}
+          {category === 'PERIFERICOS' && <optgroup label="Periféricos">
+            {PERIPHERAL_TYPES.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
+          </optgroup>}
+          {!category && <optgroup label="Equipos principales">
             <option value="Notebook">
               Notebook
             </option>
@@ -102,9 +109,9 @@ export default function EquipoCreateForm({
             <option value="BAM / Router">
               BAM / Router
             </option>
-          </optgroup>
+          </optgroup>}
 
-          <optgroup label="Periféricos">
+          {!category && <optgroup label="Periféricos">
             <option value="Monitor">
               Monitor
             </option>
@@ -132,7 +139,7 @@ export default function EquipoCreateForm({
             <option value="Otro Periférico">
               Otro Periférico
             </option>
-          </optgroup>
+          </optgroup>}
         </select>
       </div>
 

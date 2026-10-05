@@ -47,6 +47,7 @@ export default function ModuleEditModal({
   availableIps,
   formatEquipmentType,
   onHostnameChange,
+  equipmentCategory,
   onIpChange,
 }) {
   if (!editingItem) return null;
@@ -73,6 +74,7 @@ export default function ModuleEditModal({
           usuarios={usuarios}
           formatEquipmentType={formatEquipmentType}
           onHostnameChange={onHostnameChange}
+          category={equipmentCategory}
         />
       )}
 

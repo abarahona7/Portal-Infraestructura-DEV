@@ -60,6 +60,8 @@
 .equipos-table tbody tr {
   border-bottom: 1px solid #f1f5f9;
 
+  cursor: pointer;
+
   transition:
     background-color 0.15s ease;
 }
@@ -70,6 +72,12 @@
 
 .equipos-table tbody tr:hover {
   background-color: #f8fafc;
+}
+
+.equipos-table tbody tr:focus-visible,
+.equipo-card:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
 }
 
 
@@ -238,8 +246,8 @@
 
 .equipos-actions-header,
 .equipos-actions-cell {
-  width: 112px;
-  min-width: 112px;
+  width: 96px;
+  min-width: 96px;
 
   text-align: center;
 
@@ -311,6 +319,8 @@
 
 .equipo-card {
   padding: 1rem;
+
+  cursor: pointer;
 
   background-color: #fff;
 

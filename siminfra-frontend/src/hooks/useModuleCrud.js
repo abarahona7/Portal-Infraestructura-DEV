@@ -79,6 +79,7 @@ const getUpdateConfirmation = (tab, editingItem, data) => {
 
 export const useModuleCrud = ({
   tab,
+  equipmentCategory,
   data,
   newItem,
   editingItem,
@@ -121,7 +122,7 @@ export const useModuleCrud = ({
         newItem
       );
 
-      await createItemByTab(tab, payload);
+      await createItemByTab(tab, payload, equipmentCategory);
 
       showToast?.(
         'Registro creado correctamente.',
@@ -189,7 +190,8 @@ export const useModuleCrud = ({
       await updateItemByTab(
         tab,
         editingItem.id,
-        payload
+        payload,
+        equipmentCategory
       );
 
       showToast?.(

@@ -9,14 +9,15 @@ import { updateServidor } from '../api/servidoresApi';
 export const updateItemByTab = async (
   tab,
   id,
-  payload
+  payload,
+  equipmentCategory
 ) => {
   switch (tab) {
     case 'usuarios':
       return await updateUsuario(id, payload);
 
     case 'equipos':
-      return await updateEquipo(id, payload);
+      return await updateEquipo(id, payload, equipmentCategory);
 
     case 'perfiles':
       return await updatePerfil(id, payload);

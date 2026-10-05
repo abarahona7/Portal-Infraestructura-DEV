@@ -77,3 +77,18 @@ Perfiles u otro módulo que realmente los necesita.
 
 Los valores dependen del equipo, la base de datos y la carga del sistema. Para
 comparaciones válidas se debe usar el mismo entorno y número de repeticiones.
+
+## Sincronización entre usuarios
+
+Equipos, Usuarios y los módulos relacionados siguen leyendo datos por la API
+REST paginada. Después de confirmar una escritura, el backend envía por
+WebSocket un evento con identificador, operación y módulos afectados. La
+pestaña que está mostrando uno de esos módulos repite únicamente su consulta
+visible; el tablero actualiza su resumen y, si hay una lista abierta, esa
+lista. Los avisos cercanos se agrupan en el frontend y no se mantiene un
+intervalo de consultas. La capa de canales en memoria sirve solo para un
+proceso de desarrollo; producción requiere Redis compartido y Daphne.
+
+El listado de Equipos utiliza `select_related` para usuario, IP y departamento
+y cuenta con índice combinado `(tipo, estado)` para los filtros de categoría
+y estado. No se agregaron campos ni migraciones para esta integración.

@@ -35,6 +35,10 @@ export default function PCGenericoCreateForm({
 
   return (
     <>
+      <div>
+        <label style={labelStyle}>Tipo de equipo</label>
+        <input aria-label="Tipo de equipo" value="PC Genérico" readOnly style={inputStyle} />
+      </div>
       {/* Usuario Local */}
       <div>
         <label style={labelStyle}>

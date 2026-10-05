@@ -6,13 +6,13 @@ import { createAnexo } from '../api/anexosApi';
 import { createPcGenerico } from '../api/pcsGenericosApi';
 import { createServidor } from '../api/servidoresApi';
 
-export const createItemByTab = async (tab, payload) => {
+export const createItemByTab = async (tab, payload, equipmentCategory) => {
   switch (tab) {
     case 'usuarios':
       return await createUsuario(payload);
 
     case 'equipos':
-      return await createEquipo(payload);
+      return await createEquipo(payload, equipmentCategory);
 
     case 'perfiles':
       return await createPerfil(payload);

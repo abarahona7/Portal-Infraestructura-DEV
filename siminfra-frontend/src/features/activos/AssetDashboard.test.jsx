@@ -14,7 +14,6 @@ const equipment = {
   af: 'AF123',
   usuario_nombre: 'Persona QA',
   estado: 'ASIGNADO',
-  token_qr: '00000000-0000-4000-8000-000000000007',
 };
 
 const summary = {
@@ -37,32 +36,33 @@ describe('Tablero de activos', () => {
   });
 
   it('abre los equipos del departamento y permite ir a su ficha y edición', async () => {
-    const onOpenQr = vi.fn();
+    const onOpenAsset = vi.fn();
     const onEditAsset = vi.fn();
-    render(<AssetDashboard onOpenQr={onOpenQr} onEditAsset={onEditAsset} />);
+    render(<AssetDashboard onOpenAsset={onOpenAsset} onEditAsset={onEditAsset} />);
 
     fireEvent.click(await screen.findByRole('button', { name: /Tecnología/ }));
     expect(await screen.findByText('Notebook · Dell Latitude')).toBeInTheDocument();
     expect(apiClient.get).toHaveBeenCalledWith('/equipos/', expect.objectContaining({
       params: { departamento_id: 3, page: 1, page_size: 20 },
     }));
-    fireEvent.click(screen.getByRole('button', { name: 'Ver ficha QR' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir ficha de Dell Latitude' }));
     fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
-    expect(onOpenQr).toHaveBeenCalledWith(equipment.token_qr);
+    expect(onOpenAsset).toHaveBeenCalledOnce();
+    expect(onOpenAsset).toHaveBeenCalledWith(equipment);
     expect(onEditAsset).toHaveBeenCalledWith(equipment);
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
   });
 
   it('muestra la lista correcta al seleccionar un pendiente', async () => {
-    render(<AssetDashboard onOpenQr={vi.fn()} onEditAsset={vi.fn()} />);
+    render(<AssetDashboard onOpenAsset={vi.fn()} onEditAsset={vi.fn()} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /Sin número de serie/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Sin número de serie/i }));
     await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith(
       '/equipos/', expect.objectContaining({
         params: { pendiente: 'sin_serie', page: 1, page_size: 20 },
       }),
     ));
     expect(await screen.findByText('Notebook · Dell Latitude')).toBeInTheDocument();
-    expect(screen.getByText('1 equipos')).toBeInTheDocument();
+    expect(screen.getByText(/1 equipos/)).toBeInTheDocument();
   });
 });

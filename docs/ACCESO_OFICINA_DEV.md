@@ -27,7 +27,7 @@ está preparado como ejemplo y **no está instalado** en Nginx. Los valores
    `simidev`. La cuenta de la VM no puede consultar/modificar el firewall por
    falta de alcance de autenticación.
 4. Acceso de administración al Nginx de la VM y una forma de mantener el backend
-   Waitress activo tras reinicios. La configuración Nginx vigente sigue siendo la
+   Daphne activo tras reinicios. La configuración Nginx vigente sigue siendo la
    predeterminada y no se ha modificado.
 
 ## Preparar la publicación en DEV
@@ -43,7 +43,8 @@ está preparado como ejemplo y **no está instalado** en Nginx. Los valores
    etiqueta `simidev` antes de crear una regla dirigida a ella.
 3. Sustituir dominio, certificado e IP de oficina en el ejemplo Nginx. El
    frontend se sirve desde `siminfra-frontend/dist`; `/api/` y `/admin/` van al
-   backend local `127.0.0.1:8005`. El proxy **reemplaza** `X-Forwarded-Proto` y
+   backend local `127.0.0.1:8005`; `/ws/` debe permitir el upgrade de WebSocket.
+   El proxy **reemplaza** `X-Forwarded-Proto` y
    `X-Forwarded-For` para que Django no use cabeceras enviadas por el cliente.
    Validar con `sudo nginx -t` antes de recargar Nginx. No copiar el ejemplo con
    las IP/dominio de muestra.
@@ -57,20 +58,20 @@ está preparado como ejemplo y **no está instalado** en Nginx. Los valores
    .venv/bin/python manage.py collectstatic --noinput
    ```
 
-5. Iniciar Django con Waitress escuchando **solo** en `127.0.0.1:8005`, bajo el
-   gestor de servicios que utilice Infraestructura. `runserver` y Vite son para
-   desarrollo y no deben ser el servicio HTTPS estable:
+5. Iniciar Django con Daphne (ASGI) escuchando **solo** en `127.0.0.1:8005`, bajo el
+   gestor de servicios que utilice Infraestructura. Los WebSockets no funcionan con
+   el proceso WSGI de Waitress. `runserver` y Vite son para desarrollo:
 
    ```bash
    cd /opt/Portal-Infraestructura-DEV
-   .venv/bin/waitress-serve --listen=127.0.0.1:8005 --threads=8 config.wsgi:application
+   .venv/bin/daphne -b 127.0.0.1 -p 8005 config.asgi:application
    ```
 
    Antes de sustituir el proceso actual, comprobar la conexión MySQL DEV y el
    resultado de `manage.py check`; realizar el cambio en una ventana acordada.
 
 6. Una vez que el dominio HTTPS responda, actualizar el `.env` local de DEV y
-   reiniciar Waitress. Conservar las variables de base de datos y claves
+   reiniciar Daphne. Conservar las variables de base de datos y claves
    existentes; reemplazar solamente la configuración de URL/HTTPS necesaria:
 
    ```env
@@ -98,7 +99,7 @@ una ficha QR directa. En PowerShell se puede ejecutar
 `Test-NetConnection DOMINIO_DEV -Port 443`; en CMD, `curl -I https://DOMINIO_DEV`.
 Comprobar también que los usuarios **fuera** de la IP autorizada no pueden
 acceder y que 8005/5178 no están publicados a Internet. Tras un reinicio de la
-VM, repetir la comprobación para confirmar que Waitress, Nginx y el certificado
+VM, repetir la comprobación para confirmar que Daphne, Nginx y el certificado
 siguen operativos.
 
 La configuración de ejemplo se valida sin tocar Nginx activo mediante:

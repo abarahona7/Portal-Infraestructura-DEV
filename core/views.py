@@ -56,6 +56,8 @@ from .audit import (
     set_current_audit_user,
     reset_current_audit_user,
 )
+from .realtime import schedule_change
+from .equipment_categories import EQUIPMENT_CATEGORY_TYPES
 
 class AuditUserMixin:
     def perform_create(self, serializer):
@@ -65,7 +67,8 @@ class AuditUserMixin:
 
         try:
             with transaction.atomic():
-                serializer.save()
+                instance = serializer.save()
+                schedule_change(instance, 'created')
         finally:
             reset_current_audit_user(token)
 
@@ -76,7 +79,8 @@ class AuditUserMixin:
 
         try:
             with transaction.atomic():
-                serializer.save()
+                instance = serializer.save()
+                schedule_change(instance, 'updated')
         finally:
             reset_current_audit_user(token)
 
@@ -87,6 +91,7 @@ class AuditUserMixin:
 
         try:
             with transaction.atomic():
+                schedule_change(instance, 'deleted')
                 instance.delete()
         finally:
             reset_current_audit_user(token)
@@ -221,7 +226,9 @@ class IPViewSet(
                 )
             })
 
-        instance.delete()
+        with transaction.atomic():
+            schedule_change(instance, 'deleted')
+            instance.delete()
 
     @action(detail=True, methods=['get'], url_path='historial')
     def assignment_history(self, request, pk=None):
@@ -469,7 +476,7 @@ class EquipamientoViewSet(
     viewsets.ModelViewSet
 ):
     permission_classes = [PortalRolePermission]
-    queryset = Equipamiento.objects.select_related('usuario', 'usuario__ip').all()
+    queryset = Equipamiento.objects.select_related('usuario', 'usuario__ip', 'usuario__departamento').all()
     serializer_class = EquipamientoSerializer
     pagination_class = PortalPageNumberPagination
 
@@ -479,22 +486,15 @@ class EquipamientoViewSet(
         return EquipamientoSerializer
 
     def get_queryset(self):
-        queryset = Equipamiento.objects.select_related('usuario', 'usuario__ip')
+        queryset = Equipamiento.objects.select_related('usuario', 'usuario__ip', 'usuario__departamento')
         if self.action == 'retrieve':
             queryset = queryset.prefetch_related('historial')
         category = self.request.query_params.get('categoria', '').strip()
-        if category == 'PERIFERICOS':
-            queryset = queryset.filter(tipo__in=[
-                'Monitor',
-                'Adaptador',
-                'Audífonos',
-                'Teclado',
-                'Mouse',
-                'Docking',
-                'Otro Periférico',
-            ])
-        elif category:
-            return queryset.none()
+        if category:
+            allowed_types = EQUIPMENT_CATEGORY_TYPES.get(category)
+            if not allowed_types:
+                return queryset.none()
+            queryset = queryset.filter(tipo__in=allowed_types)
         department_id = self.request.query_params.get('departamento_id')
         if department_id is not None:
             if not department_id.isdecimal() or int(department_id) < 1:

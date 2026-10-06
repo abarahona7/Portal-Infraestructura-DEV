@@ -245,7 +245,7 @@ class ImportPlan:
             if serial and (serials[normalized(serial)] > 1 or normalized(serial) in existing_serials):
                 self.issue('equipos', sheet.title, number, 'EQUIPO_SERIE_DUPLICADA')
                 continue
-            if af and (len(af) > 12 or not af.isalnum() or afs[normalized(af)] > 1 or normalized(af) in existing_afs):
+            if af and (len(af) > 12 or not re.fullmatch(r'[0-9]+', af) or afs[normalized(af)] > 1 or normalized(af) in existing_afs):
                 if not serial:
                     self.issue('equipos', sheet.title, number, 'EQUIPO_ACTIVO_FIJO_CONFLICTO')
                     continue
@@ -409,7 +409,7 @@ class ImportPlan:
                 self.issue('pcs', sheet.title, number, 'PC_SERIE_INVALIDA_O_DUPLICADA')
                 continue
             af = cell(row, 10)
-            if af and (len(af) > 12 or not af.isalnum() or afs[normalized(af)] > 1 or normalized(af) in existing_afs):
+            if af and (len(af) > 12 or not re.fullmatch(r'[0-9]+', af) or afs[normalized(af)] > 1 or normalized(af) in existing_afs):
                 self.issue('pcs', sheet.title, number, 'PC_ACTIVO_FIJO_INVALIDO_OMITIDO')
                 af = ''
             password = cell(row, 4)

@@ -142,7 +142,7 @@ export const validateItem = (tab, item, data = []) => {
       return { valid: false, message: `Error: El N° de Serie "${numeroSerie}" ya está registrado en otro PC Genérico.` };
     }
     if (activoFijo.length > 12) return { valid: false, message: 'El Activo Fijo puede tener como máximo 12 caracteres.' };
-    if (activoFijo && !/^[A-Za-z0-9]+$/.test(activoFijo)) return { valid: false, message: 'El Activo Fijo solo puede contener letras y números.' };
+    if (activoFijo && !/^[0-9]+$/.test(activoFijo)) return { valid: false, message: 'El Activo Fijo solo puede contener números.' };
     if (activoFijo && data.some((pc) => pc.id !== item.id && normalizeLower(pc.activo_fijo) === activoFijo.toLowerCase())) {
       return { valid: false, message: `Error: El Activo Fijo "${activoFijo}" ya está registrado en otro PC Genérico.` };
     }
@@ -206,7 +206,7 @@ export const validateItem = (tab, item, data = []) => {
       return { valid: false, message: `Error: El número de serie "${numeroSerie}" ya está registrado.` };
     }
     if (af.length > 12) return { valid: false, message: 'El Activo Fijo (AF) puede tener máximo 12 caracteres.' };
-    if (af && !/^[A-Za-z0-9]+$/.test(af)) return { valid: false, message: 'El Activo Fijo (AF) solo puede contener letras y números.' };
+    if (af && !/^[0-9]+$/.test(af)) return { valid: false, message: 'El Activo Fijo (AF) solo puede contener números.' };
     if (af && data.some((equipo) => equipo.id !== item.id && normalizeLower(equipo.af) === af.toLowerCase())) {
       return { valid: false, message: `Error: El Activo Fijo (AF) "${af}" ya pertenece a otro equipo.` };
     }

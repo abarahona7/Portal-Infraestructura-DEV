@@ -1,9 +1,10 @@
 from datetime import timedelta
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.contrib.auth.models import User, Group
 from django.core.cache import cache
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
@@ -11,6 +12,7 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import AccessToken
 from cryptography.fernet import Fernet
 from core.models import Usuario, PerfilGenerico, IP, Equipamiento, Anexo, SecurityAuditLog, Departamento, SubArea, PCGenerico, PortalSession, Servidor
+from core.services.acta_entrega_pdf import _build_equipment_table, _build_styles, generar_acta_entrega_pdf
 
 @override_settings(FIELD_ENCRYPTION_KEY=Fernet.generate_key().decode(), LEGACY_DJANGO_SECRET_KEY='legacy-key')
 class SecurityTests(TestCase):
@@ -631,6 +633,40 @@ class SecurityTests(TestCase):
         body = response.json()
         self.assertTrue('marca' in body or 'modelo' in body)
 
+    def test_asset_numbers_accept_only_digits_in_api(self):
+        self.auth(self.operator)
+        department = Departamento.objects.create(nombre='Prueba AF Numérico')
+
+        invalid_equipment = self.client.post('/api/equipos/', {
+            'tipo': 'Notebook', 'marca': 'Lenovo', 'modelo': 'T14', 'af': 'AF00123',
+        }, format='json')
+        invalid_pc = self.client.post('/api/pcs-genericos/', {
+            'usuario_local': 'local-af', 'hostname': 'PC-AF-01',
+            'departamento': department.pk, 'activo_fijo': 'AF00123',
+        }, format='json')
+        self.assertEqual(invalid_equipment.status_code, 400)
+        self.assertIn('af', invalid_equipment.json())
+        self.assertEqual(invalid_pc.status_code, 400)
+        self.assertIn('activo_fijo', invalid_pc.json())
+
+        equipment = self.client.post('/api/equipos/', {
+            'tipo': 'Notebook', 'marca': 'Lenovo', 'modelo': 'T14', 'af': '00123',
+        }, format='json')
+        pc = self.client.post('/api/pcs-genericos/', {
+            'usuario_local': 'local-af', 'hostname': 'PC-AF-01',
+            'departamento': department.pk, 'activo_fijo': '000456',
+        }, format='json')
+        self.assertEqual(equipment.status_code, 201)
+        self.assertEqual(equipment.json()['af'], '00123')
+        self.assertEqual(pc.status_code, 201)
+        self.assertEqual(pc.json()['activo_fijo'], '000456')
+
+        invalid_update = self.client.patch(
+            f"/api/equipos/{equipment.json()['id']}/", {'af': '12A3'}, format='json',
+        )
+        self.assertEqual(invalid_update.status_code, 400)
+        self.assertIn('af', invalid_update.json())
+
     def test_equipment_serial_duplicate_is_case_insensitive(self):
         self.auth(self.operator)
         Equipamiento.objects.create(
@@ -659,7 +695,7 @@ class SecurityTests(TestCase):
             usuario_local='local1',
             hostname='PC-GEN-01',
             numero_serie='PCSER-01',
-            activo_fijo='AFPC001',
+            activo_fijo='000123',
             departamento=department,
         )
 
@@ -678,7 +714,7 @@ class SecurityTests(TestCase):
             {
                 'usuario_local': 'local3',
                 'hostname': 'PC-GEN-03',
-                'activo_fijo': 'afpc001',
+                'activo_fijo': '000123',
                 'departamento': department.pk,
             },
             format='json',
@@ -1326,3 +1362,31 @@ class PerformanceQueryTests(TestCase):
             [item['id'] for item in response.json()['results']],
             [technology_user.id],
         )
+
+
+class ActaEntregaPdfTests(SimpleTestCase):
+    def test_missing_equipment_details_have_visible_labels_in_acta(self):
+        usuario = SimpleNamespace(
+            nombre_completo='Persona de Prueba',
+            dpto_area='Tecnología',
+            equipos=[
+                SimpleNamespace(
+                    tipo='Notebook', marca='Lenovo', modelo='T14',
+                    numero_serie=None, af=' ', accesorios=None, estado=None,
+                ),
+                SimpleNamespace(
+                    tipo='Celular', marca='Apple', modelo='iPhone',
+                    numero_serie='SER-123', af='000123', accesorios='Cargador',
+                    estado='ASIGNADO',
+                ),
+            ],
+        )
+
+        table = _build_equipment_table(usuario, _build_styles())
+        self.assertEqual(table._cellvalues[1][2].text, 'Sin accesorios')
+        self.assertEqual(table._cellvalues[1][3].text, 'Sin número de serie')
+        self.assertEqual(table._cellvalues[1][4].text, 'Sin AF')
+        self.assertEqual(table._cellvalues[1][5].text, 'Sin estado')
+        self.assertEqual(table._cellvalues[2][3].text, 'SER-123')
+        self.assertEqual(table._cellvalues[2][4].text, '000123')
+        self.assertTrue(generar_acta_entrega_pdf(usuario).getvalue().startswith(b'%PDF'))

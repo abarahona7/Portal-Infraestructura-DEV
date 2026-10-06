@@ -7,7 +7,7 @@ from cryptography.fernet import Fernet
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 
 from core.crypto import decrypt_val
 from core.models import Anexo, Departamento, Equipamiento, IP, PCGenerico, PerfilGenerico, Usuario
@@ -80,6 +80,29 @@ class ImportV11Tests(TestCase):
             for secret in ('CLAVE_MUY_SECRETA', 'OTRA_CLAVE_SECRETA', 'SECRETO_LOCAL'):
                 self.assertNotIn(secret, report_text)
                 self.assertNotIn(secret, output.getvalue())
+
+    def test_dry_run_omits_nonnumeric_asset_numbers(self):
+        with TemporaryDirectory() as folder:
+            root = Path(folder)
+            self.make_workbooks(root)
+            for filename, row, column, value in (
+                ('Usuarios Simi.xlsx', 5, 16, 'AF-123'),
+                ('PCs Genericos.xlsx', 5, 10, 'PC-456'),
+            ):
+                path = root / filename
+                book = load_workbook(path)
+                book.active.cell(row, column, value)
+                book.save(path)
+
+            report_path = root / 'report.json'
+            call_command('importar_datos_v11', input_dir=root, dry_run=True,
+                         report=report_path, stdout=io.StringIO())
+            report = json.loads(report_path.read_text(encoding='utf-8'))
+            codes = {issue['code'] for issue in report['issues']}
+            self.assertIn('EQUIPO_ACTIVO_FIJO_CONFLICTO_OMITIDO', codes)
+            self.assertIn('PC_ACTIVO_FIJO_INVALIDO_OMITIDO', codes)
+            self.assertEqual(report['planned']['equipos'], 2)
+            self.assertEqual(report['planned']['pcs'], 1)
 
     def test_apply_creates_only_safe_relations_and_encrypts_secrets(self):
         with TemporaryDirectory() as folder:

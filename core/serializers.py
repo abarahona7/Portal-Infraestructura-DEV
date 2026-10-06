@@ -668,11 +668,11 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
                         "un máximo de 12 caracteres."
                 })
 
-            if not af.isalnum():
+            if not re.fullmatch(r'[0-9]+', af):
                 raise serializers.ValidationError({
                     "af":
                         "El Activo Fijo (AF) solo puede "
-                        "contener letras y números."
+                        "contener números."
                 })
 
             attrs['af'] = af
@@ -1308,9 +1308,9 @@ class PCGenericoSerializer(serializers.ModelSerializer):
                 "El Activo Fijo permite un máximo de 12 caracteres."
             )
 
-        if not value.isalnum():
+        if not re.fullmatch(r'[0-9]+', value):
             raise serializers.ValidationError(
-                "El Activo Fijo solo puede contener letras y números."
+                "El Activo Fijo solo puede contener números."
             )
 
         instance = getattr(self, 'instance', None)

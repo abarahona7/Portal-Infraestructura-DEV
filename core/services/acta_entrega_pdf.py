@@ -202,18 +202,18 @@ def _get_estado_equipo(equipo):
     )
 
     if estado is None:
-        return ""
+        return "Sin estado"
 
     if hasattr(
         equipo,
         "get_estado_display",
     ):
         try:
-            return equipo.get_estado_display()
+            return _safe(equipo.get_estado_display(), "Sin estado")
         except Exception:
             pass
 
-    return _safe(estado)
+    return _safe(estado, "Sin estado")
 
 
 def _get_accesorios(equipo):
@@ -553,7 +553,8 @@ def _build_equipment_table(
                                 equipo,
                                 "numero_serie",
                                 "",
-                            )
+                            ),
+                            "Sin número de serie",
                         ),
                         styles["table_cell"],
                     ),
@@ -564,7 +565,8 @@ def _build_equipment_table(
                                 equipo,
                                 "af",
                                 "",
-                            )
+                            ),
+                            "Sin AF",
                         ),
                         styles["table_cell"],
                     ),

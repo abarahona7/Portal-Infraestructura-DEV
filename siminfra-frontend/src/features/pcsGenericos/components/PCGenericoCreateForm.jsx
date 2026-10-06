@@ -185,17 +185,19 @@ export default function PCGenericoCreateForm({
 
         <div>
           <label style={labelStyle}>
-            Activo Fijo
+            Activo Fijo (AF - Máx. 12 dígitos)
           </label>
 
           <input
             aria-label="Activo fijo"
             type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             maxLength={12}
             value={pc.activo_fijo || ''}
             onChange={(e) => {
               const value = e.target.value
-                .replace(/[^a-zA-Z0-9]/g, '')
+                .replace(/[^0-9]/g, '')
                 .slice(0, 12);
 
               updateField('activo_fijo', value);

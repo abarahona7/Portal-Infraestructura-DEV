@@ -13,7 +13,7 @@ const cases = [
 ];
 
 describe.each(cases)('Activo Fijo en %s', (_label, Form, field) => {
-  it('permite ingresar un identificador alfanumérico y descarta caracteres inválidos', () => {
+  it('conserva los ceros iniciales y descarta letras y símbolos', () => {
     const onChange = vi.fn();
     const props = field === 'af'
       ? {
@@ -26,9 +26,10 @@ describe.each(cases)('Activo Fijo en %s', (_label, Form, field) => {
 
     const input = screen.getByRole('textbox', { name: 'Activo fijo' });
     expect(input).toHaveAttribute('maxLength', '12');
-    fireEvent.change(input, { target: { value: 'AB-123!xyz' } });
+    expect(input).toHaveAttribute('inputMode', 'numeric');
+    fireEvent.change(input, { target: { value: 'AB-00123!xyz' } });
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
-      [field]: 'AB123xyz',
+      [field]: '00123',
     }));
   });
 });

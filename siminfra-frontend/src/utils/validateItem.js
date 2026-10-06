@@ -158,6 +158,7 @@ export const validateItem = (tab, item, data = []) => {
     const usuarioRed = normalize(item.usuario_red);
     const correo = normalize(item.correo_corp);
     const gmail = normalize(item.gmail);
+    const celular = normalize(item.celular);
     const hostname = normalize(item.hostname);
     const cargo = normalize(item.cargo);
 
@@ -171,6 +172,7 @@ export const validateItem = (tab, item, data = []) => {
     if (!correo) return { valid: false, message: 'Debe ingresar el Correo Corporativo.' };
     if (!isValidEmail(correo)) return { valid: false, message: 'Ingrese un Correo Corporativo válido.' };
     if (gmail && !isValidEmail(gmail)) return { valid: false, message: 'Ingrese un correo Gmail válido.' };
+    if (celular && !/^\+[0-9]{11}$/.test(celular)) return { valid: false, message: 'La línea móvil debe tener el formato +56912345678.' };
     if (hostname.length > 50) return { valid: false, message: 'El Hostname puede tener como máximo 50 caracteres.' };
     if (hostname && !isValidHostname(hostname)) return { valid: false, message: 'El Hostname solo puede contener letras, números, punto, guion y guion bajo, sin espacios.' };
 
@@ -185,6 +187,9 @@ export const validateItem = (tab, item, data = []) => {
     }
     if (hostname && data.some((usuario) => usuario.id !== item.id && normalizeLower(usuario.hostname) === hostname.toLowerCase())) {
       return { valid: false, message: `Error: El Hostname "${hostname}" ya está registrado en otro usuario.` };
+    }
+    if (celular && data.some((usuario) => usuario.id !== item.id && normalize(usuario.celular) === celular)) {
+      return { valid: false, message: 'La línea móvil ya está registrada en otro usuario.' };
     }
   }
 

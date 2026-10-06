@@ -398,6 +398,7 @@ class UsuarioViewSet(
         'nombre_completo',
         'usuario_red',
         'correo_corp',
+        'celular',
         'hostname',
         'departamento__nombre',
         'subarea__nombre',

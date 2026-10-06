@@ -28,10 +28,9 @@ export const prepareUpdatePayload = (
   ========================= */
 
   if (tab === 'usuarios') {
-    delete payload.celular;
     delete payload.dpto_area;
 
-    ['nombre_completo', 'usuario_red', 'correo_corp', 'cargo', 'hostname', 'gmail'].forEach((field) => {
+    ['nombre_completo', 'usuario_red', 'correo_corp', 'cargo', 'hostname', 'celular', 'gmail'].forEach((field) => {
       if (typeof payload[field] === 'string') {
         payload[field] = payload[field].trim();
       }

@@ -33,6 +33,7 @@ import {
   getEquipmentIdentifier,
   getEquipmentIdentifierLabel,
 } from '../../../utils/equipmentHelpers';
+import { getCorporateLineNumbers } from '../../../utils/userCorporateLines';
 
 import './UsuarioDetailModal.css';
 
@@ -133,26 +134,7 @@ export default function UsuarioDetailModal({
      CELULAR CORPORATIVO
   ========================= */
 
-  const celularesAsignados =
-    (usuario.equipos || []).filter(
-      (equipo) =>
-        formatEquipmentType(
-          equipo.tipo
-        ) === 'Celular'
-    );
-
-  const numerosCelular =
-    celularesAsignados
-      .map(
-        (equipo) =>
-          equipo.numero_telefono
-      )
-      .filter(Boolean);
-
-  const celularCorporativo =
-    numerosCelular.length > 0
-      ? numerosCelular.join(' / ')
-      : null;
+  const celularCorporativo = getCorporateLineNumbers(usuario).join(' / ');
 
 
   /* =========================
@@ -349,10 +331,10 @@ export default function UsuarioDetailModal({
             />
             <InfoCard
               icon={Smartphone}
-              label="Celular Corporativo"
+              label="Línea móvil corporativa"
               value={
                 celularCorporativo ||
-                'Sin celular asignado'
+                'Sin línea registrada'
               }
               accent={Boolean(
                 celularCorporativo

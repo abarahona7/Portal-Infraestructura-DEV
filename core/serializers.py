@@ -697,6 +697,17 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
                 })
 
             attrs['numero_telefono'] = numero_telefono
+            line_changed = (
+                instance is None
+                or numero_telefono != getattr(instance, 'numero_telefono', None)
+                or getattr(usuario, 'pk', None) != getattr(instance, 'usuario_id', None)
+            )
+            if line_changed and Usuario.objects.filter(celular=numero_telefono).exclude(
+                pk=getattr(usuario, 'pk', None)
+            ).exists():
+                raise serializers.ValidationError({
+                    'numero_telefono': 'Esta línea móvil ya está registrada en otro usuario.'
+                })
         # =====================================
         # NÚMERO DE SERIE DUPLICADO
         # =====================================
@@ -861,6 +872,31 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
         ).exists():
             raise serializers.ValidationError(
                 'Ya existe un usuario registrado con este Hostname.'
+            )
+        return value
+
+    def validate_celular(self, value):
+        value = _normalize_spaces(value)
+        if not value:
+            return None
+        if not re.fullmatch(r'\+[0-9]{11}', value):
+            raise serializers.ValidationError(
+                'La línea móvil debe tener el formato +56912345678.'
+            )
+
+        instance = getattr(self, 'instance', None)
+        if Usuario.objects.filter(celular=value).exclude(
+            pk=getattr(instance, 'pk', None)
+        ).exists():
+            raise serializers.ValidationError(
+                'Esta línea móvil ya está registrada en otro usuario.'
+            )
+        if Equipamiento.objects.filter(
+            numero_telefono=value,
+            usuario__isnull=False,
+        ).exclude(usuario_id=getattr(instance, 'pk', None)).exists():
+            raise serializers.ValidationError(
+                'Esta línea móvil figura en un equipo asignado a otro usuario.'
             )
         return value
 

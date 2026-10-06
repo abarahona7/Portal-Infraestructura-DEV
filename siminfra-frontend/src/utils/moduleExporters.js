@@ -1,6 +1,7 @@
 import { exportToExcel } from './excelExport';
 import { formatEquipmentType } from './formatEquipmentType';
 import { getIpSegment } from './ipHelpers';
+import { getCorporateLineNumbers } from './userCorporateLines';
 
 
 /* =========================
@@ -81,38 +82,8 @@ export const exportUsuariosExcel = ({
 
       {
         key: 'celular_corporativo',
-        header: 'Celular Corporativo',
-        value: (usuario) => {
-          const celulares = (
-            usuario.equipos || []
-          ).filter((equipo) => {
-            const tipo = String(
-              equipo.tipo || ''
-            )
-              .trim()
-              .toUpperCase();
-
-            return (
-              tipo === 'CEL' ||
-              tipo === 'CELULAR'
-            );
-          });
-
-          const numeros = celulares
-            .map(
-              (equipo) =>
-                equipo.numero_telefono
-            )
-            .filter(Boolean);
-
-          const numerosUnicos = [
-            ...new Set(numeros)
-          ];
-
-          return numerosUnicos.length
-            ? numerosUnicos.join(' / ')
-            : 'N/I';
-        },
+        header: 'Línea corporativa',
+        value: (usuario) => getCorporateLineNumbers(usuario).join(' / ') || 'N/I',
       },
 
       {

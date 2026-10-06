@@ -11,6 +11,7 @@ export const getInitialCreateItem = (tab) => {
         subarea: null,
         usuario_red: '',
         correo_corp: '',
+        celular: '',
         gmail: '',
         password_gmail: '',
         password_vpn: '',

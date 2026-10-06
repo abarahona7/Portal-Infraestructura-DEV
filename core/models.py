@@ -227,6 +227,9 @@ class Usuario(models.Model):
         self.hostname = _normalize_spaces(self.hostname) if self.hostname else self.hostname
         self.gmail = (_normalize_spaces(self.gmail) or '').lower() if self.gmail else self.gmail
         self.celular = _normalize_spaces(self.celular) if self.celular else self.celular
+        if self.estado == 'BAJA' and self.celular:
+            self.celular = None
+            _include_derived_update_fields(kwargs, 'celular')
         self.telefono = _normalize_spaces(self.telefono) if self.telefono else self.telefono
         self.anexo = _normalize_spaces(self.anexo) if self.anexo else self.anexo
         self.nombre_completo_normalizado = _normalize_key(self.nombre_completo)

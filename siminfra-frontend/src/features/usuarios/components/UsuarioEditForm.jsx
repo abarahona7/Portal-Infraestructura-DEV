@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import PasswordInput from './PasswordInput';
 import AvailableIpSelector from './AvailableIpSelector';
+import { getAssignedCellularNumbers, normalizeCorporateLineInput } from '../../../utils/userCorporateLines';
 
 export default function UsuarioEditForm({
   usuario,
@@ -52,11 +53,13 @@ export default function UsuarioEditForm({
     if (value !== 'ACTIVO' && 'ip_seleccionada' in nextUsuario) {
       delete nextUsuario.ip_seleccionada;
     }
+    if (value === 'BAJA') nextUsuario.celular = '';
 
     onChange(nextUsuario);
   };
 
   const ipAssignmentDisabled = (usuario.estado || 'ACTIVO') !== 'ACTIVO';
+  const deviceLines = getAssignedCellularNumbers(usuario);
 
   const handleDepartmentChange = (value) => {
     const departmentId = value ? Number(value) : null;
@@ -203,6 +206,27 @@ export default function UsuarioEditForm({
           onChange={(e) => updateField('correo_corp', e.target.value)}
           style={inputStyle}
         />
+      </div>
+
+      <div>
+        <label style={labelStyle}>Línea móvil corporativa</label>
+        <input
+          aria-label="Línea móvil corporativa"
+          type="tel"
+          inputMode="tel"
+          maxLength={12}
+          pattern="[+][0-9]{11}"
+          placeholder="+56912345678"
+          value={usuario.celular || ''}
+          disabled={usuario.estado === 'BAJA'}
+          onChange={(e) => updateField('celular', normalizeCorporateLineInput(e.target.value))}
+          style={inputStyle}
+        />
+        <small>
+          {deviceLines.length
+            ? `El equipo asignado registra: ${deviceLines.join(' / ')}. Puedes guardar la línea aquí sin cambiar el equipo.`
+            : 'Opcional. Puedes registrar la línea aunque no conozcas el dispositivo.'}
+        </small>
       </div>
 
       <div>

@@ -100,6 +100,58 @@ class SecurityTests(TestCase):
         self.portal_user.estado='BAJA'; self.portal_user.save(); eq.refresh_from_db(); ip.refresh_from_db()
         self.assertIsNone(eq.usuario); self.assertEqual(eq.estado,'STOCK'); self.assertIsNone(ip.usuario); self.assertEqual(ip.estado,'LIBRE')
 
+    def test_mobile_line_can_belong_to_user_without_device_and_is_released_on_baja(self):
+        self.auth(self.admin)
+        number = '+56912345678'
+        response = self.client.patch(
+            f'/api/usuarios/{self.portal_user.pk}/', {'celular': number}, format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['celular'], number)
+        self.assertFalse(Equipamiento.objects.filter(usuario=self.portal_user).exists())
+        search = self.client.get('/api/usuarios/', {'search': number})
+        self.assertEqual(search.status_code, 200)
+        self.assertEqual(search.json()['results'][0]['id'], self.portal_user.pk)
+
+        other = Usuario.objects.create(
+            nombre_completo='Otra Persona', usuario_red='otra.persona',
+            correo_corp='otra.persona@example.com', departamento=self.department,
+        )
+        duplicate = self.client.patch(
+            f'/api/usuarios/{other.pk}/', {'celular': number}, format='json',
+        )
+        self.assertEqual(duplicate.status_code, 400)
+        self.assertIn('celular', duplicate.json())
+
+        conflicting_device = self.client.post('/api/equipos/', {
+            'tipo': 'Celular', 'marca': 'Apple', 'modelo': 'iPhone',
+            'usuario': other.pk, 'numero_telefono': number,
+        }, format='json')
+        self.assertEqual(conflicting_device.status_code, 400)
+        self.assertIn('numero_telefono', conflicting_device.json())
+        matching_device = self.client.post('/api/equipos/', {
+            'tipo': 'Celular', 'marca': 'Apple', 'modelo': 'iPhone',
+            'usuario': self.portal_user.pk, 'numero_telefono': number,
+        }, format='json')
+        self.assertEqual(matching_device.status_code, 201)
+
+        invalid = self.client.patch(
+            f'/api/usuarios/{other.pk}/', {'celular': '912345678'}, format='json',
+        )
+        self.assertEqual(invalid.status_code, 400)
+        self.assertIn('celular', invalid.json())
+
+        baja = self.client.patch(
+            f'/api/usuarios/{self.portal_user.pk}/', {'estado': 'BAJA'}, format='json',
+        )
+        self.assertEqual(baja.status_code, 200)
+        self.portal_user.refresh_from_db()
+        self.assertIsNone(self.portal_user.celular)
+        reassigned = self.client.patch(
+            f'/api/usuarios/{other.pk}/', {'celular': number}, format='json',
+        )
+        self.assertEqual(reassigned.status_code, 200)
+
     def test_usuario_red_duplicate_is_case_insensitive(self):
         self.auth(self.admin)
         response = self.client.post(

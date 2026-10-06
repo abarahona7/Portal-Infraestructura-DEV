@@ -4,6 +4,7 @@ import {
   History,
   UserRound,
 } from 'lucide-react';
+import { getCorporateLineNumbers } from '../../../utils/userCorporateLines';
 
 import './UsuariosTable.css';
 
@@ -15,25 +16,7 @@ export default function UsuariosTable({
   onDelete,
   renderStatusBadge,
 }) {
-  const getCelularCorporativo = (usuario) => {
-    const celulares = (usuario.equipos || []).filter((equipo) => {
-      const tipo = String(equipo.tipo || '')
-        .trim()
-        .toUpperCase();
-
-      return tipo === 'CEL' || tipo === 'CELULAR';
-    });
-
-    const numeros = celulares
-      .map((equipo) => equipo.numero_telefono)
-      .filter(Boolean);
-
-    const numerosUnicos = [...new Set(numeros)];
-
-    return numerosUnicos.length === 0
-      ? 'N/I'
-      : numerosUnicos.join(' / ');
-  };
+  const getLineasCorporativas = (usuario) => getCorporateLineNumbers(usuario).join(' / ') || 'N/I';
 
   const Actions = ({ usuario }) => (
     <div className="usuarios-actions">
@@ -99,7 +82,7 @@ export default function UsuariosTable({
               <th>Usuario Red</th>
               <th>Hostname</th>
               <th>Correo Corp.</th>
-              <th className="usuario-col-celular">Celular Corporativo</th>
+              <th className="usuario-col-celular">Línea corporativa</th>
               <th className="usuarios-actions-header">Acciones</th>
             </tr>
           </thead>
@@ -145,7 +128,7 @@ export default function UsuariosTable({
                 </td>
 
                 <td className="usuario-col-celular">
-                  {getCelularCorporativo(usuario)}
+                  {getLineasCorporativas(usuario)}
                 </td>
 
                 <td className="usuarios-actions-cell">
@@ -212,8 +195,8 @@ export default function UsuariosTable({
                 monospace
               />
               <MobileField
-                label="Celular corporativo"
-                value={getCelularCorporativo(usuario)}
+                label="Línea móvil corporativa"
+                value={getLineasCorporativas(usuario)}
               />
               <MobileField
                 label="Correo corporativo"

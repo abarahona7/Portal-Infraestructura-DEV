@@ -24,7 +24,7 @@ export const prepareCreatePayload = (
     // El backend lo sincroniza desde la relación Departamento.
     delete payload.dpto_area;
 
-    ['nombre_completo', 'usuario_red', 'correo_corp', 'cargo', 'hostname', 'gmail'].forEach((field) => {
+    ['nombre_completo', 'usuario_red', 'correo_corp', 'cargo', 'hostname', 'celular', 'gmail'].forEach((field) => {
       if (typeof payload[field] === 'string') {
         payload[field] = payload[field].trim();
       }

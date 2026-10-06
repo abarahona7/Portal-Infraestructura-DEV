@@ -15,17 +15,24 @@ definitiva, el proxy, la base de QA/producción y la ventana de despliegue.
 Las decisiones y comprobaciones aún abiertas se registran en
 [la revisión de ambigüedades](docs/REVISION_AMBIGUEDADES_PRODUCCION.md).
 
-Verificación técnica actual: **161 pruebas de `core` ejecutadas en MySQL 8.4
+Verificación técnica anterior: **161 pruebas de `core` ejecutadas en MySQL 8.4
 temporal, sin fallos (2 omisiones)**, incluidas concurrencia de IP y
-sesión/QR por HTTPS; la base y el contenedor se retiraron al terminar. El
-ejemplo Nginx pasó una prueba aislada de sintaxis, HTTPS, carga directa de QR,
+sesión/QR por HTTPS; la base y el contenedor se retiraron al terminar. Tras los
+cambios de consistencia de líneas y equipos del 6 de octubre de 2026, la suite
+completa pasó en SQLite temporal: **176 pruebas, sin fallos y 3 omisiones**.
+La suite completa de esta versión todavía debe repetirse en MySQL 8.4 aislado
+antes de declarar cerrado el respaldo técnico de producción. El ejemplo Nginx
+pasó una prueba aislada de sintaxis, HTTPS, carga directa de QR,
 archivos, estáticos y proxy de API/admin. Esta evidencia aún no reemplaza la
 prueba funcional en QA ni la revisión del entorno productivo definitivo. La
 suite incluye la migración 0060, el bloqueo del borrado de IP asignada y la
 protección de `loaddata` sobre bases con datos operacionales.
-También se restauró un respaldo actual de DEV en MySQL 8 aislado: los 365
-equipos conservaron sus ID y QR, no faltaron migraciones y pasaron las 21
-reglas de integridad; la instancia temporal se retiró.
+También se restauró un respaldo de DEV en MySQL 8 aislado: los 365 equipos
+conservaron sus ID y QR y no faltaron migraciones. En el DEV actual, las nuevas
+reglas de integridad detectan dos números móviles compartidos entre cuatro
+equipos asignados a personas distintas (IDs 44, 93, 101 y 204). Es necesario
+confirmar la titularidad y conciliar estos registros antes de exigir que la
+validación de integridad vuelva a pasar; no se modificaron automáticamente.
 
 Para habilitar QA se deben confirmar la base MySQL independiente y los permisos
 para aplicar migraciones, la URL y el certificado HTTPS propios, `PORTAL_PUBLIC_URL`

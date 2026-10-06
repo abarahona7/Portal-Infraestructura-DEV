@@ -1,4 +1,4 @@
-"""Ejecuta QA con MySQL 8 desechable en Docker; nunca usa la base DEV.
+"""Ejecuta QA con MySQL 8.4 desechable en Docker; nunca usa la base DEV.
 
 Uso: python scripts/run_qa_mysql.py [módulo.test...]
 Requiere la imagen mysql:8.4 local y acceso a Docker (directo o sudo -n).

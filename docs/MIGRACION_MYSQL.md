@@ -1,4 +1,4 @@
-# Migración verificada de SQLite a MySQL 8
+# Migración verificada de SQLite a MySQL 8.4
 
 Este procedimiento mueve los datos existentes sin convertir manualmente el
 archivo SQLite ni crear tablas a mano. Django crea el esquema MySQL desde sus

@@ -1,6 +1,6 @@
 # Despliegue de producción
 
-Este procedimiento publica el portal con MySQL 8, HTTPS y el perfil
+Este procedimiento publica el portal con MySQL 8.4, HTTPS y el perfil
 `config.settings_production`. Los secretos reales se guardan únicamente en el
 `.env` del servidor y nunca se agregan a Git.
 
@@ -33,7 +33,7 @@ fecha de producción.
 
 ## 1. Preparar el servidor
 
-1. Instalar Python, las dependencias de `requirements.txt`, Node.js y MySQL 8.
+1. Instalar Python, las dependencias de `requirements.txt`, Node.js y MySQL 8.4.
 2. Copiar `.env.production.example` como `.env`.
 3. Reemplazar cada valor `replace-with`.
 4. Generar valores independientes para Django y Fernet:
@@ -50,6 +50,13 @@ cifrados existentes.
 ## 2. Preparar MySQL
 
 Para ejecutar MySQL localmente mediante Docker:
+
+**Si `mysql_data` ya contiene una base MySQL 8.0, no ejecutar `docker compose
+up` todavía.** El cambio de imagen a 8.4 puede actualizar ese volumen. Antes,
+obtener un respaldo verificable, ensayar la restauración en una instancia
+aislada y acordar una ventana de mantenimiento. Consultar
+[la guía de actualización](docs/ACTUALIZACION_MYSQL_84.md). Si la base está
+administrada fuera de Docker, no reiniciar ni recrear un contenedor local.
 
 ```powershell
 docker compose up -d db

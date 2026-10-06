@@ -7,7 +7,7 @@ Portal de gestión de usuarios, equipos, direcciones IP y recursos de Infraestru
 - Backend: Django REST Framework + Channels (HTTP y WebSocket mediante Daphne)
 - Autenticación: JWT con access token en memoria y refresh token en cookie HttpOnly
 - Frontend: React + Vite
-- Base de datos: MySQL en DEV y producción; SQLite temporal para pruebas automatizadas
+- Base de datos: MySQL 8.4 en DEV y previsto para producción; SQLite o MySQL temporal para pruebas automatizadas
 - Cifrado: Fernet para campos sensibles (`ENC2::`)
 - UI: Inter + Lucide React
 
@@ -67,6 +67,9 @@ una base SQLite temporal, sin modificar la base DEV:
 
 Las pruebas del frontend se ejecutan con `npm test` dentro de
 `siminfra-frontend/`.
+Para verificar el backend contra MySQL 8.4 sin tocar DEV, usar
+`.venv/bin/python scripts/run_qa_mysql.py`; requiere Docker y la imagen
+`mysql:8.4` local.
 
 ## Producción
 
@@ -84,6 +87,7 @@ respaldos.
 - [Arquitectura y diagramas de flujo](docs/ARQUITECTURA_Y_FLUJOS.md)
 - [Modelo de datos y relaciones](docs/MODELO_DATOS.md)
 - [Migración verificada de SQLite a MySQL](docs/MIGRACION_MYSQL.md)
+- [Actualización y comprobaciones de MySQL 8.4](docs/ACTUALIZACION_MYSQL_84.md)
 - [Desarrollo en red local](docs/DESARROLLO_RED_LOCAL.md)
 - [Acceso al entorno DEV desde la oficina](docs/ACCESO_OFICINA_DEV.md)
 - [Histórico de importación v1.1](docs/historico/importacion/IMPORTACION_V11.md)

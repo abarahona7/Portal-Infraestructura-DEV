@@ -5,7 +5,7 @@ El backend usa Django 6.0.8 y `mysqlclient` 2.2.8. La configuración actual usa
 cambiar modelos, contraseñas del portal ni recrear la base solo por actualizar
 el servidor a MySQL 8.4.
 
-El 6 de octubre de 2026 se comprobó en DEV, **solo mediante consultas**, que
+El 6 de octubre de 2026 se comprobó inicialmente en DEV, mediante consultas, que
 `portalinfra_dev` responde con MySQL `8.4.11-google`, conexión TLS, `utf8mb4`,
 colación `utf8mb4_0900_ai_ci`, `STRICT_TRANS_TABLES` y `READ-COMMITTED`. Sus 31
 tablas usan esa misma colación. `manage.py check --database default` terminó sin
@@ -49,14 +49,24 @@ Desde la raíz del proyecto, con el `.env` correcto y el entorno virtual activo:
 ```
 
 `migrate --check` no aplica cambios; devuelve código distinto de cero si faltan
-migraciones. En la revisión del 6 de octubre, DEV tenía pendientes `core.0059`
-y `core.0060`, **que no se aplicaron**. La comprobación previa de colisiones de
-normalización de `core.0059` encontró cero casos. Antes de ejecutar `migrate`
-en DEV, obtener y verificar un respaldo actualizado, revisar `migrate --plan`
-y coordinar la ventana de despliegue. La migración 0059 actualiza claves
-normalizadas y agrega el ID de auditoría; la 0060 protege las asignaciones de
-IP contra borrado directo. No confundir este pendiente de esquema con un fallo
-de compatibilidad de MySQL 8.4.
+migraciones. DEV tenía pendientes `core.0059` y `core.0060`. Antes de aplicarlas
+se comprobó que `core.0059` actualizaría 42 claves normalizadas, sin colisiones,
+y agregaría una columna e índice de auditoría. `core.0060` cambia la protección
+de borrado en el ORM, sin SQL de alteración de tabla.
+
+Se creó un respaldo de `portalinfra_dev` en
+`.local/backups/portalinfra_dev_pre_0059_0060_20261006_150252.sql.gz`, con
+permisos `600` y SHA-256
+`d203eceaf713416c7ef43d9d543e02246cad6002c8397691f2fbaf01ee4e1b75`.
+Se restauró en un MySQL 8.4 temporal: ambas migraciones, la integridad y el
+descifrado de secretos pasaron. Los conteos de 30 tablas y la huella de ID/QR
+de los 365 equipos coincidieron antes y después. El contenedor se retiró.
+
+Después se aplicaron `core.0059` y `core.0060` en DEV sin borrar ni recrear la
+base. `migrate --check` y `check --database default` pasaron; también las 21
+reglas de integridad y el descifrado de 369 secretos. Permanecen 365 equipos,
+con 365 QR únicos y ninguno nulo. QA y producción requieren su propio respaldo,
+ensayo y migración; no apuntar esos ambientes a `portalinfra_dev`.
 
 Referencias del fabricante: [preparación y respaldo antes de actualizar](https://dev.mysql.com/doc/refman/8.4/en/upgrade-before-you-begin.html)
 y [cambio de autenticación en 8.4](https://dev.mysql.com/doc/refman/8.4/en/native-pluggable-authentication.html).

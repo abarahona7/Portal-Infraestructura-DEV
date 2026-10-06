@@ -4,9 +4,11 @@ Este procedimiento publica el portal con MySQL 8.4, HTTPS y el perfil
 `config.settings_production`. Los secretos reales se guardan únicamente en el
 `.env` del servidor y nunca se agregan a Git.
 
-Estado actual de la reconstrucción: la migración 0058 y las pruebas funcionales
-se validaron en MySQL **DEV**. La migración 0060 se probó en MySQL aislado y aún
-debe aplicarse en el ambiente correspondiente. QA y producción necesitan sus propias bases,
+Estado actual de la reconstrucción: las migraciones hasta `core.0060` y las
+pruebas funcionales se validaron en MySQL **DEV**. Antes de aplicar 0059/0060 se
+restauró un respaldo nuevo en MySQL 8.4 aislado y se verificaron conteos y QR;
+el resultado está en [la guía de actualización](docs/ACTUALIZACION_MYSQL_84.md).
+QA y producción necesitan sus propias bases,
 accesos y respaldos; no se debe apuntar un despliegue productivo a
 `portalinfra_dev`. Antes de liberar, confirmar con Infraestructura la URL HTTPS
 definitiva, el proxy, la base de QA/producción y la ventana de despliegue.
@@ -25,8 +27,8 @@ También se restauró un respaldo actual de DEV en MySQL 8 aislado: los 365
 equipos conservaron sus ID y QR, no faltaron migraciones y pasaron las 21
 reglas de integridad; la instancia temporal se retiró.
 
-Para habilitar QA faltan, como mínimo: una base MySQL independiente con permisos
-para aplicar migraciones, URL y certificado HTTPS propios, `PORTAL_PUBLIC_URL`
+Para habilitar QA se deben confirmar la base MySQL independiente y los permisos
+para aplicar migraciones, la URL y el certificado HTTPS propios, `PORTAL_PUBLIC_URL`
 apuntando a esa URL, acceso al servidor y una cuenta con rol de prueba. En QA
 se debe ejecutar la sección 4 y completar la sección 7 antes de proponer una
 fecha de producción.

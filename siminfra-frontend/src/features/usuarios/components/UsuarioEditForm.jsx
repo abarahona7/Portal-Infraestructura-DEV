@@ -60,6 +60,8 @@ export default function UsuarioEditForm({
 
   const ipAssignmentDisabled = (usuario.estado || 'ACTIVO') !== 'ACTIVO';
   const deviceLines = getAssignedCellularNumbers(usuario);
+  const deviceLine = deviceLines.length === 1 ? deviceLines[0] : '';
+  const lineMatchesDevice = !usuario.celular || usuario.celular === deviceLine;
 
   const handleDepartmentChange = (value) => {
     const departmentId = value ? Number(value) : null;
@@ -217,15 +219,19 @@ export default function UsuarioEditForm({
           maxLength={12}
           pattern="[+][0-9]{11}"
           placeholder="+56912345678"
-          value={usuario.celular || ''}
+          value={usuario.celular ?? deviceLine}
           disabled={usuario.estado === 'BAJA'}
           onChange={(e) => updateField('celular', normalizeCorporateLineInput(e.target.value))}
           style={inputStyle}
         />
         <small>
-          {deviceLines.length
-            ? `El equipo asignado registra: ${deviceLines.join(' / ')}. Puedes guardar la línea aquí sin cambiar el equipo.`
-            : 'Opcional. Puedes registrar la línea aunque no conozcas el dispositivo.'}
+          {deviceLines.length > 1
+            ? 'Hay varias líneas en celulares asignados. Edita cada número desde su equipo.'
+            : deviceLine && lineMatchesDevice
+              ? 'El celular asignado usa esta línea. Si la cambias aquí, también se actualizará en Celular.'
+              : deviceLine
+                ? `El celular asignado tiene otra línea (${deviceLine}); ambos números se mantienen por separado.`
+                : 'Opcional. Puedes registrar la línea aunque no conozcas el dispositivo.'}
         </small>
       </div>
 

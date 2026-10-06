@@ -944,6 +944,26 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
     def update(self, instance, validated_data):
         ip_enviada = 'ip_seleccionada' in validated_data
 
+        # Una línea puede estar registrada solo en el celular asignado (datos
+        # anteriores a la línea independiente del usuario). Al editarla desde
+        # Usuarios, actualizar el mismo celular sin tocar otras líneas.
+        equipos_de_la_linea = []
+        if 'celular' in validated_data and validated_data.get('estado', instance.estado) != 'BAJA':
+            celulares = list(
+                Equipamiento.objects.select_for_update().filter(
+                    usuario=instance, tipo='Celular'
+                )
+            )
+            linea_anterior = instance.celular
+            if not linea_anterior:
+                lineas = {equipo.numero_telefono for equipo in celulares if equipo.numero_telefono}
+                linea_anterior = next(iter(lineas)) if len(lineas) == 1 else None
+            if linea_anterior:
+                equipos_de_la_linea = [
+                    equipo for equipo in celulares
+                    if equipo.numero_telefono == linea_anterior
+                ]
+
         ip_seleccionada = validated_data.pop(
         'ip_seleccionada',
         None
@@ -957,6 +977,14 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
         instance,
         validated_data
         )
+
+        for equipo in equipos_de_la_linea:
+            if equipo.numero_telefono != usuario.celular:
+                equipo.numero_telefono = usuario.celular
+                equipo.save(update_fields=['numero_telefono'])
+
+        if equipos_de_la_linea:
+            usuario._prefetched_objects_cache = {}
 
         if ip_enviada and usuario.estado not in {'BAJA', 'LICENCIA'}:
             try:

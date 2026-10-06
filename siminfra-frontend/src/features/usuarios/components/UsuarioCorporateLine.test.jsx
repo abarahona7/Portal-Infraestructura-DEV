@@ -4,6 +4,7 @@ import UsuarioCreateForm from './UsuarioCreateForm';
 import UsuarioEditForm from './UsuarioEditForm';
 import UsuariosTable from './UsuariosTable';
 import { getCorporateLineNumbers } from '../../../utils/userCorporateLines';
+import { prepareUpdatePayload } from '../../../utils/prepareUpdatePayload';
 
 describe('Línea móvil del usuario', () => {
   it('permite registrar una línea sin crear un equipo', () => {
@@ -37,6 +38,22 @@ describe('Línea móvil del usuario', () => {
 
     render(<UsuarioEditForm usuario={usuario} onChange={vi.fn()} />);
     expect(screen.getByRole('textbox', { name: 'Línea móvil corporativa' })).toHaveValue('+56912345678');
-    expect(screen.getByText(/El equipo asignado registra:/)).toBeInTheDocument();
+    expect(screen.getByText(/también se actualizará en Celular/)).toBeInTheDocument();
+  });
+
+  it('muestra y permite cambiar una línea que solo existe en el celular asignado', () => {
+    const onChange = vi.fn();
+    const usuario = {
+      id: 7, celular: null,
+      equipos: [{ tipo: 'Celular', numero_telefono: '+56911111111' }],
+    };
+    render(<UsuarioEditForm usuario={usuario} onChange={onChange} />);
+    const input = screen.getByRole('textbox', { name: 'Línea móvil corporativa' });
+    expect(input).toHaveValue('+56911111111');
+    fireEvent.change(input, { target: { value: '+56922222222' } });
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ celular: '+56922222222' }));
+
+    expect(prepareUpdatePayload('usuarios', usuario)).not.toHaveProperty('celular');
+    expect(prepareUpdatePayload('usuarios', { ...usuario, celular: '' })).toHaveProperty('celular', '');
   });
 });

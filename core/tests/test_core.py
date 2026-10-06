@@ -152,6 +152,79 @@ class SecurityTests(TestCase):
         )
         self.assertEqual(reassigned.status_code, 200)
 
+    def test_editing_existing_device_line_from_user_updates_cellular_equipment(self):
+        self.auth(self.admin)
+        equipo = Equipamiento.objects.create(
+            usuario=self.portal_user, tipo='Celular', marca='Apple',
+            modelo='iPhone', numero_telefono='+56911111111',
+        )
+        self.assertIsNone(self.portal_user.celular)
+
+        response = self.client.patch(
+            f'/api/usuarios/{self.portal_user.pk}/',
+            {'celular': '+56922222222'}, format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.portal_user.refresh_from_db()
+        equipo.refresh_from_db()
+        self.assertEqual(self.portal_user.celular, '+56922222222')
+        self.assertEqual(equipo.numero_telefono, '+56922222222')
+        self.assertEqual(response.json()['equipos'][0]['numero_telefono'], '+56922222222')
+
+        unrelated = self.client.patch(
+            f'/api/usuarios/{self.portal_user.pk}/',
+            {'cargo': 'Analista'}, format='json',
+        )
+        self.assertEqual(unrelated.status_code, 200)
+        equipo.refresh_from_db()
+        self.assertEqual(equipo.numero_telefono, '+56922222222')
+
+        cleared = self.client.patch(
+            f'/api/usuarios/{self.portal_user.pk}/',
+            {'celular': ''}, format='json',
+        )
+        self.assertEqual(cleared.status_code, 200)
+        equipo.refresh_from_db()
+        self.assertIsNone(equipo.numero_telefono)
+
+    def test_editing_independent_user_line_does_not_replace_other_device_line(self):
+        self.auth(self.admin)
+        self.portal_user.celular = '+56933333333'
+        self.portal_user.save(update_fields=['celular'])
+        equipo = Equipamiento.objects.create(
+            usuario=self.portal_user, tipo='Celular', marca='Apple',
+            modelo='iPhone', numero_telefono='+56911111111',
+        )
+
+        response = self.client.patch(
+            f'/api/usuarios/{self.portal_user.pk}/',
+            {'celular': '+56944444444'}, format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        equipo.refresh_from_db()
+        self.assertEqual(equipo.numero_telefono, '+56911111111')
+
+    def test_editing_user_line_does_not_guess_between_two_device_lines(self):
+        self.auth(self.admin)
+        first = Equipamiento.objects.create(
+            usuario=self.portal_user, tipo='Celular', marca='Apple',
+            modelo='iPhone', numero_telefono='+56911111111',
+        )
+        second = Equipamiento.objects.create(
+            usuario=self.portal_user, tipo='Celular', marca='Samsung',
+            modelo='Galaxy', numero_telefono='+56922222222',
+        )
+
+        response = self.client.patch(
+            f'/api/usuarios/{self.portal_user.pk}/',
+            {'celular': '+56933333333'}, format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        first.refresh_from_db()
+        second.refresh_from_db()
+        self.assertEqual(first.numero_telefono, '+56911111111')
+        self.assertEqual(second.numero_telefono, '+56922222222')
+
     def test_usuario_red_duplicate_is_case_insensitive(self):
         self.auth(self.admin)
         response = self.client.post(

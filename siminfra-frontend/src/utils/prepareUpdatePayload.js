@@ -29,6 +29,9 @@ export const prepareUpdatePayload = (
 
   if (tab === 'usuarios') {
     delete payload.dpto_area;
+    // Null indica que el número visible proviene de un celular y no fue editado.
+    // Una cadena vacía sí indica que el usuario quitó esa línea expresamente.
+    if (payload.celular == null) delete payload.celular;
 
     ['nombre_completo', 'usuario_red', 'correo_corp', 'cargo', 'hostname', 'celular', 'gmail'].forEach((field) => {
       if (typeof payload[field] === 'string') {

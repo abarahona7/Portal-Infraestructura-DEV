@@ -139,7 +139,6 @@ export default function Sidebar({
   isOpen,
   collapsed,
   activeTab,
-  activeCount,
   onClose,
   onToggleCollapse,
   onSelectTab,
@@ -187,7 +186,6 @@ export default function Sidebar({
   };
 
   const renderModuleButton = (module, { child = false } = {}) => {
-    const active = activeTab === module.id;
     const Icon = module.icon;
 
     return (
@@ -196,7 +194,7 @@ export default function Sidebar({
         type="button"
         className={[
           child ? 'sidebar-child-button' : 'sidebar-module-button',
-          active ? 'sidebar-module-active' : '',
+          activeTab === module.id ? 'sidebar-module-active' : '',
         ]
           .filter(Boolean)
           .join(' ')}
@@ -212,11 +210,6 @@ export default function Sidebar({
             {module.label}
           </span>
 
-          {active && activeCount !== undefined && (
-            <span className="sidebar-module-count">
-              {activeCount}
-            </span>
-          )}
         </span>
       </button>
     );
@@ -322,13 +315,6 @@ export default function Sidebar({
                           {group.parent.label}
                         </span>
 
-                        {(activeTab === group.parent.id ||
-                          (group.parent.id === 'equipos' && activeTab === 'activos-resumen')) &&
-                          activeCount !== undefined && (
-                            <span className="sidebar-module-count">
-                              {activeCount}
-                            </span>
-                          )}
                       </span>
                     </button>
 

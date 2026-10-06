@@ -614,18 +614,6 @@ export default function App() {
 
   const filteredData = data;
 
-  const totalManagedIps = Object.values(ipSegmentStats).reduce(
-    (total, segment) => total + (Number(segment?.total) || 0),
-    0
-  );
-  const sidebarActiveCount = tab === 'departamentos'
-    ? data.length
-    : tab === 'usuarios' && !selectedDpto
-      ? usuariosStats.total
-      : tab === 'ips' && !selectedIpSegment
-        ? totalManagedIps
-        : pagination.count;
-
   const handleExportUsuarios = async () => {
     try {
       const rows = await getAllData();
@@ -971,7 +959,6 @@ export default function App() {
         isOpen={sidebarOpen}
         collapsed={sidebarCollapsed}
         activeTab={tab}
-        activeCount={tab === 'activos-resumen' ? undefined : sidebarActiveCount}
         onClose={closeSidebar}
         onToggleCollapse={toggleSidebarCollapsed}
         onSelectTab={handleSelectTab}

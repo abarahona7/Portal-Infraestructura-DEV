@@ -275,15 +275,6 @@
   text-overflow: ellipsis;
 }
 
-.sidebar-module-count {
-  min-width: 24px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.15);
-  font-size: 11px;
-  text-align: center;
-}
-
 /* =========================
    FOOTER
 ========================= */

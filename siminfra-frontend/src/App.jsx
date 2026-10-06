@@ -1238,6 +1238,8 @@ export default function App() {
                   onAnexoStatusChange={
                     setSelectedEstadoAnexo
                   }
+                  selectedGeneralStatus={selectedEstadoGeneral}
+                  onGeneralStatusChange={setSelectedEstadoGeneral}
                   search={search}
                   onSearchChange={setSearch}
                   searching={isLoading && Boolean(normalizedSearch)}

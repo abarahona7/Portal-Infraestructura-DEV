@@ -7,10 +7,12 @@ export const normalizeCorporateLineInput = (value) => {
   return digits ? `+${digits}` : '';
 };
 
+export const getAssignedCellularDevices = (usuario) => (usuario?.equipos || [])
+  .filter(isCellularEquipment);
+
 export const getAssignedCellularNumbers = (usuario) => [
   ...new Set(
-    (usuario?.equipos || [])
-      .filter(isCellularEquipment)
+    getAssignedCellularDevices(usuario)
       .map((equipo) => String(equipo.numero_telefono || '').trim())
       .filter(Boolean)
   ),

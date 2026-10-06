@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import PasswordInput from './PasswordInput';
 import AvailableIpSelector from './AvailableIpSelector';
-import { getAssignedCellularNumbers, normalizeCorporateLineInput } from '../../../utils/userCorporateLines';
+import { getAssignedCellularDevices, getAssignedCellularNumbers, normalizeCorporateLineInput } from '../../../utils/userCorporateLines';
 
 export default function UsuarioEditForm({
   usuario,
@@ -59,9 +59,13 @@ export default function UsuarioEditForm({
   };
 
   const ipAssignmentDisabled = (usuario.estado || 'ACTIVO') !== 'ACTIVO';
+  const cellularDevices = getAssignedCellularDevices(usuario);
   const deviceLines = getAssignedCellularNumbers(usuario);
   const deviceLine = deviceLines.length === 1 ? deviceLines[0] : '';
-  const lineMatchesDevice = !usuario.celular || usuario.celular === deviceLine;
+  const lineMatchesDevice = !usuario.celular || deviceLines.includes(usuario.celular);
+  const lineInputLabel = deviceLines.length > 1 && !deviceLines.includes(usuario.celular)
+    ? 'Línea adicional del usuario'
+    : 'Línea móvil corporativa';
 
   const handleDepartmentChange = (value) => {
     const departmentId = value ? Number(value) : null;
@@ -211,9 +215,9 @@ export default function UsuarioEditForm({
       </div>
 
       <div>
-        <label style={labelStyle}>Línea móvil corporativa</label>
+        <label style={labelStyle}>{lineInputLabel}</label>
         <input
-          aria-label="Línea móvil corporativa"
+          aria-label={lineInputLabel}
           type="tel"
           inputMode="tel"
           maxLength={12}
@@ -225,14 +229,19 @@ export default function UsuarioEditForm({
           style={inputStyle}
         />
         <small>
-          {deviceLines.length > 1
-            ? 'Hay varias líneas en celulares asignados. Edita cada número desde su equipo.'
+          {deviceLines.length > 1 && lineMatchesDevice && usuario.celular
+            ? 'Cambiar esta línea actualizará el celular que usa ese número. Las demás se editan en Celular.'
+            : deviceLines.length > 1
+              ? 'Estos celulares tienen números distintos. Cambia cada uno en Celular; este campo guarda una línea adicional independiente.'
             : deviceLine && lineMatchesDevice
-              ? 'El celular asignado usa esta línea. Si la cambias aquí, también se actualizará en Celular.'
+              ? `${cellularDevices.length > 1 ? 'Los celulares asignados usan' : 'El celular asignado usa'} esta línea. Si la cambias aquí, también se actualizará en Celular.`
               : deviceLine
                 ? `El celular asignado tiene otra línea (${deviceLine}); ambos números se mantienen por separado.`
                 : 'Opcional. Puedes registrar la línea aunque no conozcas el dispositivo.'}
         </small>
+        {deviceLines.length > 1 && (
+          <small>Celulares asignados: {deviceLines.join(' · ')}</small>
+        )}
       </div>
 
       <div>

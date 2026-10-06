@@ -225,6 +225,90 @@ class SecurityTests(TestCase):
         self.assertEqual(first.numero_telefono, '+56911111111')
         self.assertEqual(second.numero_telefono, '+56922222222')
 
+    def test_editing_cellular_updates_matching_user_line_and_preserves_other_lines(self):
+        self.auth(self.admin)
+        self.portal_user.celular = '+56911111111'
+        self.portal_user.save(update_fields=['celular'])
+        equipo = Equipamiento.objects.create(
+            usuario=self.portal_user, tipo='Celular', marca='Apple',
+            modelo='iPhone', numero_telefono='+56911111111',
+        )
+        changed = self.client.patch(
+            f'/api/equipos/{equipo.pk}/?categoria=Celular',
+            {'numero_telefono': '+56922222222'}, format='json',
+        )
+        self.assertEqual(changed.status_code, 200)
+        self.portal_user.refresh_from_db()
+        self.assertEqual(self.portal_user.celular, '+56922222222')
+
+        self.portal_user.celular = '+56933333333'
+        self.portal_user.save(update_fields=['celular'])
+        # Una línea independiente no debe seguir los cambios de otro celular.
+        changed_again = self.client.patch(
+            f'/api/equipos/{equipo.pk}/?categoria=Celular',
+            {'numero_telefono': '+56944444444'}, format='json',
+        )
+        self.assertEqual(changed_again.status_code, 200)
+        self.portal_user.refresh_from_db()
+        self.assertEqual(self.portal_user.celular, '+56933333333')
+
+    def test_two_cellulars_with_same_line_do_not_lose_remaining_line(self):
+        self.auth(self.admin)
+        self.portal_user.celular = '+56911111111'
+        self.portal_user.save(update_fields=['celular'])
+        first = Equipamiento.objects.create(
+            usuario=self.portal_user, tipo='Celular', marca='Apple',
+            modelo='iPhone', numero_telefono='+56911111111',
+        )
+        second = Equipamiento.objects.create(
+            usuario=self.portal_user, tipo='Celular', marca='Samsung',
+            modelo='Galaxy', numero_telefono='+56911111111',
+        )
+        changed = self.client.patch(
+            f'/api/equipos/{first.pk}/?categoria=Celular',
+            {'numero_telefono': '+56922222222'}, format='json',
+        )
+        self.assertEqual(changed.status_code, 200)
+        self.portal_user.refresh_from_db()
+        second.refresh_from_db()
+        self.assertEqual(self.portal_user.celular, '+56911111111')
+        self.assertEqual(second.numero_telefono, '+56911111111')
+
+    def test_releasing_cellular_keeps_independent_user_line(self):
+        self.auth(self.admin)
+        self.portal_user.celular = '+56911111111'
+        self.portal_user.save(update_fields=['celular'])
+        equipo = Equipamiento.objects.create(
+            usuario=self.portal_user, tipo='Celular', marca='Apple',
+            modelo='iPhone', numero_telefono='+56911111111',
+        )
+        released = self.client.patch(
+            f'/api/equipos/{equipo.pk}/?categoria=Celular',
+            {'usuario': None}, format='json',
+        )
+        self.assertEqual(released.status_code, 200)
+        self.portal_user.refresh_from_db()
+        equipo.refresh_from_db()
+        self.assertEqual(self.portal_user.celular, '+56911111111')
+        self.assertIsNone(equipo.usuario_id)
+        self.assertEqual(equipo.estado, 'STOCK')
+
+    def test_assigned_cellular_line_finds_user_and_equipment_without_duplicate_rows(self):
+        self.auth(self.admin)
+        for brand in ('Apple', 'Samsung'):
+            Equipamiento.objects.create(
+                usuario=self.portal_user, tipo='Celular', marca=brand,
+                modelo='Modelo', numero_telefono='+56912345678',
+            )
+        users = self.client.get('/api/usuarios/', {'search': '+56912345678'})
+        self.assertEqual(users.status_code, 200)
+        self.assertEqual(users.json()['count'], 1)
+        self.assertEqual(users.json()['results'][0]['id'], self.portal_user.pk)
+
+        equipment = self.client.get('/api/equipos/', {'search': '+56912345678'})
+        self.assertEqual(equipment.status_code, 200)
+        self.assertEqual(equipment.json()['count'], 2)
+
     def test_usuario_red_duplicate_is_case_insensitive(self):
         self.auth(self.admin)
         response = self.client.post(

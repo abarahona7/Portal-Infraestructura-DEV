@@ -1,4 +1,5 @@
 import {
+  buildEquipmentStateFromUserSelection,
   equipmentUsesHostname,
   equipmentUsesMobileLine,
   normalizeEquipmentFieldsByType,
@@ -53,7 +54,10 @@ export default function EquipoEditForm({
 
   const usuariosAsignables = usuarios.filter(
     (usuario) => usuario.estado === 'ACTIVO'
+      || String(usuario.id) === String(equipo.usuario)
   );
+
+  const hostnameManagedByUser = usaHostname && Boolean(equipo.usuario);
 
   const handleTipoChange = (nuevoTipo) => {
     const nuevoEstado =
@@ -485,6 +489,7 @@ export default function EquipoEditForm({
             aria-label="Hostname"
             type="text"
             value={equipo.hostname || ''}
+            disabled={hostnameManagedByUser}
             onChange={(e) =>
               onHostnameChange(
                 e.target.value
@@ -493,6 +498,9 @@ export default function EquipoEditForm({
             placeholder="Ej: CL-NB-001"
             style={inputStyle}
           />
+          {hostnameManagedByUser && (
+            <small>Edita el hostname desde el usuario asignado.</small>
+          )}
         </div>
       )}
 
@@ -575,12 +583,9 @@ export default function EquipoEditForm({
         <select
           aria-label="Usuario asignado"
           value={equipo.usuario || ''}
-          onChange={(e) =>
-            updateField(
-              'usuario',
-              e.target.value || null
-            )
-          }
+          onChange={(e) => onChange(buildEquipmentStateFromUserSelection(
+            equipo, e.target.value, usuarios
+          ))}
           style={inputStyle}
         >
           <option value="">
@@ -595,6 +600,7 @@ export default function EquipoEditForm({
               {usuario.nombre_completo}
               {' '}
               ({usuario.usuario_red})
+              {usuario.estado === 'LICENCIA' ? ' · En licencia' : ''}
             </option>
           ))}
         </select>

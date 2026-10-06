@@ -56,4 +56,33 @@ describe('Línea móvil del usuario', () => {
     expect(prepareUpdatePayload('usuarios', usuario)).not.toHaveProperty('celular');
     expect(prepareUpdatePayload('usuarios', { ...usuario, celular: '' })).toHaveProperty('celular', '');
   });
+
+  it('distingue dos celulares diferentes de una línea adicional del usuario', () => {
+    const usuario = {
+      id: 8, celular: null,
+      equipos: [
+        { tipo: 'Celular', numero_telefono: '+56911111111' },
+        { tipo: 'Celular', numero_telefono: '+56922222222' },
+        { tipo: 'Tablet', numero_telefono: '+56933333333' },
+      ],
+    };
+    expect(getCorporateLineNumbers(usuario)).toEqual(['+56911111111', '+56922222222']);
+    render(<UsuarioEditForm usuario={usuario} onChange={vi.fn()} />);
+    expect(screen.getByRole('textbox', { name: 'Línea adicional del usuario' })).toHaveValue('');
+    expect(screen.getByText('Celulares asignados: +56911111111 · +56922222222')).toBeInTheDocument();
+    expect(screen.getByText(/Cambia cada uno en Celular/)).toBeInTheDocument();
+  });
+
+  it('identifica cuál de dos líneas está vinculada al campo del usuario', () => {
+    const usuario = {
+      id: 9, celular: '+56911111111',
+      equipos: [
+        { tipo: 'Celular', numero_telefono: '+56911111111' },
+        { tipo: 'Celular', numero_telefono: '+56922222222' },
+      ],
+    };
+    render(<UsuarioEditForm usuario={usuario} onChange={vi.fn()} />);
+    expect(screen.getByRole('textbox', { name: 'Línea móvil corporativa' })).toHaveValue('+56911111111');
+    expect(screen.getByText(/actualizará el celular que usa ese número/)).toBeInTheDocument();
+  });
 });

@@ -573,11 +573,41 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
         except IP.DoesNotExist:
             return None
 
+    @transaction.atomic
     def update(self, instance, validated_data):
+        old_number = instance.numero_telefono
+        old_owner_id = instance.usuario_id
+        next_owner = validated_data.get('usuario', instance.usuario)
+        next_type = validated_data.get('tipo', instance.tipo)
+        next_number = validated_data.get('numero_telefono', old_number)
+        linked_user = None
+        if (
+            instance.tipo == next_type == 'Celular'
+            and old_owner_id
+            and getattr(next_owner, 'pk', None) == old_owner_id
+            and old_number
+            and next_number != old_number
+        ):
+            linked_user = Usuario.objects.select_for_update().filter(
+                pk=old_owner_id, celular=old_number
+            ).first()
+
         for field in ('icloud_password', 'pin'):
             if validated_data.get(field) in ('', None):
                 validated_data.pop(field, None)
-        return super().update(instance, validated_data)
+        equipo = super().update(instance, validated_data)
+
+        # La línea del usuario es independiente cuando difiere de la del equipo.
+        # Si ambas eran iguales, mantenerlas iguales al editar el celular.
+        if linked_user and not Equipamiento.objects.filter(
+            usuario_id=old_owner_id,
+            tipo='Celular',
+            numero_telefono=old_number,
+        ).exclude(pk=equipo.pk).exists():
+            linked_user.celular = equipo.numero_telefono or None
+            linked_user.save(update_fields=['celular'])
+
+        return equipo
 
     def validate(self, attrs):
         instance = getattr(
@@ -702,12 +732,28 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
                 or numero_telefono != getattr(instance, 'numero_telefono', None)
                 or getattr(usuario, 'pk', None) != getattr(instance, 'usuario_id', None)
             )
-            if line_changed and Usuario.objects.filter(celular=numero_telefono).exclude(
-                pk=getattr(usuario, 'pk', None)
-            ).exists():
+            if tipo not in {'Celular', 'Tablet', 'BAM / Router'} and (
+                instance is None or line_changed or tipo != instance.tipo
+            ):
                 raise serializers.ValidationError({
-                    'numero_telefono': 'Esta línea móvil ya está registrada en otro usuario.'
+                    'numero_telefono': 'Este tipo de equipo no utiliza línea móvil.'
                 })
+            if line_changed and usuario:
+                other_user_has_line = Usuario.objects.filter(
+                    celular=numero_telefono
+                ).exclude(pk=usuario.pk).exists()
+                other_owner_has_line = Equipamiento.objects.filter(
+                    numero_telefono=numero_telefono,
+                    usuario__isnull=False,
+                ).exclude(pk=getattr(instance, 'pk', None)).exclude(
+                    usuario_id=usuario.pk
+                ).exists()
+                if other_user_has_line or other_owner_has_line:
+                    raise serializers.ValidationError({
+                        'numero_telefono': 'Esta línea móvil ya está asignada a otro usuario.'
+                    })
+        elif 'numero_telefono' in attrs:
+            attrs['numero_telefono'] = None
         # =====================================
         # NÚMERO DE SERIE DUPLICADO
         # =====================================
@@ -783,7 +829,11 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
             usuario.estado in [
                 'BAJA',
                 'LICENCIA'
-            ]
+            ] and (
+                instance is None
+                or instance.usuario_id != usuario.pk
+                or usuario.estado == 'BAJA'
+            )
         ):
             raise serializers.ValidationError({
                 "usuario":
@@ -942,6 +992,8 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
+        if 'celular' in validated_data:
+            instance = Usuario.objects.select_for_update().get(pk=instance.pk)
         ip_enviada = 'ip_seleccionada' in validated_data
 
         # Una línea puede estar registrada solo en el celular asignado (datos

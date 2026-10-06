@@ -128,6 +128,83 @@ class AssetDashboardQrTests(TestCase):
         }, format='json')
         self.assertEqual(valid_peripheral.status_code, 201)
 
+    def test_mobile_numbers_follow_device_category_and_cannot_be_shared_across_users(self):
+        second_person = Usuario.objects.create(
+            nombre_completo='Persona Dos', usuario_red='persona.dos',
+            correo_corp='persona.dos@example.com', departamento=self.other_department,
+        )
+        for index, category in enumerate(('Celular', 'Tablet', 'BAM / Router'), start=1):
+            number = f'+5691234567{index}'
+            created = self.client.post(f'/api/equipos/?categoria={category}', {
+                'tipo': category, 'marca': 'Marca', 'modelo': 'Modelo',
+                'numero_telefono': number, 'usuario': self.person.pk,
+            }, format='json')
+            self.assertEqual(created.status_code, 201, created.data)
+            conflict = self.client.post(f'/api/equipos/?categoria={category}', {
+                'tipo': category, 'marca': 'Otra', 'modelo': 'Modelo',
+                'numero_telefono': number, 'usuario': second_person.pk,
+            }, format='json')
+            self.assertEqual(conflict.status_code, 400)
+            self.assertIn('numero_telefono', conflict.data)
+
+        invalid = self.client.post('/api/equipos/?categoria=Notebook', {
+            'tipo': 'Notebook', 'marca': 'Dell', 'modelo': 'XPS',
+            'numero_telefono': '+56999999999',
+        }, format='json')
+        self.assertEqual(invalid.status_code, 400)
+        self.assertIn('numero_telefono', invalid.data)
+
+    def test_equipment_on_medical_leave_can_be_edited_but_not_newly_assigned(self):
+        license_user = Usuario.objects.create(
+            nombre_completo='Persona Licencia', usuario_red='licencia',
+            correo_corp='licencia@example.com', departamento=self.department,
+            estado='LICENCIA',
+        )
+        equipment = Equipamiento.objects.create(
+            usuario=license_user, tipo='Tablet', marca='Samsung', modelo='Tab A',
+            estado='ASIGNADO',
+        )
+        edit = self.client.patch(
+            f'/api/equipos/{equipment.pk}/?categoria=Tablet',
+            {'modelo': 'Tab S'}, format='json',
+        )
+        self.assertEqual(edit.status_code, 200, edit.data)
+        self.assertEqual(edit.data['modelo'], 'Tab S')
+
+        new_assignment = self.client.patch(
+            f'/api/equipos/{self.unassigned.pk}/?categoria=Notebook',
+            {'usuario': license_user.pk}, format='json',
+        )
+        self.assertEqual(new_assignment.status_code, 400)
+        self.assertIn('usuario', new_assignment.data)
+
+    def test_each_equipment_section_keeps_type_assignment_and_department(self):
+        for category, equipment_type in (
+            ('Notebook', 'Notebook'),
+            ('Celular', 'Celular'),
+            ('Tablet', 'Tablet'),
+            ('Mac', 'Mac'),
+            ('BAM / Router', 'BAM / Router'),
+            ('PERIFERICOS', 'Monitor'),
+        ):
+            with self.subTest(category=category):
+                created = self.client.post(f'/api/equipos/?categoria={category}', {
+                    'tipo': equipment_type, 'marca': 'Marca', 'modelo': 'Modelo',
+                    'usuario': self.person.pk,
+                }, format='json')
+                self.assertEqual(created.status_code, 201, created.data)
+                self.assertEqual(created.data['estado'], 'ASIGNADO')
+                self.assertEqual(created.data['departamento_nombre'], 'Tecnología')
+                self.assertTrue(created.data['token_qr'])
+
+                changed = self.client.patch(
+                    f"/api/equipos/{created.data['id']}/?categoria={category}",
+                    {'modelo': 'Modelo actualizado'}, format='json',
+                )
+                self.assertEqual(changed.status_code, 200, changed.data)
+                self.assertEqual(changed.data['tipo'], equipment_type)
+                self.assertEqual(changed.data['modelo'], 'Modelo actualizado')
+
     @override_settings(PORTAL_PUBLIC_URL='http://portal.example.cl')
     def test_qr_rejects_http_url_in_production(self):
         path = f'/api/activos/qr/{self.assigned.token_qr}/'

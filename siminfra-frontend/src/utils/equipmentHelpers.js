@@ -199,6 +199,26 @@ export const buildEquipmentStateFromHostname = (
 };
 
 
+export const buildEquipmentStateFromUserSelection = (
+  currentState,
+  selectedUserId,
+  usuariosList = []
+) => {
+  const nextState = { ...currentState, usuario: selectedUserId || null };
+  if (!selectedUserId || !equipmentUsesHostname(currentState.tipo)) {
+    return nextState;
+  }
+
+  const selectedUser = usuariosList.find(
+    (usuario) => String(usuario.id) === String(selectedUserId)
+  );
+  if (selectedUser) {
+    nextState.hostname = selectedUser.hostname || '';
+  }
+  return nextState;
+};
+
+
 /* =========================
    FILTRO POR CATEGORÍA
 ========================= */

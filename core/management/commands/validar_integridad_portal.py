@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db.models import F, Q, QuerySet
+from django.db.models import Exists, F, OuterRef, Q, QuerySet
 
 from core.models import (
     Anexo,
@@ -109,6 +109,28 @@ def build_checks():
                 | Q(usuario__isnull=False, estado='STOCK')
                 | Q(usuario__isnull=True, fecha_asignacion__isnull=False)
             ),
+        ),
+        IntegrityCheck(
+            'equipo_linea_otro_usuario',
+            'Equipos con el mismo número móvil asignados a usuarios diferentes.',
+            Equipamiento.objects.filter(
+                usuario__isnull=False,
+                numero_telefono__isnull=False,
+            ).exclude(numero_telefono='').annotate(
+                _otra_asignacion=Exists(
+                    Equipamiento.objects.filter(
+                        numero_telefono=OuterRef('numero_telefono'),
+                        usuario__isnull=False,
+                    ).exclude(usuario_id=OuterRef('usuario_id'))
+                )
+            ).filter(_otra_asignacion=True),
+        ),
+        IntegrityCheck(
+            'equipo_linea_tipo_incompatible',
+            'Equipos de categorías sin SIM que conservan un número móvil.',
+            Equipamiento.objects.exclude(
+                tipo__in=['Celular', 'Tablet', 'BAM / Router']
+            ).exclude(numero_telefono__isnull=True).exclude(numero_telefono=''),
         ),
         IntegrityCheck(
             'ip_libre_con_asignacion',

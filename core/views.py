@@ -399,6 +399,7 @@ class UsuarioViewSet(
         'usuario_red',
         'correo_corp',
         'celular',
+        'equipos__numero_telefono',
         'hostname',
         'departamento__nombre',
         'subarea__nombre',
@@ -532,6 +533,8 @@ class EquipamientoViewSet(
         'numero_serie',
         'hostname',
         'af',
+        'numero_telefono',
+        'imei',
         'usuario__nombre_completo',
         'usuario__usuario_red'
     ]

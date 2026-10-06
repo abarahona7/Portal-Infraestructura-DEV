@@ -34,7 +34,7 @@
 }
 
 @media (max-width: 767px), (pointer: coarse) {
-  :where(
+  #root :is(
     .anexo-action,
     .equipo-action,
     .ip-action,
@@ -52,6 +52,20 @@
     height: var(--portal-touch-target);
     min-width: var(--portal-touch-target);
     min-height: var(--portal-touch-target);
+  }
+
+  :is(
+    .anexos-actions,
+    .equipos-actions,
+    .ips-actions,
+    .pcs-actions,
+    .perfiles-actions,
+    .servidores-actions,
+    .usuarios-actions
+  ) {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
   }
 
   :where(

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   X,
@@ -147,6 +147,15 @@ export default function Sidebar({
 }) {
   const [openGroups, setOpenGroups] = useState(readSavedGroups);
 
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [isOpen, onClose]);
+
   const toggleGroup = (groupId) => {
     setOpenGroups((current) => {
       const next = {
@@ -223,6 +232,7 @@ export default function Sidebar({
       />
 
       <aside
+        aria-label="Menú principal"
         className={[
           'sidebar',
           collapsed ? 'sidebar-collapsed' : '',

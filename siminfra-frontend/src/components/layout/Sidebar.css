@@ -360,14 +360,21 @@
    TABLET / MOBILE
 ========================= */
 @media (max-width: 1023px) {
+  body:has(.sidebar-mobile-open) {
+    overflow: hidden;
+  }
+
   .sidebar {
     width: 280px;
     transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform 0.25s ease, visibility 0.25s ease;
     box-shadow: 10px 0 30px rgba(0, 0, 0, 0.25);
   }
 
   .sidebar.sidebar-mobile-open {
     transform: translateX(0);
+    visibility: visible;
   }
 
   .sidebar-collapsed {

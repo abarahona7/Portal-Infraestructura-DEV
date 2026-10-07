@@ -4,14 +4,14 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [feature/itam-reinicio-limpio]
+    branches: [main, feature/itam-reinicio-limpio]
 
 permissions:
   contents: read
 
 jobs:
   backend:
-    name: Django y MySQL 8.4
+    name: Django, MySQL 8.4 y WebSocket
     runs-on: ubuntu-latest
     services:
       mysql:
@@ -51,9 +51,11 @@ jobs:
         run: python -c 'from cryptography.fernet import Fernet; print("FIELD_ENCRYPTION_KEY=" + Fernet.generate_key().decode())' >> "$GITHUB_ENV"
       - name: Ejecutar suite completa de core
         run: python manage.py test core --noinput
+      - name: Verificar WebSocket con dos clientes y cambios REST
+        run: python scripts/verify_realtime_sqlite.py
 
   frontend:
-    name: Lint y compilación de React
+    name: React y proxy HTTPS
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -73,3 +75,9 @@ jobs:
       - run: npm run build
         env:
           VITE_API_URL: /api
+      - name: Instalar Nginx para validar el proxy
+        run: sudo apt-get update && sudo apt-get install -y nginx
+      - name: Validar rutas HTTPS de producción
+        run: python3 ../scripts/validar_proxy_publicacion.py
+      - name: Validar restricción de acceso en DEV oficina
+        run: python3 ../scripts/validar_proxy_publicacion.py --office-dev

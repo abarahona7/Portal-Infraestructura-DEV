@@ -181,6 +181,9 @@ También debe entregar `dist/index.html` para rutas del frontend como
 `/qr/a/<uuid>`; de lo contrario, el código QR abrirá una página 404 al
 escanearlo. Definir `PORTAL_PUBLIC_URL` con la URL HTTPS real del frontend,
 sin ruta final. El perfil productivo rechaza una URL HTTP o mal formada.
+El flujo de GitHub Actions repite la suite de MySQL, la prueba aislada de
+WebSocket y ambas variantes del proxy en cada cambio de la rama de trabajo y
+de `main`; la comprobación en QA con el dominio real sigue siendo obligatoria.
 El ejemplo [deploy/nginx.portal.conf.example](deploy/nginx.portal.conf.example)
 incluye las rutas necesarias; reemplazar dominio, directorios y certificados
 antes de instalarlo. Validar la configuración con `nginx -t` antes de recargar

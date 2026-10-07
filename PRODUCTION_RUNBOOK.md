@@ -15,13 +15,10 @@ definitiva, el proxy, la base de QA/producción y la ventana de despliegue.
 Las decisiones y comprobaciones aún abiertas se registran en
 [la revisión de ambigüedades](docs/REVISION_AMBIGUEDADES_PRODUCCION.md).
 
-Verificación técnica anterior: **161 pruebas de `core` ejecutadas en MySQL 8.4
-temporal, sin fallos (2 omisiones)**, incluidas concurrencia de IP y
-sesión/QR por HTTPS; la base y el contenedor se retiraron al terminar. Tras los
-cambios de consistencia de líneas y equipos del 6 de octubre de 2026, la suite
-completa pasó en SQLite temporal: **176 pruebas, sin fallos y 3 omisiones**.
-La suite completa de esta versión todavía debe repetirse en MySQL 8.4 aislado
-antes de declarar cerrado el respaldo técnico de producción. El ejemplo Nginx
+Verificación técnica de la versión actual (7 de octubre de 2026): **176 pruebas
+de `core` ejecutadas en MySQL 8.4 temporal, sin fallos (2 omisiones)**. La base
+y el contenedor se retiraron al terminar. La misma suite pasó también en SQLite
+temporal: **176 pruebas, sin fallos y 3 omisiones**. El ejemplo Nginx
 pasó una prueba aislada de sintaxis, HTTPS, carga directa de QR,
 archivos, estáticos y proxy de API/admin. Esta evidencia aún no reemplaza la
 prueba funcional en QA ni la revisión del entorno productivo definitivo. La

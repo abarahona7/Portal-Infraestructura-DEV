@@ -19,7 +19,9 @@ configura `utf8mb4_0900_ai_ci`, igual que DEV. Cambiar la configuración del
 servidor **no convierte por sí solo** las columnas existentes. Las pruebas de
 `core` usan una base temporal MySQL 8.4 creada por
 `scripts/run_qa_mysql.py`; nunca deben ejecutarse contra la base compartida.
-La suite completa pasó: 161 pruebas, 2 omisiones y 0 fallos.
+La suite completa de la versión actual pasó el 7 de octubre de 2026 en MySQL
+8.4 temporal: 176 pruebas, 2 omisiones y 0 fallos. El contenedor y su base se
+retiraron al terminar.
 
 ## Antes de reiniciar un MySQL propio
 

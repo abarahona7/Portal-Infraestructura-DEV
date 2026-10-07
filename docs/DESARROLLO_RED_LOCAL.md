@@ -46,6 +46,10 @@ En Linux, el comando equivalente es:
 .venv/bin/daphne -b 127.0.0.1 -p 8005 config.asgi:application
 ```
 
+Con `DJANGO_DEBUG=True`, esta aplicación ASGI también sirve los archivos
+`/static/` del administrador de Django. Así, `/admin/` en el puerto 8005
+conserva sus estilos; en producción los estáticos los sirve Nginx.
+
 Abrir una segunda terminal en `siminfra-frontend` e iniciar el perfil LAN:
 
 ```powershell

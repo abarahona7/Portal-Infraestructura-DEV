@@ -20,6 +20,11 @@ from django.conf import settings
 from django.urls import path
 from core.realtime import PortalChangesConsumer, StrictPortalOriginValidator
 
+if settings.DEBUG:
+    from django.contrib.staticfiles.handlers import ASGIStaticFilesHandler
+
+    django_application = ASGIStaticFilesHandler(django_application)
+
 allowed_origins = list(settings.CORS_ALLOWED_ORIGINS)
 if settings.PORTAL_PUBLIC_URL:
     allowed_origins.append(settings.PORTAL_PUBLIC_URL)

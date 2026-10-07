@@ -93,14 +93,14 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
             <p className="asset-overview-help">
               {highlightedDepartment
                 ? `${highlightedDepartment.nombre}: ${highlightedDepartment.total} ${highlightedDepartment.total === 1 ? 'equipo' : 'equipos'}`
-                : 'Selecciona una barra para ver los equipos del área.'}
+                : 'Distribución actual de equipos por área.'}
             </p>
           </div>
           {!departments.length && <p>No hay departamentos registrados.</p>}
           <div className="asset-overview-bars" role="group" aria-label="Equipos asignados por departamento">
             {departments.map((department) => <button type="button" key={department.id}
               className="asset-overview-bar"
-              style={{ '--bar-height': `${department.total / maxCount * 100}%` }}
+              style={{ '--bar-width': `${department.total / maxCount * 100}%` }}
               aria-label={`${department.nombre}: ${department.total} ${department.total === 1 ? 'equipo' : 'equipos'}`}
               aria-expanded={selection?.kind === 'departamento' && selection.id === department.id}
               title={`${department.nombre}: ${department.total} ${department.total === 1 ? 'equipo' : 'equipos'}`}
@@ -109,12 +109,11 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
               onFocus={() => setHighlightedDepartment(department)}
               onBlur={() => setHighlightedDepartment(null)}
               onClick={() => select({ kind: 'departamento', id: department.id, label: department.nombre })}>
-              <strong className="asset-overview-bar-value">{department.total}</strong>
-              <span className="asset-overview-bar-plot" aria-hidden="true"><span className="asset-overview-bar-fill" /></span>
               <span className="asset-overview-bar-name" aria-hidden="true">{department.nombre}</span>
+              <span className="asset-overview-bar-plot" aria-hidden="true"><span className="asset-overview-bar-fill" /></span>
+              <strong className="asset-overview-bar-value">{department.total}</strong>
             </button>)}
           </div>
-          <small className="asset-overview-chart-hint">Desplaza el gráfico horizontalmente para ver todas las áreas.</small>
         </section>
         <div className="asset-overview-stats" aria-label="Estado de equipos">
           <div><span>Equipos registrados</span><strong>{counts.total}</strong></div>

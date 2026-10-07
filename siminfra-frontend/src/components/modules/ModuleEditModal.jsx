@@ -7,6 +7,7 @@ import IpEditForm from '../../features/ips/components/IpEditForm';
 import AnexoEditForm from '../../features/anexos/components/AnexoEditForm';
 import PCGenericoEditForm from '../../features/pcsGenericos/components/PCGenericoEditForm';
 import ServidorEditForm from '../../features/servidores/components/ServidorEditForm';
+import { normalizeModalTextChange } from '../../utils/normalizeModalText';
 
 const getEditTitle = (tab) => {
   switch (tab) {
@@ -52,6 +53,10 @@ export default function ModuleEditModal({
 }) {
   if (!editingItem) return null;
 
+  const updateItem = (next) => {
+    setEditingItem((previous) => normalizeModalTextChange(tab, previous, next));
+  };
+
   return (
     <EditModal
       title={getEditTitle(tab)}
@@ -61,7 +66,7 @@ export default function ModuleEditModal({
       {tab === 'usuarios' && (
         <UsuarioEditForm
           usuario={editingItem}
-          onChange={setEditingItem}
+          onChange={updateItem}
           departments={departmentCatalog}
           availableIps={availableIps}
         />
@@ -70,7 +75,7 @@ export default function ModuleEditModal({
       {tab === 'equipos' && (
         <EquipoEditForm
           equipo={editingItem}
-          onChange={setEditingItem}
+          onChange={updateItem}
           usuarios={usuarios}
           formatEquipmentType={formatEquipmentType}
           onHostnameChange={onHostnameChange}
@@ -81,7 +86,7 @@ export default function ModuleEditModal({
       {tab === 'perfiles' && (
         <PerfilEditForm
           perfil={editingItem}
-          onChange={setEditingItem}
+          onChange={updateItem}
           departments={departmentCatalog}
         />
       )}
@@ -89,7 +94,7 @@ export default function ModuleEditModal({
       {tab === 'ips' && (
         <IpEditForm
           ip={editingItem}
-          onChange={setEditingItem}
+          onChange={updateItem}
           usuarios={usuarios}
           onIpChange={onIpChange}
         />
@@ -98,7 +103,7 @@ export default function ModuleEditModal({
       {tab === 'anexos' && (
         <AnexoEditForm
           anexo={editingItem}
-          onChange={setEditingItem}
+          onChange={updateItem}
           usuarios={usuarios}
         />
       )}
@@ -106,7 +111,7 @@ export default function ModuleEditModal({
       {tab === 'pcs-genericos' && (
         <PCGenericoEditForm
           pc={editingItem}
-          onChange={setEditingItem}
+          onChange={updateItem}
           departments={departmentCatalog}
           availableIps={availableIps}
         />
@@ -115,7 +120,7 @@ export default function ModuleEditModal({
       {tab === 'servidores' && (
         <ServidorEditForm
           servidor={editingItem}
-          onChange={setEditingItem}
+          onChange={updateItem}
           availableIps={availableIps}
         />
       )}

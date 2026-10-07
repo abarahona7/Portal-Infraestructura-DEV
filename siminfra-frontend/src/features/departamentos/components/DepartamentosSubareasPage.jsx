@@ -149,7 +149,7 @@ export default function DepartamentosSubareasPage({
       ...current,
       values: {
         ...current.values,
-        nombre: value,
+        nombre: value.toLocaleUpperCase('es-CL'),
       },
     }));
   };

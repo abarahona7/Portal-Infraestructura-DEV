@@ -7,6 +7,7 @@ import IpCreateForm from '../../features/ips/components/IpCreateForm';
 import AnexoCreateForm from '../../features/anexos/components/AnexoCreateForm';
 import PCGenericoCreateForm from '../../features/pcsGenericos/components/PCGenericoCreateForm';
 import ServidorCreateForm from '../../features/servidores/components/ServidorCreateForm';
+import { normalizeModalTextChange } from '../../utils/normalizeModalText';
 
 const getCreateTitle = (tab) => {
   switch (tab) {
@@ -52,6 +53,10 @@ export default function ModuleCreateModal({
 }) {
   if (!newItem) return null;
 
+  const updateItem = (next) => {
+    setNewItem((previous) => normalizeModalTextChange(tab, previous, next));
+  };
+
   return (
     <CreateModal
       title={getCreateTitle(tab)}
@@ -61,7 +66,7 @@ export default function ModuleCreateModal({
       {tab === 'usuarios' && (
         <UsuarioCreateForm
           usuario={newItem}
-          onChange={setNewItem}
+          onChange={updateItem}
           departments={departmentCatalog}
           availableIps={availableIps}
         />
@@ -70,7 +75,7 @@ export default function ModuleCreateModal({
       {tab === 'equipos' && (
         <EquipoCreateForm
           equipo={newItem}
-          onChange={setNewItem}
+          onChange={updateItem}
           usuarios={usuarios}
           formatEquipmentType={formatEquipmentType}
           onHostnameChange={onHostnameChange}
@@ -81,7 +86,7 @@ export default function ModuleCreateModal({
       {tab === 'perfiles' && (
         <PerfilCreateForm
           perfil={newItem}
-          onChange={setNewItem}
+          onChange={updateItem}
           departments={departmentCatalog}
         />
       )}
@@ -89,7 +94,7 @@ export default function ModuleCreateModal({
       {tab === 'ips' && (
         <IpCreateForm
           ip={newItem}
-          onChange={setNewItem}
+          onChange={updateItem}
           usuarios={usuarios}
           onIpChange={onIpChange}
         />
@@ -98,7 +103,7 @@ export default function ModuleCreateModal({
       {tab === 'anexos' && (
         <AnexoCreateForm
           anexo={newItem}
-          onChange={setNewItem}
+          onChange={updateItem}
           usuarios={usuarios}
         />
       )}
@@ -106,7 +111,7 @@ export default function ModuleCreateModal({
       {tab === 'pcs-genericos' && (
         <PCGenericoCreateForm
           pc={newItem}
-          onChange={setNewItem}
+          onChange={updateItem}
           departments={departmentCatalog}
           availableIps={availableIps}
         />
@@ -115,7 +120,7 @@ export default function ModuleCreateModal({
       {tab === 'servidores' && (
         <ServidorCreateForm
           servidor={newItem}
-          onChange={setNewItem}
+          onChange={updateItem}
           availableIps={availableIps}
         />
       )}

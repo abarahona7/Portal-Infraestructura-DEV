@@ -14,7 +14,7 @@
 .asset-overview-stats > div { display: grid; gap: .35rem; border-left: 3px solid #60a5fa; }
 .asset-overview-stats span { color: #52627a; font-size: .8rem; }
 .asset-overview-stats strong { color: #174ea6; font-size: 1.5rem; }
-.asset-overview-chart { min-width: 0; }
+.asset-overview-chart { min-width: 0; container-type: inline-size; }
 .asset-overview-chart-heading { min-height: 3.5rem; padding-bottom: .65rem; border-bottom: 1px solid #e2e8f0; }
 .asset-overview-bars, .asset-overview-reasons, .asset-overview-items { display: grid; margin-top: .8rem; }
 .asset-overview-bars { gap: 0; overflow: visible; }
@@ -41,6 +41,12 @@
 .asset-overview-items article > div:last-child { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
 .asset-overview-pages { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem; margin-top: .7rem; }
 .asset-overview-error { color: #991b1b; }
+@container (min-width: 700px) {
+  .asset-overview-bars { display: block; columns: 2; column-gap: 1rem; }
+  .asset-overview-bars .asset-overview-bar { break-inside: avoid; grid-template-columns: minmax(0, 36%) minmax(0, 1fr) 2rem; gap: .45rem; min-height: 34px; padding: .2rem .35rem; }
+  .asset-overview-bar-name { font-size: .72rem; }
+  .asset-overview-bar-plot { height: .55rem; }
+}
 @media (max-width: 850px) {
   .asset-overview-main { grid-template-columns: minmax(0, 1fr); }
   .asset-overview-stats { grid-template-columns: repeat(5, minmax(0, 1fr)); }

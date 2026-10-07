@@ -114,7 +114,7 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
               <span className="asset-overview-bar-name" aria-hidden="true">{department.nombre}</span>
             </button>)}
           </div>
-          <small className="asset-overview-chart-hint">Desliza el gráfico para ver todas las áreas.</small>
+          <small className="asset-overview-chart-hint">Desplaza el gráfico horizontalmente para ver todas las áreas.</small>
         </section>
         <div className="asset-overview-stats" aria-label="Estado de equipos">
           <div><span>Equipos registrados</span><strong>{counts.total}</strong></div>

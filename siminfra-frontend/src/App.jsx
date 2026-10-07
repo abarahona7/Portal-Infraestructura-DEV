@@ -962,6 +962,7 @@ export default function App() {
         onClose={closeSidebar}
         onToggleCollapse={toggleSidebarCollapsed}
         onSelectTab={handleSelectTab}
+        onLogout={handleLogout}
         role={authUser?.role}
       />
 
@@ -979,7 +980,6 @@ export default function App() {
           activeTab={tab}
           role={authUser?.role}
           onOpenSidebar={openSidebar}
-          onLogout={handleLogout}
         />
 
         {/* FILTROS Y ACCIONES */}

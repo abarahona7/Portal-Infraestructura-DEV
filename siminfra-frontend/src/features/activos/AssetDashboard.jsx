@@ -12,6 +12,8 @@ const reasons = [
 export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 }) {
   const [summary, setSummary] = useState(null);
   const [summaryError, setSummaryError] = useState('');
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
+  const [refreshing, setRefreshing] = useState(true);
   const [reload, setReload] = useState(0);
   const [selection, setSelection] = useState(null);
   const [page, setPage] = useState(1);
@@ -22,8 +24,18 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
   useEffect(() => {
     const controller = new AbortController();
     apiClient.get('/activos/resumen/', { signal: controller.signal })
-      .then(({ data }) => { setSummary(data); setSummaryError(''); })
-      .catch((error) => { if (error.code !== 'ERR_CANCELED') setSummaryError('No se pudo cargar el tablero.'); });
+      .then(({ data }) => {
+        if (controller.signal.aborted) return;
+        setSummary(data);
+        setSummaryError('');
+        setLastUpdatedAt(new Date());
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted && error.code !== 'ERR_CANCELED') {
+          setSummaryError('No se pudo cargar el tablero.');
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setRefreshing(false); });
     return () => controller.abort();
   }, [reload, revision]);
 
@@ -56,7 +68,19 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
   return <div className="asset-overview">
     <div className="asset-overview-heading">
       <div><h2>Tablero de activos</h2><p>Estado general y equipos que necesitan revisión.</p></div>
-      <button type="button" onClick={() => setReload((value) => value + 1)}>Actualizar</button>
+      <div className="asset-overview-actions">
+        <button type="button" disabled={refreshing} onClick={() => {
+          setRefreshing(true);
+          setReload((value) => value + 1);
+        }}>
+          {refreshing ? 'Actualizando...' : 'Actualizar'}
+        </button>
+        <small role="status" aria-live="polite">
+          {lastUpdatedAt
+            ? <>Última actualización: <time dateTime={lastUpdatedAt.toISOString()}>{lastUpdatedAt.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time></>
+            : 'Aún sin actualizar'}
+        </small>
+      </div>
     </div>
     {!summary && !summaryError && <p role="status">Cargando tablero...</p>}
     {summaryError && <p role="alert" className="asset-overview-error">{summaryError}</p>}

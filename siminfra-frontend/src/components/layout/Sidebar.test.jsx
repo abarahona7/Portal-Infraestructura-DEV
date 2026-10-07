@@ -30,4 +30,14 @@ describe('Navegación por rol', () => {
     expect(screen.queryByRole('button', { name: 'Tablero de activos' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Notebook' })).toBeInTheDocument();
   });
+
+  it('ofrece cerrar sesión desde el sidebar y cierra el menú móvil', () => {
+    const onClose = vi.fn();
+    const onLogout = vi.fn();
+    render(<Sidebar {...props} isOpen role="Operador Infraestructura" onClose={onClose} onLogout={onLogout} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }));
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(onLogout).toHaveBeenCalledOnce();
+  });
 });

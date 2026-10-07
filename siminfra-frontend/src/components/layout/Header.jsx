@@ -1,7 +1,4 @@
-import {
-  Menu,
-  LogOut
-} from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 import './Header.css';
 import {
@@ -13,7 +10,6 @@ export default function Header({
   activeTab,
   role,
   onOpenSidebar,
-  onLogout,
 }) {
   const getTitle = () => {
     if (isEquipmentTab(activeTab)) {
@@ -84,19 +80,6 @@ export default function Header({
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={onLogout}
-        className="header-logout-button"
-        title="Cerrar sesión"
-        aria-label="Cerrar sesión"
-      >
-        <LogOut size={17} />
-
-        <span>
-          Cerrar Sesión
-        </span>
-      </button>
     </header>
   );
 }

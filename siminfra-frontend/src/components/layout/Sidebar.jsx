@@ -18,6 +18,7 @@ import {
   Globe2,
   Phone,
   Building2,
+  LogOut,
 } from 'lucide-react';
 
 import './Sidebar.css';
@@ -142,6 +143,7 @@ export default function Sidebar({
   onClose,
   onToggleCollapse,
   onSelectTab,
+  onLogout,
   role,
 }) {
   const [openGroups, setOpenGroups] = useState(readSavedGroups);
@@ -350,6 +352,19 @@ export default function Sidebar({
         </nav>
 
         <div className="sidebar-footer">
+          <button
+            type="button"
+            className="sidebar-logout-button"
+            onClick={() => {
+              if (isOpen) onClose();
+              onLogout();
+            }}
+            title={collapsed ? 'Cerrar sesión' : undefined}
+            aria-label="Cerrar sesión"
+          >
+            <LogOut size={18} aria-hidden="true" />
+            <span>Cerrar sesión</span>
+          </button>
           {collapsed ? (
             <span
               className="sidebar-footer-mini"

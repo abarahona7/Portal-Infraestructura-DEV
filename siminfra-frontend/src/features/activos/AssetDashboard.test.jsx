@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import apiClient from '../../api/client';
 import AssetDashboard from './AssetDashboard';
@@ -64,5 +64,32 @@ describe('Tablero de activos', () => {
     ));
     expect(await screen.findByText('Notebook · Dell Latitude')).toBeInTheDocument();
     expect(screen.getByText(/1 equipos/)).toBeInTheDocument();
+  });
+
+  it('actualiza la hora al terminar una recarga correcta', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2026-10-07T12:00:00.000Z'));
+      let completeRefresh;
+      apiClient.get
+        .mockResolvedValueOnce({ data: summary })
+        .mockImplementationOnce(() => new Promise((resolve) => { completeRefresh = resolve; }));
+
+      const { container } = render(<AssetDashboard onOpenAsset={vi.fn()} onEditAsset={vi.fn()} />);
+      await screen.findByText(/Última actualización:/);
+      const updatedAt = container.querySelector('time');
+      expect(updatedAt).toHaveAttribute('dateTime', '2026-10-07T12:00:00.000Z');
+
+      vi.setSystemTime(new Date('2026-10-07T12:05:07.000Z'));
+      fireEvent.click(screen.getByRole('button', { name: 'Actualizar' }));
+      expect(screen.getByRole('button', { name: 'Actualizando...' })).toBeDisabled();
+      expect(updatedAt).toHaveAttribute('dateTime', '2026-10-07T12:00:00.000Z');
+
+      await act(async () => { completeRefresh({ data: summary }); });
+      await waitFor(() => expect(updatedAt).toHaveAttribute('dateTime', '2026-10-07T12:05:07.000Z'));
+      expect(screen.getByRole('button', { name: 'Actualizar' })).toBeEnabled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

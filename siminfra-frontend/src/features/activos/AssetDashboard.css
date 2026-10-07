@@ -1,6 +1,9 @@
 .asset-overview { display: grid; gap: 1rem; color: #0f172a; }
 .asset-overview-heading, .asset-overview-detail-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 .asset-overview-heading > div, .asset-overview-detail-heading h3 { min-width: 0; overflow-wrap: anywhere; }
+.asset-overview-actions { display: flex; flex: 0 0 auto; flex-direction: column; align-items: flex-end; gap: .25rem; }
+.asset-overview-actions small { color: #64748b; font-size: .72rem; white-space: nowrap; }
+.asset-overview-actions button:disabled { cursor: wait; opacity: .7; }
 .asset-overview-heading h2, .asset-overview-card h3 { margin: 0; }
 .asset-overview-heading p, .asset-overview-help { margin: .3rem 0 0; color: #64748b; font-size: .9rem; }
 .asset-overview button { border: 1px solid #bfdbfe; background: white; color: #174ea6; border-radius: 8px; padding: .55rem .75rem; font: inherit; font-weight: 600; cursor: pointer; }
@@ -30,13 +33,15 @@
 .asset-overview-error { color: #991b1b; }
 @media (max-width: 640px) {
   .asset-overview-heading, .asset-overview-detail-heading { align-items: stretch; flex-wrap: wrap; }
-  .asset-overview-heading > button, .asset-overview-detail-heading > button { min-height: 44px; }
+  .asset-overview-actions { align-items: flex-start; }
+  .asset-overview-actions > button, .asset-overview-detail-heading > button { min-height: 44px; }
   .asset-overview-bars button { grid-template-columns: minmax(0, 1fr) 3rem; }
   .asset-overview-track { grid-column: 1 / -1; grid-row: 2; }
   .asset-overview-items article { flex-direction: column; }
 }
 @media (max-width: 420px) {
-  .asset-overview-heading > button, .asset-overview-detail-heading > button { width: 100%; }
+  .asset-overview-actions { width: 100%; align-items: stretch; }
+  .asset-overview-actions > button, .asset-overview-detail-heading > button { width: 100%; }
   .asset-overview-pages { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .asset-overview-pages span { grid-column: 1 / -1; grid-row: 1; text-align: center; }
 }

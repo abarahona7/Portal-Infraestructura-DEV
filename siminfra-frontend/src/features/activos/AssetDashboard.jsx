@@ -19,6 +19,7 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
   const [page, setPage] = useState(1);
   const [list, setList] = useState(null);
   const [listError, setListError] = useState('');
+  const [highlightedDepartment, setHighlightedDepartment] = useState(null);
   const detailRef = useRef(null);
 
   useEffect(() => {
@@ -89,16 +90,31 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
         <section className="asset-overview-card asset-overview-chart" aria-label="Gráfico de equipos por departamento">
           <div className="asset-overview-chart-heading">
             <h3>Equipos asignados por departamento</h3>
-            <p className="asset-overview-help">Selecciona un área para ver sus equipos.</p>
+            <p className="asset-overview-help">
+              {highlightedDepartment
+                ? `${highlightedDepartment.nombre}: ${highlightedDepartment.total} ${highlightedDepartment.total === 1 ? 'equipo' : 'equipos'}`
+                : 'Selecciona una barra para ver los equipos del área.'}
+            </p>
           </div>
           {!departments.length && <p>No hay departamentos registrados.</p>}
-          <div className="asset-overview-bars">
+          <div className="asset-overview-bars" role="group" aria-label="Equipos asignados por departamento">
             {departments.map((department) => <button type="button" key={department.id}
+              className="asset-overview-bar"
+              style={{ '--bar-height': `${department.total / maxCount * 100}%` }}
+              aria-label={`${department.nombre}: ${department.total} ${department.total === 1 ? 'equipo' : 'equipos'}`}
               aria-expanded={selection?.kind === 'departamento' && selection.id === department.id}
+              title={`${department.nombre}: ${department.total} ${department.total === 1 ? 'equipo' : 'equipos'}`}
+              onMouseEnter={() => setHighlightedDepartment(department)}
+              onMouseLeave={() => setHighlightedDepartment(null)}
+              onFocus={() => setHighlightedDepartment(department)}
+              onBlur={() => setHighlightedDepartment(null)}
               onClick={() => select({ kind: 'departamento', id: department.id, label: department.nombre })}>
-              <span>{department.nombre}</span><span className="asset-overview-track" aria-hidden="true"><span style={{ width: `${department.total / maxCount * 100}%` }} /></span><strong>{department.total}</strong>
+              <strong className="asset-overview-bar-value">{department.total}</strong>
+              <span className="asset-overview-bar-plot" aria-hidden="true"><span className="asset-overview-bar-fill" /></span>
+              <span className="asset-overview-bar-name" aria-hidden="true">{department.nombre}</span>
             </button>)}
           </div>
+          <small className="asset-overview-chart-hint">Desliza el gráfico para ver todas las áreas.</small>
         </section>
         <div className="asset-overview-stats" aria-label="Estado de equipos">
           <div><span>Equipos registrados</span><strong>{counts.total}</strong></div>

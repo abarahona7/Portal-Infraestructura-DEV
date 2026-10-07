@@ -76,7 +76,10 @@ describe('Tablero de activos', () => {
     } });
     render(<AssetDashboard onOpenAsset={vi.fn()} onEditAsset={vi.fn()} />);
     expect(await screen.findByRole('button', { name: /TECNOLOGÍA/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /VENTAS0/ })).toBeInTheDocument();
+    const zeroBar = screen.getByRole('button', { name: 'VENTAS: 0 equipos' });
+    expect(zeroBar).toHaveStyle({ '--bar-height': '0%' });
+    fireEvent.mouseEnter(zeroBar);
+    expect(screen.getByText('VENTAS: 0 equipos')).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Gráfico de equipos por departamento' })).toBeInTheDocument();
   });
 

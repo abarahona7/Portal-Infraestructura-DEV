@@ -63,7 +63,7 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
   };
   const counts = summary?.conteos;
   const departments = summary?.departamentos || [];
-  const maxCount = departments[0]?.total || 1;
+  const maxCount = Math.max(1, ...departments.map((department) => department.total));
 
   return <div className="asset-overview">
     <div className="asset-overview-heading">
@@ -85,24 +85,29 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
     {!summary && !summaryError && <p role="status">Cargando tablero...</p>}
     {summaryError && <p role="alert" className="asset-overview-error">{summaryError}</p>}
     {counts && <>
-      <div className="asset-overview-stats" aria-label="Estado de equipos">
-        <div><span>Equipos registrados</span><strong>{counts.total}</strong></div>
-        <div><span>Con usuario asignado</span><strong>{counts.asignados}</strong></div>
-        <div><span>Disponibles</span><strong>{counts.disponibles}</strong></div>
-        <div><span>En reparación</span><strong>{counts.reparacion}</strong></div>
-        <div><span>Dados de baja</span><strong>{counts.baja}</strong></div>
-      </div>
-      <section className="asset-overview-card">
-        <h3>Departamentos con más equipos asignados</h3>
-        {!departments.length && <p>No hay equipos asignados a departamentos.</p>}
-        <div className="asset-overview-bars">
-          {departments.map((department) => <button type="button" key={department.id}
-            aria-expanded={selection?.kind === 'departamento' && selection.id === department.id}
-            onClick={() => select({ kind: 'departamento', id: department.id, label: department.nombre })}>
-            <span>{department.nombre}</span><span className="asset-overview-track" aria-hidden="true"><span style={{ width: `${department.total / maxCount * 100}%` }} /></span><strong>{department.total}</strong>
-          </button>)}
+      <div className="asset-overview-main">
+        <section className="asset-overview-card asset-overview-chart" aria-label="Gráfico de equipos por departamento">
+          <div className="asset-overview-chart-heading">
+            <h3>Equipos asignados por departamento</h3>
+            <p className="asset-overview-help">Selecciona un área para ver sus equipos.</p>
+          </div>
+          {!departments.length && <p>No hay departamentos registrados.</p>}
+          <div className="asset-overview-bars">
+            {departments.map((department) => <button type="button" key={department.id}
+              aria-expanded={selection?.kind === 'departamento' && selection.id === department.id}
+              onClick={() => select({ kind: 'departamento', id: department.id, label: department.nombre })}>
+              <span>{department.nombre}</span><span className="asset-overview-track" aria-hidden="true"><span style={{ width: `${department.total / maxCount * 100}%` }} /></span><strong>{department.total}</strong>
+            </button>)}
+          </div>
+        </section>
+        <div className="asset-overview-stats" aria-label="Estado de equipos">
+          <div><span>Equipos registrados</span><strong>{counts.total}</strong></div>
+          <div><span>Con usuario asignado</span><strong>{counts.asignados}</strong></div>
+          <div><span>Disponibles</span><strong>{counts.disponibles}</strong></div>
+          <div><span>Dados de baja</span><strong>{counts.baja}</strong></div>
+          <div><span>En reparación</span><strong>{counts.reparacion}</strong></div>
         </div>
-      </section>
+      </div>
       <section className="asset-overview-card">
         <h3>Pendientes por revisar</h3>
         <p className="asset-overview-help">Selecciona un motivo para ver los equipos. Los equipos sin usuario asignado pueden estar disponibles, en reparación o dados de baja.</p>

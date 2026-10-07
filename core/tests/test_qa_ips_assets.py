@@ -119,7 +119,7 @@ class QAResumenActivosTests(TestCase):
         self.client = APIClient()
         self.client.force_authenticate(user=self.admin)
 
-    def test_top_cinco_excluye_pc_genericos_y_coincide_con_filtros(self):
+    def test_todas_las_areas_excluye_pc_genericos_y_coincide_con_filtros(self):
         all_assets = []
         for rank in range(1, 7):
             department = Departamento.objects.create(nombre=f'Área QA {rank}')
@@ -142,6 +142,7 @@ class QAResumenActivosTests(TestCase):
         unassigned = Equipamiento.objects.create(
             tipo='Celular', marca='Samsung', modelo='A1', estado='STOCK',
         )
+        Departamento.objects.create(nombre='Área QA sin equipos')
 
         response = self.client.get('/api/activos/resumen/')
         self.assertEqual(response.status_code, 200)
@@ -150,7 +151,7 @@ class QAResumenActivosTests(TestCase):
         self.assertEqual(response.data['conteos']['sin_custodio'], 1)
         self.assertEqual(
             [row['nombre'] for row in response.data['departamentos']],
-            [f'Área QA {rank}' for rank in range(6, 1, -1)],
+            [f'Área QA {rank}' for rank in range(6, 0, -1)] + ['Área QA sin equipos'],
         )
         for row in response.data['departamentos']:
             listing = self.client.get('/api/equipos/', {'departamento_id': row['id']})

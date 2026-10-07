@@ -80,4 +80,20 @@ describe('Filtros de estado en los listados', () => {
       selectedEstadoGeneral: 'INACTIVO',
     }));
   });
+
+  it('filtra Notebook por departamento en vez de estado', () => {
+    sessionStorage.setItem('portal-infra-ti-chile-active-tab', 'equipos-notebook');
+    render(<App />);
+
+    const department = screen.getByRole('combobox', { name: 'Filtrar equipos por departamento' });
+    fireEvent.change(department, { target: { value: '1' } });
+
+    expect(department).toHaveValue('1');
+    expect(useModuleData).toHaveBeenLastCalledWith(expect.objectContaining({
+      tab: 'equipos',
+      equipmentCategory: 'Notebook',
+      selectedDpto: '1',
+    }));
+    expect(screen.queryByRole('combobox', { name: /equipos por estado/i })).not.toBeInTheDocument();
+  });
 });

@@ -36,6 +36,11 @@ body {
   overflow-x: clip;
 }
 
+html:has([aria-modal="true"]),
+body:has([aria-modal="true"]) {
+  overflow: hidden;
+}
+
 body,
 button,
 input,

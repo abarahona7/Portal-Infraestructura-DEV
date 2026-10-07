@@ -44,7 +44,6 @@ export const useModuleData = ({
   selectedDpto,
   equipmentCategory,
   selectedIpSegment,
-  selectedEstadoEquipo,
   selectedEstadoIP,
   selectedEstadoAnexo,
   selectedEstadoGeneral,
@@ -88,6 +87,9 @@ export const useModuleData = ({
         params.tipo = equipmentCategory;
       }
     }
+    if (tab === 'equipos' && selectedDpto) {
+      params.departamento_id = selectedDpto;
+    }
 
     if (tab === 'ips' && selectedIpSegment) {
       params.segmento = selectedIpSegment;
@@ -95,9 +97,6 @@ export const useModuleData = ({
 
     if (selectedEstadoIP && tab === 'ips') {
       params.estado = selectedEstadoIP;
-    }
-    if (selectedEstadoEquipo && tab === 'equipos') {
-      params.estado = selectedEstadoEquipo;
     }
     if (selectedEstadoAnexo && tab === 'anexos') {
       params.estado = selectedEstadoAnexo;
@@ -113,7 +112,6 @@ export const useModuleData = ({
     selectedDpto,
     equipmentCategory,
     selectedIpSegment,
-    selectedEstadoEquipo,
     selectedEstadoIP,
     selectedEstadoAnexo,
     selectedEstadoGeneral,

@@ -66,6 +66,20 @@ describe('Tablero de activos', () => {
     expect(screen.getByText(/1 equipos/)).toBeInTheDocument();
   });
 
+  it('muestra todas las áreas devueltas por la API, incluidas las vacías', async () => {
+    apiClient.get.mockResolvedValueOnce({ data: {
+      ...summary,
+      departamentos: [
+        { id: 3, nombre: 'TECNOLOGÍA', total: 1 },
+        { id: 4, nombre: 'VENTAS', total: 0 },
+      ],
+    } });
+    render(<AssetDashboard onOpenAsset={vi.fn()} onEditAsset={vi.fn()} />);
+    expect(await screen.findByRole('button', { name: /TECNOLOGÍA/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /VENTAS0/ })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Gráfico de equipos por departamento' })).toBeInTheDocument();
+  });
+
   it('actualiza la hora al terminar una recarga correcta', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {

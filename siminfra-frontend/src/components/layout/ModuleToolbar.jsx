@@ -11,10 +11,9 @@ import {
 export default function ModuleToolbar({
   activeTab,
   departments,
+  equipmentDepartments = [],
   selectedDepartment,
   onDepartmentChange,
-  selectedEquipmentStatus,
-  onEquipmentStatusChange,
   selectedIpStatus,
   onIpStatusChange,
   selectedAnexoStatus,
@@ -183,19 +182,17 @@ export default function ModuleToolbar({
         {activeTab === 'equipos' && (
           <div className="module-toolbar-filter">
             <Filter size={16} />
-
             <select
-              aria-label="Filtrar equipos por estado"
-              value={selectedEquipmentStatus}
-              onChange={(event) =>
-                onEquipmentStatusChange(event.target.value)
-              }
+              aria-label="Filtrar equipos por departamento"
+              value={selectedDepartment || ''}
+              onChange={(event) => onDepartmentChange(event.target.value)}
             >
-              <option value="">Todos los Estados</option>
-              <option value="ASIGNADO">Asignado</option>
-              <option value="STOCK">Stock / Disponible</option>
-              <option value="MANTENCION">En Mantención</option>
-              <option value="BAJA">Dado de Baja</option>
+              <option value="">Todos los departamentos</option>
+              {equipmentDepartments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.nombre}{!department.activo ? ' (Inactivo)' : ''}
+                </option>
+              ))}
             </select>
           </div>
         )}

@@ -208,9 +208,6 @@ export default function App() {
     selectedDpto,
     setSelectedDpto,
 
-    selectedEstadoEquipo,
-    setSelectedEstadoEquipo,
-
     selectedEstadoIP,
     setSelectedEstadoIP,
 
@@ -317,7 +314,6 @@ export default function App() {
     selectedDpto,
     equipmentCategory,
     selectedIpSegment,
-    selectedEstadoEquipo,
     selectedEstadoIP,
     selectedEstadoAnexo,
     selectedEstadoGeneral,
@@ -1209,12 +1205,10 @@ export default function App() {
                   activeTab={activeModuleTab}
                   readOnly={isViewer}
                   departments={dptosList}
+                  equipmentDepartments={departamentosList}
 
                   selectedDepartment={selectedDpto}
                   onDepartmentChange={setSelectedDpto}
-
-                  selectedEquipmentStatus={selectedEstadoEquipo}
-                  onEquipmentStatusChange={setSelectedEstadoEquipo}
 
                   selectedIpStatus={selectedEstadoIP}
                   onIpStatusChange={setSelectedEstadoIP}

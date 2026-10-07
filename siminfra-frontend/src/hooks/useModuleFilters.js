@@ -4,7 +4,6 @@ export const useModuleFilters = () => {
   const [search, setSearch] = useState('');
   const [selectedDpto, setSelectedDpto] = useState('');
   const [selectedCategoriaEquipo, setSelectedCategoriaEquipo] = useState('');
-  const [selectedEstadoEquipo, setSelectedEstadoEquipo] = useState('');
   const [selectedEstadoIP, setSelectedEstadoIP] = useState('');
   const [selectedEstadoAnexo, setSelectedEstadoAnexo] = useState('');
   const [selectedEstadoGeneral, setSelectedEstadoGeneral] = useState('');
@@ -13,7 +12,6 @@ export const useModuleFilters = () => {
     setSearch('');
     setSelectedDpto('');
     setSelectedCategoriaEquipo('');
-    setSelectedEstadoEquipo('');
     setSelectedEstadoIP('');
     setSelectedEstadoAnexo('');
     setSelectedEstadoGeneral('');
@@ -28,9 +26,6 @@ export const useModuleFilters = () => {
 
     selectedCategoriaEquipo,
     setSelectedCategoriaEquipo,
-
-    selectedEstadoEquipo,
-    setSelectedEstadoEquipo,
 
     selectedEstadoIP,
     setSelectedEstadoIP,

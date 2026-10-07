@@ -47,3 +47,17 @@ describe('Filtros de estado', () => {
     expect(screen.queryByRole('option', { name: 'Licencia médica' })).not.toBeInTheDocument();
   });
 });
+
+describe('Filtro de equipos', () => {
+  it('filtra por departamento sin mostrar el filtro de estado', () => {
+    const onDepartmentChange = vi.fn();
+    render(<ModuleToolbar {...props} activeTab="equipos"
+      selectedDepartment="" onDepartmentChange={onDepartmentChange}
+      equipmentDepartments={[{ id: 3, nombre: 'TECNOLOGÍA', activo: true }]} />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Filtrar equipos por departamento' }), {
+      target: { value: '3' },
+    });
+    expect(onDepartmentChange).toHaveBeenCalledWith('3');
+    expect(screen.queryByRole('combobox', { name: /equipos por estado/i })).not.toBeInTheDocument();
+  });
+});

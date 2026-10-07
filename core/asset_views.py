@@ -11,7 +11,7 @@ from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Equipamiento
+from .models import Departamento, Equipamiento
 from .permissions import PortalRolePermission
 
 
@@ -97,15 +97,13 @@ class ResumenEquiposView(APIView):
             sin_custodio=Count('id', filter=Q(usuario__isnull=True)),
             custodio_no_activo=Count('id', filter=Q(usuario__isnull=False) & ~Q(usuario__estado='ACTIVO')),
         )
-        departamentos = list(equipos.filter(usuario__isnull=False)
-            .values('usuario__departamento_id', 'usuario__departamento__nombre')
-            .annotate(total=Count('id'))
-            .order_by('-total', 'usuario__departamento__nombre')[:5])
+        departamentos = Departamento.objects.annotate(
+            total=Count('usuarios__equipos', distinct=True),
+        ).order_by('-total', 'nombre')
         response = Response({
             'conteos': counts,
-            'departamentos': [{'id': row['usuario__departamento_id'],
-                               'nombre': row['usuario__departamento__nombre'],
-                               'total': row['total']} for row in departamentos],
+            'departamentos': [{'id': row.id, 'nombre': row.nombre, 'total': row.total}
+                              for row in departamentos],
         })
         response['Cache-Control'] = 'no-store, private'
         return response

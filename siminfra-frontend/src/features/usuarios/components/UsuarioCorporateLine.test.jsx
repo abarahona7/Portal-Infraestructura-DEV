@@ -11,11 +11,28 @@ describe('Línea móvil del usuario', () => {
     const onChange = vi.fn();
     render(<UsuarioCreateForm usuario={{ estado: 'ACTIVO' }} onChange={onChange} />);
 
+    expect(screen.getByRole('combobox', { name: 'Estado del usuario' })).toHaveValue('ACTIVO');
+    expect(screen.getByText('+569')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Nombre completo' }), {
+      target: { value: 'María Pérez' },
+    });
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+      nombre_completo: 'MARÍA PÉREZ',
+    }));
+
     fireEvent.change(screen.getByRole('textbox', { name: 'Línea móvil corporativa' }), {
-      target: { value: '56 9 1234-5678' },
+      target: { value: '12345678' },
     });
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
       celular: '+56912345678',
+    }));
+
+    fireEvent.paste(screen.getByRole('textbox', { name: 'Línea móvil corporativa' }), {
+      clipboardData: { getData: () => '+56987654321' },
+    });
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+      celular: '+56987654321',
     }));
   });
 
@@ -37,7 +54,7 @@ describe('Línea móvil del usuario', () => {
     expect(getCorporateLineNumbers({ equipos: usuario.equipos })).toEqual(['+56912345678']);
 
     render(<UsuarioEditForm usuario={usuario} onChange={vi.fn()} />);
-    expect(screen.getByRole('textbox', { name: 'Línea móvil corporativa' })).toHaveValue('+56912345678');
+    expect(screen.getByRole('textbox', { name: 'Línea móvil corporativa' })).toHaveValue('12345678');
     expect(screen.getByText(/también se actualizará en Celular/)).toBeInTheDocument();
   });
 
@@ -49,9 +66,12 @@ describe('Línea móvil del usuario', () => {
     };
     render(<UsuarioEditForm usuario={usuario} onChange={onChange} />);
     const input = screen.getByRole('textbox', { name: 'Línea móvil corporativa' });
-    expect(input).toHaveValue('+56911111111');
-    fireEvent.change(input, { target: { value: '+56922222222' } });
+    expect(input).toHaveValue('11111111');
+    fireEvent.change(input, { target: { value: '22222222' } });
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ celular: '+56922222222' }));
+
+    fireEvent.change(input, { target: { value: '' } });
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ celular: '' }));
 
     expect(prepareUpdatePayload('usuarios', usuario)).not.toHaveProperty('celular');
     expect(prepareUpdatePayload('usuarios', { ...usuario, celular: '' })).toHaveProperty('celular', '');
@@ -82,7 +102,7 @@ describe('Línea móvil del usuario', () => {
       ],
     };
     render(<UsuarioEditForm usuario={usuario} onChange={vi.fn()} />);
-    expect(screen.getByRole('textbox', { name: 'Línea móvil corporativa' })).toHaveValue('+56911111111');
+    expect(screen.getByRole('textbox', { name: 'Línea móvil corporativa' })).toHaveValue('11111111');
     expect(screen.getByText(/actualizará el celular que usa ese número/)).toBeInTheDocument();
   });
 });

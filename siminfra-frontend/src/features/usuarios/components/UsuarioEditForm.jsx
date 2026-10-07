@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import PasswordInput from './PasswordInput';
 import AvailableIpSelector from './AvailableIpSelector';
-import { getAssignedCellularDevices, getAssignedCellularNumbers, normalizeCorporateLineInput } from '../../../utils/userCorporateLines';
+import { getAssignedCellularDevices, getAssignedCellularNumbers } from '../../../utils/userCorporateLines';
+import CorporatePhoneInput from './CorporatePhoneInput';
 
 export default function UsuarioEditForm({
   usuario,
@@ -116,7 +117,7 @@ export default function UsuarioEditForm({
           type="text"
           value={usuario.nombre_completo || ''}
           maxLength={150}
-          onChange={(e) => updateField('nombre_completo', e.target.value)}
+          onChange={(e) => updateField('nombre_completo', e.target.value.toLocaleUpperCase('es-CL'))}
           style={inputStyle}
         />
       </div>
@@ -216,17 +217,12 @@ export default function UsuarioEditForm({
 
       <div>
         <label style={labelStyle}>{lineInputLabel}</label>
-        <input
-          aria-label={lineInputLabel}
-          type="tel"
-          inputMode="tel"
-          maxLength={12}
-          pattern="[+][0-9]{11}"
-          placeholder="+56912345678"
+        <CorporatePhoneInput
+          label={lineInputLabel}
           value={usuario.celular ?? deviceLine}
           disabled={usuario.estado === 'BAJA'}
-          onChange={(e) => updateField('celular', normalizeCorporateLineInput(e.target.value))}
-          style={inputStyle}
+          onChange={(value) => updateField('celular', value)}
+          inputStyle={inputStyle}
         />
         <small>
           {deviceLines.length > 1 && lineMatchesDevice && usuario.celular

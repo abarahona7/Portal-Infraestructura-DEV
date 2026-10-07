@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import PasswordInput from './PasswordInput';
 import AvailableIpSelector from './AvailableIpSelector';
-import { normalizeCorporateLineInput } from '../../../utils/userCorporateLines';
+import CorporatePhoneInput from './CorporatePhoneInput';
 
 export default function UsuarioCreateForm({
   usuario,
@@ -96,7 +96,7 @@ export default function UsuarioCreateForm({
           required
           value={usuario.nombre_completo || ''}
           maxLength={150}
-          onChange={(e) => updateField('nombre_completo', e.target.value)}
+          onChange={(e) => updateField('nombre_completo', e.target.value.toLocaleUpperCase('es-CL'))}
           style={inputStyle}
         />
       </div>
@@ -199,17 +199,12 @@ export default function UsuarioCreateForm({
 
       <div>
         <label style={labelStyle}>Línea móvil corporativa</label>
-        <input
-          aria-label="Línea móvil corporativa"
-          type="tel"
-          inputMode="tel"
-          maxLength={12}
-          pattern="[+][0-9]{11}"
-          placeholder="+56912345678"
+        <CorporatePhoneInput
+          label="Línea móvil corporativa"
           value={usuario.celular || ''}
           disabled={usuario.estado === 'BAJA'}
-          onChange={(e) => updateField('celular', normalizeCorporateLineInput(e.target.value))}
-          style={inputStyle}
+          onChange={(value) => updateField('celular', value)}
+          inputStyle={inputStyle}
         />
         <small>Opcional. Puedes registrar la línea aunque no conozcas el dispositivo.</small>
       </div>

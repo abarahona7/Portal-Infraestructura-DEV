@@ -35,17 +35,6 @@ export default function UsuarioCreateForm({
     });
   };
 
-  const handleStatusChange = (value) => {
-    onChange({
-      ...usuario,
-      estado: value,
-      ...(value === 'ACTIVO' ? {} : { ip_seleccionada: null }),
-      ...(value === 'BAJA' ? { celular: '' } : {}),
-    });
-  };
-
-  const ipAssignmentDisabled = (usuario.estado || 'ACTIVO') !== 'ACTIVO';
-
   const handleDepartmentChange = (value) => {
     const departmentId = value ? Number(value) : null;
 
@@ -75,17 +64,8 @@ export default function UsuarioCreateForm({
   return (
     <>
       <div>
-        <label style={labelStyle}>Estado del Usuario</label>
-        <select
-          aria-label="Estado del usuario"
-          value={usuario.estado || 'ACTIVO'}
-          onChange={(e) => handleStatusChange(e.target.value)}
-          style={inputStyle}
-        >
-          <option value="ACTIVO">Activo</option>
-          <option value="LICENCIA">Licencia Médica</option>
-          <option value="BAJA">Dar de Baja</option>
-        </select>
+        <span style={labelStyle}>Estado del Usuario</span>
+        <p style={{ ...inputStyle, backgroundColor: '#f8fafc', color: '#166534', fontWeight: 600 }}>Activo</p>
       </div>
 
       <div>
@@ -202,7 +182,6 @@ export default function UsuarioCreateForm({
         <CorporatePhoneInput
           label="Línea móvil corporativa"
           value={usuario.celular || ''}
-          disabled={usuario.estado === 'BAJA'}
           onChange={(value) => updateField('celular', value)}
           inputStyle={inputStyle}
         />
@@ -240,7 +219,6 @@ export default function UsuarioCreateForm({
       <AvailableIpSelector
         selectedIp={usuario.ip_seleccionada ?? ''}
         availableIps={availableIps}
-        disabled={ipAssignmentDisabled}
         onIpChange={(value) => updateField('ip_seleccionada', value)}
       />
     </>

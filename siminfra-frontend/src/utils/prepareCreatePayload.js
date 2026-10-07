@@ -20,6 +20,7 @@ export const prepareCreatePayload = (
   ========================= */
 
   if (tab === 'usuarios') {
+    payload.estado = 'ACTIVO';
     // dpto_area queda como campo legado de compatibilidad.
     // El backend lo sincroniza desde la relación Departamento.
     delete payload.dpto_area;

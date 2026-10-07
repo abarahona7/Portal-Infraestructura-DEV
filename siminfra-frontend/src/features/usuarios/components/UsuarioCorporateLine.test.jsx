@@ -5,13 +5,16 @@ import UsuarioEditForm from './UsuarioEditForm';
 import UsuariosTable from './UsuariosTable';
 import { getCorporateLineNumbers } from '../../../utils/userCorporateLines';
 import { prepareUpdatePayload } from '../../../utils/prepareUpdatePayload';
+import { prepareCreatePayload } from '../../../utils/prepareCreatePayload';
 
 describe('Línea móvil del usuario', () => {
   it('permite registrar una línea sin crear un equipo', () => {
     const onChange = vi.fn();
     render(<UsuarioCreateForm usuario={{ estado: 'ACTIVO' }} onChange={onChange} />);
 
-    expect(screen.getByRole('combobox', { name: 'Estado del usuario' })).toHaveValue('ACTIVO');
+    expect(screen.getByText('Activo')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Estado del usuario' })).not.toBeInTheDocument();
+    expect(prepareCreatePayload('usuarios', { estado: 'BAJA' }).estado).toBe('ACTIVO');
     expect(screen.getByText('+569')).toBeInTheDocument();
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Nombre completo' }), {

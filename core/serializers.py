@@ -907,6 +907,7 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
     ip_actual = serializers.SerializerMethodField()
 
     anexo_actual = serializers.SerializerMethodField()
+    protocolos_estado = serializers.SerializerMethodField()
 
     ip_seleccionada = serializers.IPAddressField(
         write_only=True,
@@ -943,11 +944,26 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
 
         except Anexo.DoesNotExist:
             return None
+
+    def get_protocolos_estado(self, obj):
+        return {
+            status: [
+                {'id': item_id, 'label': label}
+                for item_id, label in required_user_checks(obj, {'estado': status})
+            ]
+            for status in ('BAJA', 'LICENCIA', 'ACTIVO')
+            if status != obj.estado
+        }
         
     def validate_nombre_completo(self, value):
         value = _normalize_spaces(value)
         if not value:
             raise serializers.ValidationError('Debe ingresar el Nombre Completo.')
+        return value
+
+    def validate_estado(self, value):
+        if value not in {'ACTIVO', 'LICENCIA', 'BAJA'}:
+            raise serializers.ValidationError('Selecciona un estado válido para el usuario.')
         return value
 
     def validate_usuario_red(self, value):
@@ -1037,9 +1053,16 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         confirmed = validated_data.pop('protocolo_confirmaciones', None)
+        instance = Usuario.objects.select_for_update().get(pk=instance.pk)
         required = required_user_checks(instance, validated_data)
-        if 'celular' in validated_data:
-            instance = Usuario.objects.select_for_update().get(pk=instance.pk)
+        if required and not validate_confirmations(required, confirmed):
+            raise serializers.ValidationError({
+                'protocolo_confirmaciones': 'Las asignaciones cambiaron. Revisa el protocolo actual antes de guardar.',
+            })
+        if not required and confirmed:
+            raise serializers.ValidationError({
+                'protocolo_confirmaciones': 'El estado cambió. Vuelve a revisar el usuario antes de guardar.',
+            })
         ip_enviada = 'ip_seleccionada' in validated_data
 
         # Una línea puede estar registrada solo en el celular asignado (datos

@@ -26,16 +26,75 @@ class PapeleraYProtocolosTests(TestCase):
 
     def test_status_protocol_is_required_and_logged(self):
         url = f'/api/usuarios/{self.user.pk}/'
+        checklist = self.client.get(url).data['protocolos_estado']['BAJA']
+        self.assertEqual([item['id'] for item in checklist], ['sin_recursos'])
         self.assertEqual(self.client.patch(url, {'estado': 'BAJA'}, format='json').status_code, 400)
         self.assertEqual(self.user.historial.filter(accion='PROTOCOLO_CONFIRMADO').count(), 0)
-        response = self.client.patch(url, {
+        self.assertEqual(self.client.patch(url, {
             'estado': 'BAJA',
             'protocolo_confirmaciones': ['equipos', 'ip', 'anexo'],
+        }, format='json').status_code, 400)
+        response = self.client.patch(url, {
+            'estado': 'BAJA',
+            'protocolo_confirmaciones': ['sin_recursos'],
         }, format='json')
         self.assertEqual(response.status_code, 200, response.data)
         event = HistorialUsuario.objects.get(usuario=self.user, accion='PROTOCOLO_CONFIRMADO')
         self.assertEqual(event.modificado_por, self.admin.username)
+        self.assertIn('no tiene equipos, IP ni anexo asignados', event.observacion)
+
+    def test_baja_only_confirms_assigned_equipment(self):
+        equipment = Equipamiento.objects.create(
+            usuario=self.user, tipo='Notebook', marca='Lenovo', modelo='T14',
+            numero_serie='PROTO-USER-1',
+        )
+        url = f'/api/usuarios/{self.user.pk}/'
+        checklist = self.client.get(url).data['protocolos_estado']['BAJA']
+        self.assertEqual([item['id'] for item in checklist], ['equipos'])
+        self.assertEqual(self.client.patch(url, {
+            'estado': 'BAJA', 'protocolo_confirmaciones': ['equipos'],
+        }, format='json').status_code, 200)
+        equipment.refresh_from_db()
+        self.assertIsNone(equipment.usuario_id)
+        event = HistorialUsuario.objects.get(usuario=self.user, accion='PROTOCOLO_CONFIRMADO')
         self.assertIn('devolución física', event.observacion)
+        self.assertNotIn('anexo', event.observacion)
+
+    def test_baja_only_confirms_assigned_extension(self):
+        extension = Anexo.objects.create(numero_anexo='5222', usuario=self.user)
+        url = f'/api/usuarios/{self.user.pk}/'
+        checklist = self.client.get(url).data['protocolos_estado']['BAJA']
+        self.assertEqual([item['id'] for item in checklist], ['anexo'])
+        self.assertEqual(self.client.patch(url, {
+            'estado': 'BAJA', 'protocolo_confirmaciones': ['anexo'],
+        }, format='json').status_code, 200)
+        extension.refresh_from_db()
+        self.assertIsNone(extension.usuario_id)
+
+    def test_protocol_rejects_confirmation_when_assignments_change(self):
+        url = f'/api/usuarios/{self.user.pk}/'
+        self.assertEqual(
+            [item['id'] for item in self.client.get(url).data['protocolos_estado']['BAJA']],
+            ['sin_recursos'],
+        )
+        Anexo.objects.create(numero_anexo='5223', usuario=self.user)
+        response = self.client.patch(url, {
+            'estado': 'BAJA', 'protocolo_confirmaciones': ['sin_recursos'],
+        }, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.estado, 'ACTIVO')
+
+    def test_license_only_confirms_assigned_ip(self):
+        ip = IP.objects.create(direccion_ip='172.24.1.211', usuario=self.user)
+        url = f'/api/usuarios/{self.user.pk}/'
+        checklist = self.client.get(url).data['protocolos_estado']['LICENCIA']
+        self.assertEqual([item['id'] for item in checklist], ['ip'])
+        self.assertEqual(self.client.patch(url, {
+            'estado': 'LICENCIA', 'protocolo_confirmaciones': ['ip'],
+        }, format='json').status_code, 200)
+        ip.refresh_from_db()
+        self.assertIsNone(ip.usuario_id)
 
     def test_equipment_protocol_is_required_for_assignment_or_status(self):
         equipment = Equipamiento.objects.create(

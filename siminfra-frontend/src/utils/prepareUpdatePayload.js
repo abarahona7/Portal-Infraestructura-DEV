@@ -18,6 +18,7 @@ export const prepareUpdatePayload = (
   delete payload.departamento_nombre;
   delete payload.subarea_nombre;
   delete payload.anexo_actual;
+  delete payload.protocolos_estado;
   delete payload.password_gmail_configured;
   delete payload.password_vpn_configured;
   delete payload.password_configured;

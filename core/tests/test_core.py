@@ -144,7 +144,7 @@ class SecurityTests(TestCase):
         baja = self.client.patch(
             f'/api/usuarios/{self.portal_user.pk}/', {
                 'estado': 'BAJA',
-                'protocolo_confirmaciones': ['equipos', 'ip', 'anexo'],
+                'protocolo_confirmaciones': ['equipos'],
             }, format='json',
         )
         self.assertEqual(baja.status_code, 200)

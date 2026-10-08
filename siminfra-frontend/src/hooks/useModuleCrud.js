@@ -7,7 +7,7 @@ import { prepareCreatePayload } from '../utils/prepareCreatePayload';
 import { prepareUpdatePayload } from '../utils/prepareUpdatePayload';
 import { validateItem } from '../utils/validateItem';
 import { formatEquipmentType } from '../utils/formatEquipmentType';
-import { userStatusChecklist, equipmentChecklist, needsEquipmentChecklist } from '../utils/changeProtocols';
+import { equipmentChecklist, needsEquipmentChecklist } from '../utils/changeProtocols';
 
 const extractApiErrorMessage = (error, fallback) => {
   const data = error?.response?.data;
@@ -58,8 +58,8 @@ const getUpdateConfirmation = (tab, editingItem, originalItem) => {
   if (nextStatus === 'BAJA') {
     return {
       title: 'Confirmar Baja del usuario',
-      message: 'Esta acción desasignará equipos e insumos, y liberará IP y anexo.',
-      checklist: userStatusChecklist.BAJA,
+      message: 'Revisa las asignaciones actuales antes de confirmar la baja.',
+      checklist: originalItem.protocolos_estado?.BAJA || [],
       confirmText: 'Guardar Baja',
       danger: true,
     };
@@ -68,8 +68,8 @@ const getUpdateConfirmation = (tab, editingItem, originalItem) => {
   if (nextStatus === 'LICENCIA') {
     return {
       title: 'Guardar cambios',
-      message: 'Se liberará la IP; los equipos, insumos y anexo permanecerán asignados.',
-      checklist: userStatusChecklist.LICENCIA,
+      message: 'Revisa el efecto de la licencia sobre las asignaciones actuales.',
+      checklist: originalItem.protocolos_estado?.LICENCIA || [],
       confirmText: 'Confirmar licencia',
       danger: true,
     };
@@ -78,7 +78,7 @@ const getUpdateConfirmation = (tab, editingItem, originalItem) => {
   return {
     ...defaultConfirmation,
     message: 'Confirma la revisión de datos y accesos antes de reactivar al usuario.',
-    checklist: userStatusChecklist.ACTIVO,
+    checklist: originalItem.protocolos_estado?.ACTIVO || [],
   };
 };
 
@@ -178,13 +178,19 @@ export const useModuleCrud = ({
     }
 
     let originalItem = data.find((item) => String(item.id) === String(editingItem.id));
-    if (!originalItem && ['usuarios', 'equipos'].includes(tab)) {
+    const userStatusMayChange = tab === 'usuarios' && originalItem?.estado !== editingItem.estado;
+    if (userStatusMayChange || (!originalItem && ['usuarios', 'equipos'].includes(tab))) {
       try {
         originalItem = await getItemDetailsByTab(tab, editingItem.id);
       } catch {
         showToast?.('No se pudo verificar el estado actual del registro.', 'error');
         return;
       }
+    }
+    if (tab === 'usuarios' && originalItem?.estado !== editingItem.estado
+      && !originalItem?.protocolos_estado?.[editingItem.estado]?.length) {
+      showToast?.('No se pudo cargar el protocolo actual del usuario.', 'error');
+      return;
     }
     const confirmed = await requestConfirmation?.(
       getUpdateConfirmation(tab, editingItem, originalItem)

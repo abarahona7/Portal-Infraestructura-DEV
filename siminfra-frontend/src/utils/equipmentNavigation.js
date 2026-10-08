@@ -21,7 +21,7 @@ export const getEquipmentCategoryByTab = (tab) => (
 );
 
 export const getEquipmentLabelByTab = (tab) => (
-  EQUIPMENT_NAV_ITEMS.find((item) => item.id === tab)?.label || 'Equipos'
+  EQUIPMENT_NAV_ITEMS.find((item) => item.id === tab)?.label?.toLocaleUpperCase('es-CL') || 'Equipos'
 );
 
 export const getModuleTab = (tab) => (

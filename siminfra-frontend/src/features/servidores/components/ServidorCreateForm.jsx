@@ -35,7 +35,7 @@ export default function ServidorCreateForm({
           required
           value={servidor.ip || ''}
           onChange={(event) => updateField('ip', event.target.value)}
-          style={{ ...inputStyle, fontFamily: 'monospace' }}
+          style={inputStyle}
         >
           <option value="">Selecciona una IP disponible...</option>
           {availableIps.map((ip) => (

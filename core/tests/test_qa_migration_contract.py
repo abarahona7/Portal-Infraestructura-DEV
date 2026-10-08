@@ -72,7 +72,9 @@ class QAEsquemaYFixtureTests(TestCase):
         with TemporaryDirectory() as directory:
             path = Path(directory) / 'departamentos.json'
             call_command('dumpdata', 'core.Departamento', output=str(path), verbosity=0)
-            department.delete()
+            # La Papelera deja la fila en la base; esta prueba requiere un
+            # destino físicamente vacío para verificar el contrato de loaddata.
+            Departamento.all_objects.filter(pk=department.pk).delete()
             call_command('loaddata', str(path), verbosity=0)
         self.assertTrue(Departamento.objects.filter(nombre='Departamento de fixture QA').exists())
 

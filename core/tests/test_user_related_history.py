@@ -161,7 +161,7 @@ class UserRelatedHistoryTests(TestCase):
 
         response = self.client.patch(
             f'/api/usuarios/{self.user.pk}/',
-            {'estado': 'LICENCIA'},
+            {'estado': 'LICENCIA', 'protocolo_confirmaciones': ['ip', 'custodia']},
             format='json',
         )
         self.assertEqual(response.status_code, 200)

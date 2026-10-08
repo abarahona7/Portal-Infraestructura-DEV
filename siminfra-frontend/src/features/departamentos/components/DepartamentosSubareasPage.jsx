@@ -299,9 +299,9 @@ export default function DepartamentosSubareasPage({
 
   const removeSubarea = async (subarea) => {
     const confirmed = await requestConfirmation?.({
-      title: 'Eliminar área',
-      message: `¿Deseas eliminar definitivamente "${subarea.nombre}"? Esta acción solo se permite si no tiene usuarios asociados.`,
-      confirmText: 'Eliminar',
+      title: 'Enviar área a Papelera',
+      message: `¿Deseas enviar "${subarea.nombre}" a Papelera? Esta acción solo se permite si no tiene registros activos asociados.`,
+      confirmText: 'Enviar a Papelera',
       danger: true,
     });
 
@@ -309,7 +309,7 @@ export default function DepartamentosSubareasPage({
 
     try {
       await deleteSubarea(subarea.id);
-      showToast?.('Área eliminada correctamente.', 'success');
+      showToast?.('Área enviada a Papelera.', 'success');
       await onRefresh?.();
     } catch (error) {
       showToast?.(getApiErrorMessage(error), 'error');
@@ -318,9 +318,9 @@ export default function DepartamentosSubareasPage({
 
   const removeDepartment = async (department) => {
     const confirmed = await requestConfirmation?.({
-      title: 'Eliminar departamento',
-      message: `¿Deseas eliminar definitivamente "${department.nombre}"? Solo se puede eliminar si no tiene usuarios ni áreas asociadas.`,
-      confirmText: 'Eliminar',
+      title: 'Enviar departamento a Papelera',
+      message: `¿Deseas enviar "${department.nombre}" a Papelera? Solo se permite si no tiene registros activos asociados.`,
+      confirmText: 'Enviar a Papelera',
       danger: true,
     });
 
@@ -328,7 +328,7 @@ export default function DepartamentosSubareasPage({
 
     try {
       await deleteDepartamento(department.id);
-      showToast?.('Departamento eliminado correctamente.', 'success');
+      showToast?.('Departamento enviado a Papelera.', 'success');
       setSelectedDepartmentId(null);
       await onRefresh?.();
     } catch (error) {

@@ -103,6 +103,39 @@
   white-space: pre-line;
 }
 
+.confirm-checklist {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  text-align: left;
+}
+
+.confirm-checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  color: #1e293b;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.confirm-checklist-item input {
+  flex: none;
+  margin-top: 2px;
+  width: 17px;
+  height: 17px;
+  accent-color: #2563eb;
+}
+
+.confirm-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .confirm-actions {
   display: flex;
   justify-content: flex-end;

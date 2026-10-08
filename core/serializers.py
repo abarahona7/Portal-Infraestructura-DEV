@@ -4,6 +4,11 @@ from rest_framework import serializers
 from django.db import transaction
 from django.db.models.functions import Lower, Trim
 from .equipment_categories import EQUIPMENT_CATEGORY_TYPES
+from .protocols import (
+    required_user_checks, required_equipment_checks,
+    validate_confirmations, confirmation_observation,
+)
+from .audit import get_current_audit_username
 
 from .models import (
     Usuario,
@@ -44,6 +49,11 @@ def _has_normalized_duplicate(queryset, field_name, value, exclude_pk=None):
     normalized = (_normalize_spaces(value) or '').lower()
     if not normalized:
         return False
+
+    # Un registro en Papelera conserva sus claves únicas y debe restaurarse,
+    # no duplicarse con un nuevo registro que acabaría rechazando la BD.
+    if hasattr(queryset.model, 'all_objects'):
+        queryset = queryset.model.all_objects.all()
 
     queryset = queryset.annotate(
         _normalized_value=Lower(Trim(field_name))
@@ -88,10 +98,11 @@ class InternalModelFieldsMixin:
     """Exclude database-only normalization fields from public API schemas."""
 
     internal_model_fields = ()
+    archive_model_fields = ('deleted_at', 'deleted_by', 'archive_context')
 
     def get_fields(self):
         fields = super().get_fields()
-        for field_name in self.internal_model_fields:
+        for field_name in (*self.internal_model_fields, *self.archive_model_fields):
             fields.pop(field_name, None)
         return fields
 
@@ -191,7 +202,7 @@ class DepartamentoSerializer(serializers.ModelSerializer):
 
 
 
-class IPSerializer(serializers.ModelSerializer):
+class IPSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
     usuario = serializers.PrimaryKeyRelatedField(read_only=True)
     usuario_nombre = serializers.ReadOnlyField(
         source='usuario.nombre_completo'
@@ -325,6 +336,7 @@ class HistorialAsignacionIPSerializer(serializers.ModelSerializer):
             'propietario_id',
             'propietario_nombre',
             'realizado_por',
+            'observacion',
             'fecha_movimiento',
         ]
         read_only_fields = fields
@@ -418,7 +430,7 @@ class HistorialAnexoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class AnexoSerializer(serializers.ModelSerializer):
+class AnexoSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
     usuario_nombre = serializers.ReadOnlyField(
         source='usuario.nombre_completo'
     )
@@ -525,6 +537,9 @@ class HistorialEquipoSerializer(serializers.ModelSerializer):
 
 
 class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
+    protocolo_confirmaciones = serializers.ListField(
+        child=serializers.CharField(), write_only=True, required=False,
+    )
     internal_model_fields = (
         'numero_serie_normalizado',
         'hostname_computador_normalizado',
@@ -575,6 +590,8 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
 
     @transaction.atomic
     def update(self, instance, validated_data):
+        confirmed = validated_data.pop('protocolo_confirmaciones', None)
+        required = required_equipment_checks(instance, validated_data)
         old_number = instance.numero_telefono
         old_owner_id = instance.usuario_id
         next_owner = validated_data.get('usuario', instance.usuario)
@@ -596,6 +613,19 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
             if validated_data.get(field) in ('', None):
                 validated_data.pop(field, None)
         equipo = super().update(instance, validated_data)
+
+        if required and self.context.get('protocol_exemption'):
+            HistorialEquipo.objects.create(
+                equipo=equipo, accion='PROTOCOLO_OMITIDO',
+                modificado_por=get_current_audit_username(),
+                observacion=f"Importación controlada:::{self.context['protocol_exemption']}:::Registrada",
+            )
+        elif required:
+            HistorialEquipo.objects.create(
+                equipo=equipo, accion='PROTOCOLO_CONFIRMADO',
+                modificado_por=get_current_audit_username(),
+                observacion=confirmation_observation(required),
+            )
 
         # La línea del usuario es independiente cuando difiere de la del equipo.
         # Si ambas eran iguales, mantenerlas iguales al editar el celular.
@@ -842,10 +872,24 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
                     "de baja o en licencia."
             })
 
+        required = required_equipment_checks(instance, attrs)
+        confirmed = attrs.get('protocolo_confirmaciones')
+        if required and not self.context.get('protocol_exemption') and not validate_confirmations(required, confirmed):
+            raise serializers.ValidationError({
+                'protocolo_confirmaciones': 'Confirma todos los puntos del protocolo antes de guardar.',
+            })
+        if not required and confirmed:
+            raise serializers.ValidationError({
+                'protocolo_confirmaciones': 'No corresponde confirmar un protocolo sin cambio de asignación o estado.',
+            })
+
         return attrs
 
 
 class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
+    protocolo_confirmaciones = serializers.ListField(
+        child=serializers.CharField(), write_only=True, required=False,
+    )
     internal_model_fields = (
         'nombre_completo_normalizado',
         'usuario_red_normalizado',
@@ -992,6 +1036,8 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
+        confirmed = validated_data.pop('protocolo_confirmaciones', None)
+        required = required_user_checks(instance, validated_data)
         if 'celular' in validated_data:
             instance = Usuario.objects.select_for_update().get(pk=instance.pk)
         ip_enviada = 'ip_seleccionada' in validated_data
@@ -1029,6 +1075,13 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
         instance,
         validated_data
         )
+
+        if required:
+            HistorialUsuario.objects.create(
+                usuario=usuario, accion='PROTOCOLO_CONFIRMADO',
+                modificado_por=get_current_audit_username(),
+                observacion=confirmation_observation(required),
+            )
 
         for equipo in equipos_de_la_linea:
             if equipo.numero_telefono != usuario.celular:
@@ -1195,6 +1248,17 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
                     )
                 })
 
+        required = required_user_checks(instance, attrs)
+        confirmed = attrs.get('protocolo_confirmaciones')
+        if required and not validate_confirmations(required, confirmed):
+            raise serializers.ValidationError({
+                'protocolo_confirmaciones': 'Confirma todos los puntos del protocolo antes de guardar.',
+            })
+        if not required and confirmed:
+            raise serializers.ValidationError({
+                'protocolo_confirmaciones': 'No corresponde confirmar un protocolo sin cambio de estado.',
+            })
+
         return attrs
 
 class HistorialPerfilGenericoSerializer(serializers.ModelSerializer):
@@ -1327,7 +1391,7 @@ class HistorialPCGenericoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class PCGenericoSerializer(serializers.ModelSerializer):
+class PCGenericoSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
     historial = HistorialPCGenericoSerializer(
         many=True,
         read_only=True

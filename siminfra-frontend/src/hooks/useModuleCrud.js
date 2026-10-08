@@ -1,11 +1,13 @@
 import { createItemByTab } from '../services/createItemService';
 import { updateItemByTab } from '../services/updateItemService';
 import { deleteItemByTab } from '../services/deleteItemService';
+import { getItemDetailsByTab } from '../services/getItemService';
 
 import { prepareCreatePayload } from '../utils/prepareCreatePayload';
 import { prepareUpdatePayload } from '../utils/prepareUpdatePayload';
 import { validateItem } from '../utils/validateItem';
 import { formatEquipmentType } from '../utils/formatEquipmentType';
+import { userStatusChecklist, equipmentChecklist, needsEquipmentChecklist } from '../utils/changeProtocols';
 
 const extractApiErrorMessage = (error, fallback) => {
   const data = error?.response?.data;
@@ -26,20 +28,26 @@ const extractApiErrorMessage = (error, fallback) => {
   return fallback;
 };
 
-const getUpdateConfirmation = (tab, editingItem, data) => {
+const getUpdateConfirmation = (tab, editingItem, originalItem) => {
   const defaultConfirmation = {
     title: 'Guardar cambios',
     message: '¿Confirmas que deseas guardar los cambios realizados?',
     confirmText: 'Guardar',
   };
 
-  if (tab !== 'usuarios' || !editingItem?.id) {
+  if (!editingItem?.id) {
     return defaultConfirmation;
   }
 
-  const originalItem = data.find(
-    (item) => String(item.id) === String(editingItem.id)
-  );
+  if (tab === 'equipos' && needsEquipmentChecklist(originalItem, editingItem)) {
+    return {
+      title: 'Confirmar movimiento del equipo',
+      message: 'Revisa y confirma cada punto antes de guardar el cambio.',
+      confirmText: 'Guardar movimiento',
+      checklist: equipmentChecklist,
+    };
+  }
+  if (tab !== 'usuarios') return defaultConfirmation;
   const nextStatus = editingItem.estado;
   const isStatusChange = originalItem?.estado !== nextStatus;
 
@@ -49,15 +57,10 @@ const getUpdateConfirmation = (tab, editingItem, data) => {
 
   if (nextStatus === 'BAJA') {
     return {
-      title: 'Guardar cambios',
-      message: (
-        'Al dar de baja al usuario se realizarán estas acciones:\n\n'
-        + '• Se desasignarán sus equipos e insumos.\n'
-        + '• Se liberará su dirección IP.\n'
-        + '• Se liberará su anexo.\n\n'
-        + 'Antes de confirmar, valida la devolución física de los equipos e insumos.'
-      ),
-      confirmText: 'Dar de baja',
+      title: 'Confirmar Baja del usuario',
+      message: 'Esta acción desasignará equipos e insumos, y liberará IP y anexo.',
+      checklist: userStatusChecklist.BAJA,
+      confirmText: 'Guardar Baja',
       danger: true,
     };
   }
@@ -65,16 +68,18 @@ const getUpdateConfirmation = (tab, editingItem, data) => {
   if (nextStatus === 'LICENCIA') {
     return {
       title: 'Guardar cambios',
-      message: (
-        'Al cambiar el estado a Licencia Médica se liberará la dirección IP del usuario.\n\n'
-        + 'Los equipos, insumos y el anexo permanecerán asignados.'
-      ),
+      message: 'Se liberará la IP; los equipos, insumos y anexo permanecerán asignados.',
+      checklist: userStatusChecklist.LICENCIA,
       confirmText: 'Confirmar licencia',
       danger: true,
     };
   }
 
-  return defaultConfirmation;
+  return {
+    ...defaultConfirmation,
+    message: 'Confirma la revisión de datos y accesos antes de reactivar al usuario.',
+    checklist: userStatusChecklist.ACTIVO,
+  };
 };
 
 export const useModuleCrud = ({
@@ -172,8 +177,17 @@ export const useModuleCrud = ({
       return;
     }
 
+    let originalItem = data.find((item) => String(item.id) === String(editingItem.id));
+    if (!originalItem && ['usuarios', 'equipos'].includes(tab)) {
+      try {
+        originalItem = await getItemDetailsByTab(tab, editingItem.id);
+      } catch {
+        showToast?.('No se pudo verificar el estado actual del registro.', 'error');
+        return;
+      }
+    }
     const confirmed = await requestConfirmation?.(
-      getUpdateConfirmation(tab, editingItem, data)
+      getUpdateConfirmation(tab, editingItem, originalItem)
     );
 
     if (confirmed === false) {
@@ -186,6 +200,9 @@ export const useModuleCrud = ({
         editingItem,
         formatEquipmentType
       );
+      if (Array.isArray(confirmed)) {
+        payload.protocolo_confirmaciones = confirmed;
+      }
 
       await updateItemByTab(
         tab,
@@ -227,9 +244,9 @@ export const useModuleCrud = ({
 
   const handleDelete = async (id, nombre) => {
     const confirmed = await requestConfirmation?.({
-      title: 'Eliminar registro',
-      message: `¿Estás seguro de que deseas eliminar permanentemente "${nombre}"?`,
-      confirmText: 'Eliminar',
+      title: 'Enviar a Papelera',
+      message: `¿Quieres enviar "${nombre}" a Papelera? Podrás consultar y restaurar el registro después. Las asignaciones liberadas deberán revisarse manualmente.`,
+      confirmText: 'Enviar a Papelera',
       danger: true,
     });
 
@@ -241,7 +258,7 @@ export const useModuleCrud = ({
       await deleteItemByTab(tab, id);
 
       showToast?.(
-        'Registro eliminado correctamente.',
+        'Registro enviado a Papelera.',
         'success'
       );
 

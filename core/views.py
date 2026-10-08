@@ -1,7 +1,8 @@
 from django.http import HttpResponse
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Prefetch, Q
 from django.db.models.functions import Length
+from django.core.paginator import Paginator
 from rest_framework.decorators import action
 
 from .services.acta_entrega_pdf import (
@@ -28,6 +29,7 @@ from .models import (
     Servidor,
     Departamento,
     SubArea,
+    PapeleraEvento,
 )
 
 from .serializers import (
@@ -57,6 +59,9 @@ from .audit import (
     reset_current_audit_user,
 )
 from .realtime import schedule_change
+from .services.papelera import archive_record, restore_record, ARCHIVABLE_MODELS
+from .permissions import is_admin
+from rest_framework.permissions import IsAuthenticated
 from .equipment_categories import EQUIPMENT_CATEGORY_TYPES
 
 class AuditUserMixin:
@@ -69,32 +74,123 @@ class AuditUserMixin:
             with transaction.atomic():
                 instance = serializer.save()
                 schedule_change(instance, 'created')
+        except IntegrityError as exc:
+            raise serializers.ValidationError({
+                'detail': 'Ya existe un identificador en uso o en Papelera. Revisa el registro antes de crear uno nuevo.',
+            }) from exc
         finally:
             reset_current_audit_user(token)
 
     def perform_update(self, serializer):
-        token = set_current_audit_user(
-            self.request.user
-        )
-
+        token = set_current_audit_user(self.request.user)
         try:
             with transaction.atomic():
                 instance = serializer.save()
                 schedule_change(instance, 'updated')
+        except IntegrityError as exc:
+            raise serializers.ValidationError({
+                'detail': 'Ya existe un identificador en uso o en Papelera. Revisa el registro antes de guardar.',
+            }) from exc
         finally:
             reset_current_audit_user(token)
 
     def perform_destroy(self, instance):
-        token = set_current_audit_user(
-            self.request.user
-        )
-
+        token = set_current_audit_user(self.request.user)
         try:
-            with transaction.atomic():
-                schedule_change(instance, 'deleted')
-                instance.delete()
+            archive_record(instance)
         finally:
             reset_current_audit_user(token)
+
+
+PAPELERA_SERIALIZERS = {
+    'usuarios': UsuarioSerializer,
+    'equipos': EquipamientoSerializer,
+    'perfiles-genericos': PerfilGenericoSerializer,
+    'anexos': AnexoSerializer,
+    'ips': IPSerializer,
+    'pcs-genericos': PCGenericoSerializer,
+    'servidores': ServidorSerializer,
+    'departamentos': DepartamentoSerializer,
+    'subareas': SubAreaSerializer,
+}
+
+
+class PapeleraPermission(IsAuthenticated):
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) and is_admin(request.user)
+
+
+class PapeleraView(APIView):
+    permission_classes = [PapeleraPermission]
+
+    def get(self, request):
+        selected = request.query_params.get('modulo')
+        if selected and selected not in ARCHIVABLE_MODELS:
+            raise serializers.ValidationError({'modulo': 'Módulo desconocido.'})
+        modules = [selected] if selected else ARCHIVABLE_MODELS
+        rows = []
+        for module in modules:
+            model = ARCHIVABLE_MODELS[module]
+            for instance in model.all_objects.filter(
+                deleted_at__isnull=False,
+            ).order_by('-deleted_at'):
+                rows.append({
+                    'modulo': module,
+                    'id': instance.pk,
+                    'nombre': str(instance),
+                    'eliminado_en': instance.deleted_at,
+                    'eliminado_por': instance.deleted_by,
+                })
+        rows.sort(key=lambda row: row['eliminado_en'], reverse=True)
+        try:
+            page = max(1, int(request.query_params.get('page', '1')))
+        except ValueError as exc:
+            raise serializers.ValidationError({'page': 'Página inválida.'}) from exc
+        paginator = Paginator(rows, 50)
+        page_data = paginator.get_page(page)
+        response = Response({
+            'count': paginator.count,
+            'page': page_data.number,
+            'total_pages': paginator.num_pages,
+            'results': page_data.object_list,
+        })
+        response['Cache-Control'] = 'no-store, private'
+        return response
+
+
+class PapeleraRecordView(APIView):
+    permission_classes = [PapeleraPermission]
+
+    def get(self, request, module, record_id):
+        model = ARCHIVABLE_MODELS.get(module)
+        if model is None:
+            raise serializers.ValidationError({'detail': 'Módulo desconocido.'})
+        instance = model.all_objects.filter(pk=record_id, deleted_at__isnull=False).first()
+        if instance is None:
+            return Response({'detail': 'Registro no encontrado en Papelera.'}, status=404)
+        serializer = PAPELERA_SERIALIZERS[module](instance, context={'request': request})
+        events = PapeleraEvento.objects.filter(modulo=module, registro_id=record_id).values(
+            'accion', 'realizado_por', 'fecha', 'detalle',
+        )
+        history = (
+            HistorialAsignacionIPSerializer(instance.historial_asignaciones.all(), many=True).data
+            if isinstance(instance, IP) else serializer.data.get('historial', [])
+        )
+        response = Response({'registro': serializer.data, 'historial': history, 'eventos': list(events)})
+        response['Cache-Control'] = 'no-store, private'
+        return response
+
+
+class PapeleraRestoreView(APIView):
+    permission_classes = [PapeleraPermission]
+
+    def post(self, request, module, record_id):
+        token = set_current_audit_user(request.user)
+        try:
+            instance = restore_record(module, record_id)
+        finally:
+            reset_current_audit_user(token)
+        return Response({'modulo': module, 'id': instance.pk, 'detail': 'Registro restaurado.'})
 
 
 
@@ -213,6 +309,13 @@ class IPViewSet(
         return queryset.order_by('direccion_ip')
 
     def perform_destroy(self, instance):
+        token = set_current_audit_user(self.request.user)
+        try:
+            self._archive_free_ip(instance)
+        finally:
+            reset_current_audit_user(token)
+
+    def _archive_free_ip(self, instance):
         with transaction.atomic():
             ip = IP.objects.select_for_update().get(pk=instance.pk)
             if (
@@ -229,8 +332,7 @@ class IPViewSet(
                         'Libérala primero desde el módulo que administra su asignación.'
                     )
                 })
-            schedule_change(ip, 'deleted')
-            ip.delete()
+            archive_record(ip)
 
     @action(detail=True, methods=['get'], url_path='historial')
     def assignment_history(self, request, pk=None):

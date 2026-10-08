@@ -14,7 +14,7 @@ from core.models import (
     Anexo, AsignacionIP, Departamento, Equipamiento, HistorialAnexo,
     HistorialAsignacionIP, HistorialEquipo, HistorialPCGenerico,
     HistorialPerfilGenerico, HistorialServidor, HistorialUsuario, IP,
-    PCGenerico, PerfilGenerico, PortalSession, SecurityAuditLog, Servidor,
+    PCGenerico, PerfilGenerico, PortalSession, PapeleraEvento, SecurityAuditLog, Servidor,
     SubArea, Usuario,
 )
 
@@ -24,7 +24,7 @@ DELETE_ORDER = (
     PerfilGenerico, PCGenerico, Usuario, IP, HistorialAnexo,
     HistorialAsignacionIP, HistorialEquipo, HistorialPCGenerico,
     HistorialPerfilGenerico, HistorialServidor, HistorialUsuario,
-    SecurityAuditLog, SubArea, Departamento,
+    SecurityAuditLog, PapeleraEvento, SubArea, Departamento,
 )
 
 
@@ -46,7 +46,7 @@ class Command(BaseCommand):
         configured_models = set(apps.get_app_config('core').get_models())
         if configured_models != set(DELETE_ORDER):
             raise CommandError('La lista de modelos core cambió; revisar antes de borrar.')
-        counts = {model.__name__: model.objects.count() for model in DELETE_ORDER}
+        counts = {model.__name__: getattr(model, 'all_objects', model.objects).count() for model in DELETE_ORDER}
         self.stdout.write('Base: ' + str(database))
         self.stdout.write(json.dumps(counts, sort_keys=True))
         if not options['apply']:
@@ -72,8 +72,8 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             for model in DELETE_ORDER:
-                model.objects.all().delete()
-            remaining = {model.__name__: model.objects.count() for model in DELETE_ORDER}
+                getattr(model, 'all_objects', model.objects).all().delete()
+            remaining = {model.__name__: getattr(model, 'all_objects', model.objects).count() for model in DELETE_ORDER}
             if any(remaining.values()):
                 raise CommandError('La limpieza no terminó; la transacción se revertirá.')
 

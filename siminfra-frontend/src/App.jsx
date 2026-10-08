@@ -1,4 +1,5 @@
 import React, {
+  useCallback,
   useEffect,
   useRef,
   useState
@@ -72,6 +73,7 @@ import ModuleToolbar from './components/layout/ModuleToolbar';
 import DepartamentosSubareasPage
   from './features/departamentos/components/DepartamentosSubareasPage';
 import AssetDashboard from './features/activos/AssetDashboard';
+import PapeleraPage from './features/papelera/PapeleraPage';
 import EquipoDetailModal from './features/equipos/components/EquipoDetailModal';
 
 import { formatEquipmentType } from './utils/formatEquipmentType';
@@ -102,6 +104,7 @@ export default function App() {
     confirmText: 'Confirmar',
     cancelText: 'Cancelar',
     danger: false,
+    checklist: [],
   });
 
   const [secretRequest, setSecretRequest] = useState(null);
@@ -118,6 +121,7 @@ export default function App() {
     confirmText = 'Confirmar',
     cancelText = 'Cancelar',
     danger = false,
+    checklist = [],
   }) => {
     return new Promise((resolve) => {
       confirmResolverRef.current = resolve;
@@ -129,12 +133,13 @@ export default function App() {
         confirmText,
         cancelText,
         danger,
+        checklist,
       });
     });
   };
 
-  const handleConfirmAction = () => {
-    confirmResolverRef.current?.(true);
+  const handleConfirmAction = (confirmedChecks) => {
+    confirmResolverRef.current?.(confirmModal.checklist.length ? confirmedChecks : true);
     confirmResolverRef.current = null;
 
     setConfirmModal((prev) => ({
@@ -155,7 +160,7 @@ export default function App() {
 
   const toastTimerRef = useRef(null);
 
-  const showToast = (
+  const showToast = useCallback((
     message,
     type = 'success'
   ) => {
@@ -174,7 +179,7 @@ export default function App() {
         type: 'success',
       });
     }, 3500);
-  };
+  }, []);
 
   const closeToast = () => {
     if (toastTimerRef.current) {
@@ -296,6 +301,7 @@ export default function App() {
 
   const moduleDataEnabled = !(
     activeModuleTab === 'activos-resumen'
+    || activeModuleTab === 'papelera'
     || (activeModuleTab === 'usuarios' && !selectedDpto && !normalizedSearch && !selectedEstadoGeneral)
     || (activeModuleTab === 'ips' && !selectedIpSegment && !normalizedSearch)
   );
@@ -933,16 +939,17 @@ export default function App() {
         onClose={closeToast}
       />
 
-      <ConfirmModal
+      {confirmModal.open && <ConfirmModal
         open={confirmModal.open}
         title={confirmModal.title}
         message={confirmModal.message}
         confirmText={confirmModal.confirmText}
         cancelText={confirmModal.cancelText}
         danger={confirmModal.danger}
+        checklist={confirmModal.checklist}
         onConfirm={handleConfirmAction}
         onCancel={handleCancelAction}
-      />
+      />}
       {secretRequest && (
         <SecretRevealModal
           request={secretRequest}
@@ -1076,6 +1083,10 @@ export default function App() {
 
         {tab === 'activos-resumen' && <AssetDashboard revision={dashboardRevision} onOpenAsset={(item) => setSelectedEquipmentId(item.id)} onEditAsset={openDashboardAssetForEdit} />}
 
+        {tab === 'papelera' && authUser?.role === 'Administrador' && (
+          <PapeleraPage requestConfirmation={requestConfirmation} showToast={showToast} />
+        )}
+
         {tab === 'departamentos' && (
           <DepartamentosSubareasPage
             departamentos={data}
@@ -1099,6 +1110,7 @@ export default function App() {
             tab !== 'ips' &&
             tab !== 'departamentos' &&
             tab !== 'activos-resumen'
+            && tab !== 'papelera'
           )
         ) && (
             <>

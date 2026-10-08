@@ -17,6 +17,9 @@ class DepartamentoAdmin(admin.ModelAdmin):
     search_fields = ('nombre',)
     ordering = ('nombre',)
 
+    def has_delete_permission(self, request, obj=None):
+        return False  # El archivado se hace desde la Papelera del portal.
+
 
 @admin.register(SubArea)
 class SubAreaAdmin(admin.ModelAdmin):
@@ -24,6 +27,9 @@ class SubAreaAdmin(admin.ModelAdmin):
     list_filter = ('activo', 'departamento')
     search_fields = ('nombre', 'departamento__nombre')
     ordering = ('departamento__nombre', 'nombre')
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(AsignacionIP)

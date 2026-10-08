@@ -13,6 +13,7 @@ const VALID_TABS = new Set([
   'ips',
   'anexos',
   'departamentos',
+  'papelera',
   ...EQUIPMENT_NAV_ITEMS.map((item) => item.id),
 ]);
 
@@ -81,6 +82,7 @@ export const useModuleNavigation = (resetFilters, role) => {
     if (role === 'Visualizador' && nextTab !== 'anexos') {
       return;
     }
+    if (nextTab === 'papelera' && role !== 'Administrador') return;
 
     setTab(nextTab);
     saveTab(nextTab);
@@ -92,7 +94,7 @@ export const useModuleNavigation = (resetFilters, role) => {
   const closeSidebar = () => setSidebarOpen(false);
   const toggleSidebarCollapsed = () => setSidebarCollapsed((prev) => !prev);
 
-  const activeTab = role === 'Visualizador' ? 'anexos' : tab;
+  const activeTab = role === 'Visualizador' ? 'anexos' : (tab === 'papelera' && role !== 'Administrador' ? 'usuarios' : tab);
 
   return {
     tab: activeTab,

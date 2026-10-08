@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from core.views import UsuarioViewSet, EquipamientoViewSet, PerfilGenericoViewSet, IPViewSet, AnexoViewSet, PCGenericoViewSet, ServidorViewSet, DepartamentoViewSet, SubAreaViewSet, ReferenceDataView
+from core.views import UsuarioViewSet, EquipamientoViewSet, PerfilGenericoViewSet, IPViewSet, AnexoViewSet, PCGenericoViewSet, ServidorViewSet, DepartamentoViewSet, SubAreaViewSet, ReferenceDataView, PapeleraView, PapeleraRecordView, PapeleraRestoreView
 from core.auth_views import ActivityView, CsrfTokenView, LoginView, RefreshCookieView, LogoutView, MeView
 from core.security_views import RevealSecretView
 from core.asset_views import FichaEquipoQrView, EtiquetaEquipoQrView, ResumenEquiposView
@@ -27,6 +27,9 @@ urlpatterns = [
     path('api/auth/me/', MeView.as_view(), name='me'),
     path('api/secrets/reveal/', RevealSecretView.as_view(), name='reveal-secret'),
     path('api/reference-data/', ReferenceDataView.as_view(), name='reference-data'),
+    path('api/papelera/', PapeleraView.as_view(), name='papelera'),
+    path('api/papelera/<str:module>/<int:record_id>/', PapeleraRecordView.as_view(), name='papelera-registro'),
+    path('api/papelera/<str:module>/<int:record_id>/restaurar/', PapeleraRestoreView.as_view(), name='papelera-restaurar'),
     path('api/activos/resumen/', ResumenEquiposView.as_view(), name='resumen-equipos'),
     path('api/activos/qr/<uuid:token>/', FichaEquipoQrView.as_view(), name='ficha-equipo-qr'),
     path('api/activos/qr/<uuid:token>/imagen/', EtiquetaEquipoQrView.as_view(), name='etiqueta-equipo-qr'),

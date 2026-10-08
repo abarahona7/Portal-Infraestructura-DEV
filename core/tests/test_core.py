@@ -142,7 +142,10 @@ class SecurityTests(TestCase):
         self.assertIn('celular', invalid.json())
 
         baja = self.client.patch(
-            f'/api/usuarios/{self.portal_user.pk}/', {'estado': 'BAJA'}, format='json',
+            f'/api/usuarios/{self.portal_user.pk}/', {
+                'estado': 'BAJA',
+                'protocolo_confirmaciones': ['equipos', 'ip', 'anexo'],
+            }, format='json',
         )
         self.assertEqual(baja.status_code, 200)
         self.portal_user.refresh_from_db()
@@ -284,7 +287,7 @@ class SecurityTests(TestCase):
         )
         released = self.client.patch(
             f'/api/equipos/{equipo.pk}/?categoria=Celular',
-            {'usuario': None}, format='json',
+            {'usuario': None, 'protocolo_confirmaciones': ['custodia', 'identidad', 'estado']}, format='json',
         )
         self.assertEqual(released.status_code, 200)
         self.portal_user.refresh_from_db()

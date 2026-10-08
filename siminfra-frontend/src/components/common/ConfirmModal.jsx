@@ -2,6 +2,7 @@ import {
   CircleAlert,
   X
 } from 'lucide-react';
+import { useState } from 'react';
 
 import './ConfirmModal.css';
 
@@ -12,9 +13,12 @@ export default function ConfirmModal({
   confirmText = 'Confirmar',
   cancelText = 'Cancelar',
   danger = false,
+  checklist = [],
   onConfirm,
   onCancel,
 }) {
+  const [checked, setChecked] = useState([]);
+
   if (!open) {
     return null;
   }
@@ -63,6 +67,23 @@ export default function ConfirmModal({
           {message}
         </p>
 
+        {checklist.length > 0 && (
+          <div className="confirm-checklist" role="group" aria-label="Protocolo de confirmación">
+            {checklist.map(({ id, label }) => (
+              <label key={id} className="confirm-checklist-item">
+                <input
+                  type="checkbox"
+                  checked={checked.includes(id)}
+                  onChange={(event) => setChecked((current) => (
+                    event.target.checked ? [...current, id] : current.filter((item) => item !== id)
+                  ))}
+                />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+        )}
+
         <div className="confirm-actions">
           <button
             type="button"
@@ -79,7 +100,8 @@ export default function ConfirmModal({
                 ? 'confirm-button confirm-button-danger'
                 : 'confirm-button confirm-button-primary'
             }
-            onClick={onConfirm}
+            onClick={() => onConfirm?.(checked)}
+            disabled={checklist.length > 0 && checked.length !== checklist.length}
           >
             {confirmText}
           </button>

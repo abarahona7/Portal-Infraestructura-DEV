@@ -3,8 +3,8 @@
 from uuid import uuid4
 
 from django.contrib.auth.models import Group, User
-from django.db.models.deletion import ProtectedError
 from django.test import TestCase, override_settings
+from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
 
 from core.models import (
@@ -90,7 +90,7 @@ class QAIpServidorTests(TestCase):
         history_count = HistorialAsignacionIP.objects.filter(ip=ip).count()
         self.assertGreater(history_count, 0)
 
-        with self.assertRaises(ProtectedError):
+        with self.assertRaises(ValidationError):
             ip.delete()
 
         self.assertTrue(IP.objects.filter(pk=ip.pk).exists())

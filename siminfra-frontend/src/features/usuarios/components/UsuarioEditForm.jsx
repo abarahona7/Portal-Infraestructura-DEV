@@ -106,7 +106,7 @@ export default function UsuarioEditForm({
         >
           <option value="ACTIVO">Activo</option>
           <option value="LICENCIA">Licencia Médica</option>
-          <option value="BAJA">Dar de Baja</option>
+          <option value="BAJA">Baja</option>
         </select>
       </div>
 

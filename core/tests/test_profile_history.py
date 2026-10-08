@@ -80,11 +80,13 @@ class ProfileHistoryApiTests(TestCase):
         deleted = self.client.delete(f'/api/perfiles-genericos/{profile_id}/')
         self.assertEqual(deleted.status_code, 204)
         deletion_history = HistorialPerfilGenerico.objects.get(
-            perfil__isnull=True,
+            perfil_id=profile_id,
             perfil_usuario='perfil.auditado',
-            accion='ELIMINACION',
+            accion='ARCHIVO',
         )
         self.assertEqual(deletion_history.modificado_por, self.admin.username)
+        self.assertFalse(PerfilGenerico.objects.filter(pk=profile_id).exists())
+        self.assertTrue(PerfilGenerico.all_objects.filter(pk=profile_id).exists())
 
     def test_cleanup_command_tracks_every_core_model(self):
         configured_models = set(apps.get_app_config('core').get_models())

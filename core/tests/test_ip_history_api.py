@@ -33,16 +33,16 @@ class IpHistoryApiTests(TestCase):
         self.assertEqual(released.status_code, 200)
 
         records = HistorialAsignacionIP.objects.filter(ip=self.ip)
-        self.assertEqual(records.count(), 2)
+        self.assertEqual(records.count(), 5)
         self.assertFalse(
-            records.exclude(realizado_por=self.admin.username).exists()
+            records.exclude(accion='REGISTRO').exclude(realizado_por=self.admin.username).exists()
         )
 
         response = self.client.get(f'/api/ips/{self.ip.pk}/historial/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             [entry['accion'] for entry in response.json()],
-            ['LIBERACION', 'ASIGNACION'],
+            ['LIBERACION', 'MODIFICACION', 'ASIGNACION', 'MODIFICACION', 'REGISTRO'],
         )
         self.assertEqual(
             response.json()[0]['propietario_nombre'],

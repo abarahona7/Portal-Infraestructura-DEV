@@ -127,6 +127,11 @@
   scrollbar-color: #334155 transparent;
 }
 
+.sidebar-recycle-link {
+  padding-top: 8px;
+  border-top: 1px solid #334155;
+}
+
 .sidebar-group {
   display: flex;
   flex-direction: column;

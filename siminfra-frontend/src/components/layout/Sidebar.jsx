@@ -19,6 +19,7 @@ import {
   Phone,
   Building2,
   LogOut,
+  Trash2,
 } from 'lucide-react';
 
 import './Sidebar.css';
@@ -350,6 +351,12 @@ export default function Sidebar({
             })
           )}
         </nav>
+
+        {role === 'Administrador' && (
+          <div className="sidebar-recycle-link">
+            {renderModuleButton({ id: 'papelera', icon: Trash2, label: 'Papelera' })}
+          </div>
+        )}
 
         <div className="sidebar-footer">
           <button

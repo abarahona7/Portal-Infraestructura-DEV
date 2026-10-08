@@ -37,7 +37,7 @@ export const renderUsuarioStatusBadge = (estado) => {
           }}
         >
           <StatusDot />
-          Dar de Baja
+          Baja
         </span>
       );
 

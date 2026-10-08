@@ -80,9 +80,9 @@ class ServerHistoryApiTests(TestCase):
         self.assertEqual(self.first_ip.estado, 'LIBRE')
         self.assertIsNone(self.first_ip.asignado_otro)
         deletion_history = HistorialServidor.objects.get(
-            servidor__isnull=True,
-            accion='ELIMINACION',
+            servidor_id=server_id,
+            accion='ARCHIVO',
             servidor_hostname='SRV-HISTORY-01',
         )
         self.assertEqual(deletion_history.modificado_por, self.admin.username)
-        self.assertIn('IP liberada: 172.23.1.230', deletion_history.observacion)
+        self.assertIn('Dirección IP:::172.23.1.230:::Liberada', deletion_history.observacion)

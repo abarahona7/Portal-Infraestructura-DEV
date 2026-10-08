@@ -67,6 +67,11 @@ class Command(BaseCommand):
                             equipment,
                             data=payload,
                             partial=True,
+                            context={
+                                'protocol_exemption': (
+                                    'Asignación de importación v1.1 con archivo y SHA-256 verificados'
+                                ),
+                            },
                         )
                         serializer.is_valid(raise_exception=True)
                         serializer.save()

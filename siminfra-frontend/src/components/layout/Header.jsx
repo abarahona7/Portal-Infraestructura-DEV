@@ -44,6 +44,9 @@ export default function Header({
       case 'departamentos':
         return 'Departamentos / Áreas';
 
+      case 'papelera':
+        return 'Papelera';
+
       default:
         return 'Portal de Infraestructura TI Chile';
     }

@@ -98,7 +98,10 @@ class ResumenEquiposView(APIView):
             custodio_no_activo=Count('id', filter=Q(usuario__isnull=False) & ~Q(usuario__estado='ACTIVO')),
         )
         departamentos = Departamento.objects.annotate(
-            total=Count('usuarios__equipos', distinct=True),
+            total=Count(
+                'usuarios__equipos', distinct=True,
+                filter=Q(usuarios__deleted_at__isnull=True, usuarios__equipos__deleted_at__isnull=True),
+            ),
         ).order_by('-total', 'nombre')
         response = Response({
             'conteos': counts,

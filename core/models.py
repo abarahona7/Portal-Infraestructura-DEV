@@ -12,7 +12,7 @@ from .audit import get_current_audit_username
 ESTADOS = [
     ('ACTIVO', 'Activo'),
     ('LICENCIA', 'En Licencia'),
-    ('BAJA', 'Dado de Baja'),
+    ('BAJA', 'Baja'),
 ]
 
 ESTADOS_PERFIL = [
@@ -79,7 +79,46 @@ def _include_derived_update_fields(kwargs, *field_names):
         kwargs['update_fields'] = set(update_fields).union(field_names)
 
 
-class Departamento(models.Model):
+class ArchivableQuerySet(models.QuerySet):
+    def delete(self):
+        from .services.papelera import archive_record
+
+        with transaction.atomic():
+            records = list(self.select_for_update())
+            for record in records:
+                archive_record(record)
+        count = len(records)
+        return count, {self.model._meta.label: count}
+
+
+class ActiveRecordsManager(models.Manager.from_queryset(ArchivableQuerySet)):
+    def get_queryset(self):
+        return super().get_queryset().filter(deleted_at__isnull=True)
+
+
+class ArchivableRecord(models.Model):
+    """Conserva el registro y su identidad; el portal solo consulta los activos."""
+
+    deleted_at = models.DateTimeField(null=True, blank=True, db_index=True, editable=False)
+    deleted_by = models.CharField(max_length=150, null=True, blank=True, editable=False)
+    archive_context = models.JSONField(default=dict, blank=True, editable=False)
+
+    objects = ActiveRecordsManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        abstract = True
+        base_manager_name = 'all_objects'
+        default_manager_name = 'objects'
+
+    def delete(self, using=None, keep_parents=False):
+        from .services.papelera import archive_record
+
+        archive_record(self)
+        return 1, {self._meta.label: 1}
+
+
+class Departamento(ArchivableRecord):
     nombre = models.CharField(max_length=100)
     nombre_normalizado = models.CharField(
         max_length=100,
@@ -109,7 +148,7 @@ class Departamento(models.Model):
         return self.nombre
 
 
-class SubArea(models.Model):
+class SubArea(ArchivableRecord):
     departamento = models.ForeignKey(
         Departamento,
         on_delete=models.PROTECT,
@@ -149,7 +188,7 @@ class SubArea(models.Model):
         return f"{self.departamento.nombre} / {self.nombre}"
 
 
-class Usuario(models.Model):
+class Usuario(ArchivableRecord):
     nombre_completo = models.CharField(max_length=150)
     nombre_completo_normalizado = models.CharField(
         max_length=150,
@@ -260,7 +299,7 @@ class Usuario(models.Model):
     def __str__(self):
         return f"{self.nombre_completo} ({self.usuario_red})"
 
-class Anexo(models.Model):
+class Anexo(ArchivableRecord):
     numero_anexo = models.CharField(
         max_length=10,
         unique=True
@@ -388,7 +427,7 @@ class HistorialAnexo(models.Model):
     def __str__(self):
         return f"{self.anexo.numero_anexo} - {self.accion}"
 
-class IP(models.Model):
+class IP(ArchivableRecord):
     direccion_ip = models.GenericIPAddressField(unique=True)
     estado = models.CharField(max_length=20, choices=ESTADOS_IP, default='LIBRE')
     observacion = models.CharField(max_length=255, null=True, blank=True)
@@ -471,7 +510,7 @@ class IP(models.Model):
 # SERVIDORES
 # =========================================
 
-class Servidor(models.Model):
+class Servidor(ArchivableRecord):
     ip = models.OneToOneField(
         IP,
         on_delete=models.PROTECT,
@@ -581,7 +620,7 @@ def registrar_relacion_usuario(
     )
 
 
-class Equipamiento(models.Model):
+class Equipamiento(ArchivableRecord):
     usuario = models.ForeignKey(
         Usuario,
         on_delete=models.SET_NULL,
@@ -825,7 +864,7 @@ class HistorialEquipo(models.Model):
     class Meta:
         ordering = ['-fecha_movimiento']
 
-class PerfilGenerico(models.Model):
+class PerfilGenerico(ArchivableRecord):
     nombre = models.CharField(max_length=150, null=True, blank=True)
     usuario = models.CharField(max_length=100, unique=True)
     usuario_normalizado = models.CharField(
@@ -942,7 +981,7 @@ class HistorialPerfilGenerico(models.Model):
         ]
 
 
-class PCGenerico(models.Model):
+class PCGenerico(ArchivableRecord):
     ip = models.OneToOneField(
         IP,
         on_delete=models.PROTECT,
@@ -1219,9 +1258,13 @@ class AsignacionIP(models.Model):
 
 class HistorialAsignacionIP(models.Model):
     ACCIONES = [
+        ('REGISTRO', 'Registro'),
+        ('MODIFICACION', 'Modificación'),
         ('ASIGNACION', 'Asignación'),
         ('LIBERACION', 'Liberación'),
         ('MIGRACION', 'Migración inicial'),
+        ('ARCHIVO', 'Envío a Papelera'),
+        ('RESTAURACION', 'Restauración'),
     ]
 
     ip = models.ForeignKey(
@@ -1242,6 +1285,7 @@ class HistorialAsignacionIP(models.Model):
     propietario_id = models.PositiveBigIntegerField(null=True, blank=True)
     propietario_nombre = models.CharField(max_length=150, null=True, blank=True)
     realizado_por = models.CharField(max_length=150, null=True, blank=True)
+    observacion = models.TextField(null=True, blank=True)
     fecha_movimiento = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -1257,6 +1301,19 @@ class HistorialAsignacionIP(models.Model):
 
     def __str__(self):
         return f'{self.direccion_ip} - {self.accion}'
+
+
+class PapeleraEvento(models.Model):
+    modulo = models.CharField(max_length=40)
+    registro_id = models.PositiveBigIntegerField()
+    accion = models.CharField(max_length=20)
+    realizado_por = models.CharField(max_length=150, null=True, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+    detalle = models.TextField(blank=True, default='')
+
+    class Meta:
+        ordering = ['-fecha', '-pk']
+        indexes = [models.Index(fields=['modulo', 'registro_id', '-fecha'], name='idx_papelera_mod_reg_fecha')]
 
 
 class HistorialPCGenerico(models.Model):
@@ -1797,6 +1854,12 @@ def track_historial_equipo(sender, instance, **kwargs):
         instance.imei
     )
 
+    add_cambio(
+        "Accesorios",
+        equipo_previo.accesorios,
+        instance.accesorios
+    )
+
     if equipo_previo.pin != instance.pin:
         add_cambio("PIN", "••••••••", "••••••••")
 
@@ -1877,6 +1940,14 @@ def registrar_asignacion_inicial_equipo(sender, instance, created, **kwargs):
     if not created:
         return
 
+    HistorialEquipo.objects.create(
+        equipo=instance,
+        usuario_nuevo=instance.usuario.nombre_completo if instance.usuario_id else 'Sin asignar',
+        accion='CREACION',
+        modificado_por=get_current_audit_username(),
+        observacion=f'Equipo creado:::N/I:::{instance.tipo} {instance.marca} {instance.modelo}',
+    )
+
     identificador = (
         instance.numero_serie
         or instance.af
@@ -1952,6 +2023,41 @@ def sync_ip_con_usuario(sender, instance, **kwargs):
     else:
 
             instance.estado = 'LIBRE'
+
+
+@receiver(pre_save, sender=IP)
+def registrar_cambios_ip(sender, instance, **kwargs):
+    if kwargs.get('raw') or not instance.pk:
+        return
+    previous = IP.objects.filter(pk=instance.pk).first()
+    if previous is None:
+        return
+    changes = []
+    for label, old, new in (
+        ('Dirección IP', previous.direccion_ip, instance.direccion_ip),
+        ('Estado', previous.estado, instance.estado),
+        ('Reservado para', previous.asignado_otro, instance.asignado_otro),
+        ('Usuario', previous.usuario_id, instance.usuario_id),
+    ):
+        if old != new:
+            changes.append(f'{label}:::{old or "N/I"}:::{new or "N/I"}')
+    if changes:
+        HistorialAsignacionIP.objects.create(
+            ip=instance, direccion_ip=previous.direccion_ip,
+            accion='MODIFICACION', realizado_por=get_current_audit_username(),
+            observacion='||'.join(changes),
+        )
+
+
+@receiver(post_save, sender=IP)
+def registrar_creacion_ip(sender, instance, created, **kwargs):
+    if kwargs.get('raw') or not created:
+        return
+    HistorialAsignacionIP.objects.create(
+        ip=instance, direccion_ip=instance.direccion_ip,
+        accion='REGISTRO', realizado_por=get_current_audit_username(),
+        observacion=f'Dirección IP:::N/I:::{instance.direccion_ip}',
+    )
 
 
 @receiver(pre_save, sender=Servidor)

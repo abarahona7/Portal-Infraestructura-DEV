@@ -1,0 +1,9 @@
+# Papelera y protocolos de cambios
+
+La eliminación desde el portal archiva el registro. Queda con el mismo ID y se puede consultar y restaurar desde **Papelera**, visible solo para el rol **Administrador**. Las listas operativas, el tablero y la ficha QR excluyen los archivados. El QR conserva su token: vuelve a funcionar al restaurar el equipo.
+
+Al archivar un usuario se liberan sus IP, equipos y anexo. Al archivar un equipo se libera su custodio; al archivar un servidor o PC genérico se libera su IP. La restauración **no reasigna** estos recursos, porque podrían pertenecer ya a otra persona o dispositivo. Revisa el historial y haz las nuevas asignaciones manualmente. Las claves únicas (usuario, serie, AF, IP, hostname) permanecen reservadas; restaura el registro antiguo si necesitas reutilizarlas.
+
+El estado operativo `BAJA` del usuario y del equipo es distinto de estar en Papelera. Un operador puede cambiar el estado siguiendo el protocolo; solo un administrador puede archivar o restaurar. Para cambiar el estado de un usuario, o la asignación o estado de un equipo, la API exige todos los identificadores del checklist y registra `PROTOCOLO_CONFIRMADO` con el actor. La importación controlada v1.1 conserva su operación automática y deja constancia como `PROTOCOLO_OMITIDO`, sin afirmar una verificación física que nadie hizo.
+
+Antes de probar en una base existente, realizar un respaldo verificado y ejecutar `python manage.py migrate` sobre DEV. La implementación añade las migraciones `0061` y `0062`; no borra filas ni modifica los valores existentes. Las eliminaciones definitivas anteriores a estas migraciones solo se pueden recuperar desde un respaldo previo. El comando excepcional `limpiar_datos_v11` sigue siendo destructivo por diseño: exige SQLite, respaldo verificado y confirmación explícita por ruta.

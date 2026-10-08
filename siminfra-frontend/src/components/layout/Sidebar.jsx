@@ -43,12 +43,12 @@ const navigationGroups = [
       {
         id: 'perfiles',
         icon: Mail,
-        label: 'Perfiles Genéricos',
+        label: 'Perfiles genéricos',
       },
       {
         id: 'departamentos',
         icon: Building2,
-        label: 'Departamentos / Áreas',
+        label: 'Departamentos / áreas',
       },
     ],
   },
@@ -63,37 +63,37 @@ const navigationGroups = [
       {
         id: 'pcs-genericos',
         icon: Monitor,
-        label: 'PCS GENÉRICOS',
+        label: 'PCs genéricos',
       },
       {
         id: 'equipos-notebook',
         icon: Laptop,
-        label: 'NOTEBOOK',
+        label: 'Notebook',
       },
       {
         id: 'equipos-celular',
         icon: Smartphone,
-        label: 'CELULAR',
+        label: 'Celular',
       },
       {
         id: 'equipos-tablet',
         icon: Tablet,
-        label: 'TABLET',
+        label: 'Tablet',
       },
       {
         id: 'equipos-mac',
         icon: Monitor,
-        label: 'MAC',
+        label: 'Mac',
       },
       {
         id: 'equipos-bam-router',
         icon: Wifi,
-        label: 'BAM / ROUTER',
+        label: 'BAM / Router',
       },
       {
         id: 'equipos-perifericos',
         icon: Keyboard,
-        label: 'PERIFÉRICOS',
+        label: 'Periféricos',
       },
     ],
   },
@@ -350,13 +350,12 @@ export default function Sidebar({
               );
             })
           )}
+          {role === 'Administrador' && (
+            <div className="sidebar-recycle-link">
+              {renderModuleButton({ id: 'papelera', icon: Trash2, label: 'Papelera' })}
+            </div>
+          )}
         </nav>
-
-        {role === 'Administrador' && (
-          <div className="sidebar-recycle-link">
-            {renderModuleButton({ id: 'papelera', icon: Trash2, label: 'Papelera' })}
-          </div>
-        )}
 
         <div className="sidebar-footer">
           <button
@@ -373,17 +372,9 @@ export default function Sidebar({
             <span>Cerrar sesión</span>
           </button>
           {collapsed ? (
-            <span
-              className="sidebar-footer-mini"
-              title="Farmacias del Dr. Simi"
-            >
-              TI
-            </span>
+            <span className="sidebar-footer-mini" title="Farmacias del Dr. Simi">TI</span>
           ) : (
-            <>
-              <strong>Farmacias del Dr. Simi</strong>
-              <span>Infraestructura TI</span>
-            </>
+            <strong>Farmacias del Dr. Simi</strong>
           )}
         </div>
       </aside>

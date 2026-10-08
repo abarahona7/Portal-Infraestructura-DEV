@@ -28,7 +28,7 @@ describe('Navegación por rol', () => {
     expect(onSelectTab).toHaveBeenCalledWith('equipos');
     fireEvent.click(screen.getByRole('button', { name: 'Expandir Equipos' }));
     expect(screen.queryByRole('button', { name: 'Tablero de activos' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'NOTEBOOK' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Notebook' })).toBeInTheDocument();
   });
 
   it('ofrece cerrar sesión desde el sidebar y cierra el menú móvil', () => {

@@ -1,5 +1,9 @@
+from io import BytesIO
+
 from django.contrib.auth.models import Group, User
 from django.test import TestCase
+from django.utils import timezone
+from openpyxl import load_workbook
 from rest_framework.test import APIClient
 
 from core.models import (
@@ -150,6 +154,42 @@ class PapeleraYProtocolosTests(TestCase):
         equipment.refresh_from_db()
         self.assertIsNone(equipment.usuario_id)
         self.assertTrue(HistorialUsuario.objects.filter(usuario=self.user, accion='RESTAURACION').exists())
+
+    def test_recycle_report_exports_all_pages_and_respects_module_filter(self):
+        self.assertEqual(self.client.delete(f'/api/usuarios/{self.user.pk}/').status_code, 204)
+        formula_department = Departamento.objects.create(nombre='=1+1')
+        for number in range(50):
+            Departamento.objects.create(nombre=f'Área archivada {number}')
+        Departamento.all_objects.exclude(pk=self.department.pk).update(
+            deleted_at=timezone.now(), deleted_by=self.admin.username,
+        )
+
+        response = self.client.get('/api/papelera/reporte/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('spreadsheetml.sheet', response['Content-Type'])
+        self.assertIn('attachment;', response['Content-Disposition'])
+        self.assertEqual(response['Cache-Control'], 'no-store, private')
+        workbook = load_workbook(BytesIO(response.content), read_only=True)
+        sheet = workbook.active
+        report_rows = list(sheet.iter_rows())
+        self.assertEqual(len(report_rows), 53)  # Encabezado + 51 áreas + 1 usuario.
+        self.assertEqual([cell.value for cell in report_rows[0]], [
+            'Módulo', 'ID', 'Registro', 'Archivado el', 'Archivado por',
+        ])
+        formula_row = next(row for row in report_rows if row[1].value == formula_department.pk)
+        self.assertEqual(formula_row[2].value, '=1+1')
+        self.assertEqual(formula_row[2].data_type, 's')
+
+        filtered = self.client.get('/api/papelera/reporte/?modulo=usuarios')
+        self.assertEqual(filtered.status_code, 200)
+        filtered_sheet = load_workbook(BytesIO(filtered.content), read_only=True).active
+        self.assertEqual(len(list(filtered_sheet.iter_rows())), 2)
+        self.assertEqual(filtered_sheet['A2'].value, 'Usuarios')
+        self.assertEqual(filtered_sheet['B2'].value, self.user.pk)
+        self.assertEqual(self.client.get('/api/papelera/reporte/?modulo=desconocido').status_code, 400)
+
+        self.client.force_authenticate(self.operator)
+        self.assertEqual(self.client.get('/api/papelera/reporte/').status_code, 403)
 
     def test_archived_equipment_disappears_from_qr_and_dashboard(self):
         equipment = Equipamiento.objects.create(

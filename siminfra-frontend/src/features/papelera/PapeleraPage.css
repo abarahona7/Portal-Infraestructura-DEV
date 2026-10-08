@@ -3,7 +3,12 @@
 .papelera-heading { justify-content: space-between; }
 .papelera-heading h2 { margin: 0 0 4px; font-size: 1.35rem; }
 .papelera-heading p { margin: 0; color: #64748b; font-size: .9rem; }
-.papelera-heading button, .papelera-row-actions button, .papelera-restore { min-height: 38px; padding: 8px 12px; border: 1px solid #bfd1ee; border-radius: 8px; background: #fff; color: #1d4ed8; font-weight: 600; cursor: pointer; }
+.papelera-heading button, .papelera-row-actions button, .papelera-restore, .papelera-report-button { min-height: 38px; padding: 8px 12px; border: 1px solid #bfd1ee; border-radius: 8px; background: #fff; color: #1d4ed8; font-weight: 600; cursor: pointer; }
+.papelera-toolbar { justify-content: space-between; flex-wrap: wrap; }
+.papelera-filter { display: flex; align-items: center; gap: 10px; }
+.papelera-report-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.papelera-report-button:disabled { opacity: .6; cursor: wait; }
+.papelera-report-note { margin: -9px 0 0; color: #64748b; font-size: .8rem; }
 .papelera-toolbar select { min-height: 38px; min-width: 210px; border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; padding: 6px; }
 .papelera-toolbar label { color: #334155; font-weight: 600; }
 .papelera-list { display: grid; gap: 9px; }
@@ -32,4 +37,4 @@
 .papelera-history details { padding: 8px; border: 1px solid #dbe3ef; border-radius: 7px; overflow-wrap: anywhere; }
 .papelera-history summary { cursor: pointer; font-weight: 600; }
 .papelera-history p { margin: 8px 0 0; white-space: pre-wrap; font-size: .83rem; }
-@media (max-width: 700px) { .papelera-heading, .papelera-row { align-items: flex-start; flex-direction: column; } .papelera-row-actions { width: 100%; flex-wrap: wrap; } .papelera-fields { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .papelera-heading, .papelera-row { align-items: flex-start; flex-direction: column; } .papelera-row-actions { width: 100%; flex-wrap: wrap; } .papelera-fields { grid-template-columns: 1fr; } .papelera-filter, .papelera-filter select, .papelera-report-button { width: 100%; } .papelera-filter { flex-wrap: wrap; } }

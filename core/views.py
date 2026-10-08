@@ -1,8 +1,11 @@
+from io import BytesIO
+
 from django.http import HttpResponse
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Prefetch, Q
 from django.db.models.functions import Length
 from django.core.paginator import Paginator
+from django.utils import timezone
 from rest_framework.decorators import action
 
 from .services.acta_entrega_pdf import (
@@ -120,28 +123,46 @@ class PapeleraPermission(IsAuthenticated):
         return super().has_permission(request, view) and is_admin(request.user)
 
 
+PAPELERA_MODULE_NAMES = {
+    'usuarios': 'Usuarios',
+    'equipos': 'Equipos',
+    'perfiles-genericos': 'Perfiles genéricos',
+    'anexos': 'Anexos',
+    'ips': 'IPs',
+    'pcs-genericos': 'PCs genéricos',
+    'servidores': 'Servidores',
+    'departamentos': 'Departamentos',
+    'subareas': 'Áreas',
+}
+
+
+def papelera_rows(selected):
+    if selected and selected not in ARCHIVABLE_MODELS:
+        raise serializers.ValidationError({'modulo': 'Módulo desconocido.'})
+    modules = [selected] if selected else ARCHIVABLE_MODELS
+    rows = []
+    for module in modules:
+        model = ARCHIVABLE_MODELS[module]
+        for instance in model.all_objects.filter(
+            deleted_at__isnull=False,
+        ).order_by('-deleted_at'):
+            rows.append({
+                'modulo': module,
+                'id': instance.pk,
+                'nombre': str(instance),
+                'eliminado_en': instance.deleted_at,
+                'eliminado_por': instance.deleted_by,
+            })
+    rows.sort(key=lambda row: row['eliminado_en'], reverse=True)
+    return rows
+
+
 class PapeleraView(APIView):
     permission_classes = [PapeleraPermission]
 
     def get(self, request):
         selected = request.query_params.get('modulo')
-        if selected and selected not in ARCHIVABLE_MODELS:
-            raise serializers.ValidationError({'modulo': 'Módulo desconocido.'})
-        modules = [selected] if selected else ARCHIVABLE_MODELS
-        rows = []
-        for module in modules:
-            model = ARCHIVABLE_MODELS[module]
-            for instance in model.all_objects.filter(
-                deleted_at__isnull=False,
-            ).order_by('-deleted_at'):
-                rows.append({
-                    'modulo': module,
-                    'id': instance.pk,
-                    'nombre': str(instance),
-                    'eliminado_en': instance.deleted_at,
-                    'eliminado_por': instance.deleted_by,
-                })
-        rows.sort(key=lambda row: row['eliminado_en'], reverse=True)
+        rows = papelera_rows(selected)
         try:
             page = max(1, int(request.query_params.get('page', '1')))
         except ValueError as exc:
@@ -154,6 +175,58 @@ class PapeleraView(APIView):
             'total_pages': paginator.num_pages,
             'results': page_data.object_list,
         })
+        response['Cache-Control'] = 'no-store, private'
+        return response
+
+
+class PapeleraReportView(APIView):
+    permission_classes = [PapeleraPermission]
+
+    def get(self, request):
+        from openpyxl import Workbook
+        from openpyxl.cell import WriteOnlyCell
+        from openpyxl.styles import Font, PatternFill
+
+        selected = request.query_params.get('modulo')
+        rows = papelera_rows(selected)
+        workbook = Workbook(write_only=True)
+        sheet = workbook.create_sheet('Papelera')
+        sheet.freeze_panes = 'A2'
+        for column, width in {'A': 24, 'B': 12, 'C': 48, 'D': 24, 'E': 24}.items():
+            sheet.column_dimensions[column].width = width
+
+        def text_cell(value):
+            # Los nombres son datos ingresados por usuarios: nunca interpretarlos como fórmulas.
+            cell = WriteOnlyCell(sheet, value=str(value or ''))
+            cell.data_type = 's'
+            return cell
+
+        header = [text_cell(value) for value in (
+            'Módulo', 'ID', 'Registro', 'Archivado el', 'Archivado por',
+        )]
+        for cell in header:
+            cell.font = Font(bold=True, color='FFFFFF')
+            cell.fill = PatternFill('solid', fgColor='2B5AA5')
+        sheet.append(header)
+        for row in rows:
+            sheet.append([
+                text_cell(PAPELERA_MODULE_NAMES[row['modulo']]),
+                row['id'],
+                text_cell(row['nombre']),
+                text_cell(timezone.localtime(row['eliminado_en']).strftime('%Y-%m-%d %H:%M:%S')),
+                text_cell(row['eliminado_por'] or 'No registrado'),
+            ])
+        sheet.auto_filter.ref = f'A1:E{len(rows) + 1}'
+
+        output = BytesIO()
+        workbook.save(output)
+        scope = selected or 'general'
+        date = timezone.localdate().strftime('%Y%m%d')
+        response = HttpResponse(
+            output.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        response['Content-Disposition'] = f'attachment; filename="papelera_{scope}_{date}.xlsx"'
         response['Cache-Control'] = 'no-store, private'
         return response
 

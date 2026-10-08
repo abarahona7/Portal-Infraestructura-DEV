@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { RotateCcw, Trash2, X } from 'lucide-react';
+import { Download, RotateCcw, Trash2, X } from 'lucide-react';
 import apiClient from '../../api/client';
 import './PapeleraPage.css';
 
@@ -25,6 +25,7 @@ export default function PapeleraPage({ requestConfirmation, showToast }) {
   const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -84,6 +85,31 @@ export default function PapeleraPage({ requestConfirmation, showToast }) {
     }
   };
 
+  const downloadReport = async () => {
+    setExporting(true);
+    try {
+      const response = await apiClient.get('/papelera/reporte/', {
+        params: module ? { modulo: module } : {},
+        responseType: 'blob',
+      });
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `papelera_${module || 'general'}_${new Date().toLocaleDateString('sv-SE')}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch {
+      showToast?.('No se pudo descargar el reporte de Papelera.', 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <section className="papelera-page">
       <header className="papelera-heading">
@@ -91,12 +117,18 @@ export default function PapeleraPage({ requestConfirmation, showToast }) {
         <button type="button" onClick={reload}>Actualizar</button>
       </header>
       <div className="papelera-toolbar">
-        <label htmlFor="papelera-module">Módulo</label>
-        <select id="papelera-module" value={module} onChange={(event) => { setPage(1); setModule(event.target.value); setLoading(true); }}>
-          <option value="">Todos</option>
-          {Object.entries(MODULE_NAMES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-        </select>
+        <div className="papelera-filter">
+          <label htmlFor="papelera-module">Módulo</label>
+          <select id="papelera-module" value={module} onChange={(event) => { setPage(1); setModule(event.target.value); setLoading(true); }}>
+            <option value="">Todos</option>
+            {Object.entries(MODULE_NAMES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+          </select>
+        </div>
+        <button type="button" className="papelera-report-button" disabled={exporting} onClick={downloadReport}>
+          <Download size={16} /> {exporting ? 'Preparando reporte…' : 'Descargar reporte Excel'}
+        </button>
       </div>
+      <p className="papelera-report-note">Incluye todos los registros actualmente en Papelera del módulo seleccionado, no solo esta página.</p>
       {loading ? <p className="papelera-empty">Cargando registros…</p> : rows.length === 0 ? (
         <p className="papelera-empty">No hay registros en Papelera.</p>
       ) : (

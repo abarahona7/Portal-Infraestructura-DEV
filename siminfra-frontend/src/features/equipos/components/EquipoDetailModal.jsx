@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import apiClient from '../../../api/client';
+import { formatEquipmentTypeLabel } from '../../../utils/formatEquipmentType';
 import './EquipoDetailModal.css';
 
 export default function EquipoDetailModal({ id, token, onClose, onOpenHistory, revision = 0 }) {
@@ -24,7 +25,7 @@ export default function EquipoDetailModal({ id, token, onClose, onOpenHistory, r
       {error && <p role="alert" className="equipment-detail-error">{error}</p>}
       {!equipo && !error && <p role="status">Cargando ficha...</p>}
       {equipo && <>
-        <div className="equipment-detail-identity"><strong>{equipo.tipo} · {equipo.marca} {equipo.modelo}</strong><span>Serie: {equipo.numero_serie || 'Sin registrar'} · Activo fijo: {equipo.af || 'Sin registrar'}</span></div>
+        <div className="equipment-detail-identity"><strong>{formatEquipmentTypeLabel(equipo.tipo)} · {equipo.marca} {equipo.modelo}</strong><span>Serie: {equipo.numero_serie || 'Sin registrar'} · Activo fijo: {equipo.af || 'Sin registrar'}</span></div>
         <dl className="equipment-detail-fields">
           <dt>Estado</dt><dd>{equipo.estado}</dd>
           <dt>Departamento</dt><dd>{equipo.departamento_nombre || equipo.departamento || 'Sin departamento asignado'}</dd>

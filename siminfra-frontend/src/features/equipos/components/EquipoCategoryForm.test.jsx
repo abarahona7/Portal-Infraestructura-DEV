@@ -17,7 +17,8 @@ describe('Tipo de equipo por categoría', () => {
     const type = screen.getByRole('combobox', { name: 'Tipo de equipo' });
     expect(type).toBeDisabled();
     expect(type.value).toBe('Notebook');
-    expect(screen.queryByRole('option', { name: 'Celular' })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'NOTEBOOK' })).toHaveValue('Notebook');
+    expect(screen.queryByRole('option', { name: 'CELULAR' })).not.toBeInTheDocument();
     created.unmount();
     render(<EquipoEditForm {...props} category="Notebook" />);
     expect(screen.getByRole('combobox', { name: 'Tipo de equipo' })).toBeDisabled();
@@ -29,8 +30,8 @@ describe('Tipo de equipo por categoría', () => {
       onChange={onChange} category="PERIFERICOS" />);
     const type = screen.getByRole('combobox', { name: 'Tipo de equipo' });
     expect(type).toBeEnabled();
-    expect(screen.getByRole('option', { name: 'Mouse' })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'Notebook' })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'MOUSE' })).toHaveValue('Mouse');
+    expect(screen.queryByRole('option', { name: 'NOTEBOOK' })).not.toBeInTheDocument();
     fireEvent.change(type, { target: { value: 'Mouse' } });
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ tipo: 'Mouse' }));
   });

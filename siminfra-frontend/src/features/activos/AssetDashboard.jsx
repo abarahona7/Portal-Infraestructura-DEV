@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import apiClient from '../../api/client';
+import { formatEquipmentTypeLabel } from '../../utils/formatEquipmentType';
 import './AssetDashboard.css';
 
 const reasons = [
@@ -152,7 +153,7 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
             }}
             role="button" tabIndex={0}
             aria-label={`Abrir ficha de ${item.marca || ''} ${item.modelo || ''}`.trim()}>
-            <div><strong>{item.tipo} · {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'Sin registrar'} · Activo fijo: {item.af || 'Sin registrar'}</span><span>{item.usuario_nombre || 'Sin usuario asignado'} · {item.estado}</span></div>
+            <div><strong>{formatEquipmentTypeLabel(item.tipo)} · {item.marca} {item.modelo}</strong><span>Serie: {item.numero_serie || 'Sin registrar'} · Activo fijo: {item.af || 'Sin registrar'}</span><span>{item.usuario_nombre || 'Sin usuario asignado'} · {item.estado}</span></div>
             <div><button type="button" onClick={(event) => { event.stopPropagation(); onEditAsset(item); }}>Editar</button></div>
           </article>)}
         </div>

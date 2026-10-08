@@ -397,7 +397,7 @@ export default function EquiposTable({
                 <td className="equipo-type">
                   {formatEquipmentType(
                     equipo.tipo
-                  )}
+                  ).toLocaleUpperCase('es-CL')}
                 </td>
 
 
@@ -538,7 +538,7 @@ export default function EquiposTable({
                     <span className="equipo-card-type">
                       {formatEquipmentType(
                         equipo.tipo
-                      )}
+                      ).toLocaleUpperCase('es-CL')}
                     </span>
                   </div>
                 </div>

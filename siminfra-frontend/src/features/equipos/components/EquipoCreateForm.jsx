@@ -5,6 +5,7 @@ import {
   normalizeEquipmentFieldsByType,
 } from '../../../utils/equipmentHelpers';
 import { PERIPHERAL_TYPES } from '../../../utils/equipmentNavigation';
+import { formatEquipmentTypeLabel } from '../../../utils/formatEquipmentType';
 
 export default function EquipoCreateForm({
   equipo,
@@ -88,59 +89,59 @@ export default function EquipoCreateForm({
           }
           style={inputStyle}
         >
-          {category !== 'PERIFERICOS' ? <option value={category}>{category}</option> : null}
+          {category !== 'PERIFERICOS' ? <option value={category}>{formatEquipmentTypeLabel(category)}</option> : null}
           {category === 'PERIFERICOS' && <optgroup label="Periféricos">
-            {PERIPHERAL_TYPES.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
+            {PERIPHERAL_TYPES.map((tipo) => <option key={tipo} value={tipo}>{formatEquipmentTypeLabel(tipo)}</option>)}
           </optgroup>}
           {!category && <optgroup label="Equipos principales">
             <option value="Notebook">
-              Notebook
+              NOTEBOOK
             </option>
 
             <option value="Celular">
-              Celular
+              CELULAR
             </option>
 
             <option value="Tablet">
-              Tablet
+              TABLET
             </option>
 
             <option value="Mac">
-              Mac
+              MAC
             </option>
 
             <option value="BAM / Router">
-              BAM / Router
+              BAM / ROUTER
             </option>
           </optgroup>}
 
           {!category && <optgroup label="Periféricos">
             <option value="Monitor">
-              Monitor
+              MONITOR
             </option>
 
             <option value="Adaptador">
-              Adaptador
+              ADAPTADOR
             </option>
 
             <option value="Audífonos">
-              Audífonos
+              AUDÍFONOS
             </option>
 
             <option value="Teclado">
-              Teclado
+              TECLADO
             </option>
 
             <option value="Mouse">
-              Mouse
+              MOUSE
             </option>
 
             <option value="Docking">
-              Docking
+              DOCKING
             </option>
 
             <option value="Otro Periférico">
-              Otro Periférico
+              OTRO PERIFÉRICO
             </option>
           </optgroup>}
         </select>

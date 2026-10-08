@@ -465,7 +465,7 @@ export default function UsuarioDetailModal({
 
                             <div>
                               <span className="user-detail-equipment-type">
-                                {tipoEquipo}
+                                {tipoEquipo.toLocaleUpperCase('es-CL')}
                               </span>
 
                               <h4>

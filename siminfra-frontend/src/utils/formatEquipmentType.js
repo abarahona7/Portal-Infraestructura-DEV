@@ -28,3 +28,6 @@ export const formatEquipmentType = (tipo) => {
 
   return tipo;
 };
+
+export const formatEquipmentTypeLabel = (tipo) =>
+  formatEquipmentType(tipo).toLocaleUpperCase('es-CL');

@@ -128,7 +128,7 @@ export default function EquipmentCategoryCards({
 
               <div className="equipment-category-content">
                 <span className="equipment-category-name">
-                  {category.label}
+                  {category.label.toLocaleUpperCase('es-CL')}
                 </span>
 
                 <div className="equipment-category-count">

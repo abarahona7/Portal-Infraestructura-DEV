@@ -26,7 +26,7 @@ describe('Ficha del equipo', () => {
 
     expect(await screen.findByText('Sin departamento asignado')).toBeInTheDocument();
     expect(screen.getByText('Sin usuario asignado')).toBeInTheDocument();
-    expect(screen.getByText('Notebook · Dell Latitude')).toBeInTheDocument();
+    expect(screen.getByText('NOTEBOOK · Dell Latitude')).toBeInTheDocument();
     expect(apiClient.get).toHaveBeenCalledWith('/equipos/5/', expect.any(Object));
     expect(screen.queryByText('Código QR')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Descargar etiqueta' })).not.toBeInTheDocument();
@@ -39,7 +39,7 @@ describe('Ficha del equipo', () => {
 
   it('mantiene acceso a la ficha desde un enlace QR antiguo sin mostrar etiqueta', async () => {
     render(<EquipoDetailModal token="qa-token" onClose={vi.fn()} onOpenHistory={vi.fn()} />);
-    expect(await screen.findByText('Notebook · Dell Latitude')).toBeInTheDocument();
+    expect(await screen.findByText('NOTEBOOK · Dell Latitude')).toBeInTheDocument();
     expect(apiClient.get).toHaveBeenCalledWith('/activos/qr/qa-token/', expect.any(Object));
     expect(apiClient.get).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('Código QR')).not.toBeInTheDocument();

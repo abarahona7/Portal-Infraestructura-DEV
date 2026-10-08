@@ -27,6 +27,7 @@ describe('Listado de equipos', () => {
     />);
 
     const [row, card] = screen.getAllByRole('button', { name: 'Abrir ficha de Dell Latitude' });
+    expect(screen.getAllByText('NOTEBOOK')).toHaveLength(2);
     fireEvent.click(row);
     fireEvent.keyDown(row, { key: 'Enter' });
     fireEvent.click(card);

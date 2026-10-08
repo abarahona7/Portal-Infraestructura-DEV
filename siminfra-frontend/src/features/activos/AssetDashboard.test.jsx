@@ -41,7 +41,7 @@ describe('Tablero de activos', () => {
     render(<AssetDashboard onOpenAsset={onOpenAsset} onEditAsset={onEditAsset} />);
 
     fireEvent.click(await screen.findByRole('button', { name: /Tecnología/ }));
-    expect(await screen.findByText('Notebook · Dell Latitude')).toBeInTheDocument();
+    expect(await screen.findByText('NOTEBOOK · Dell Latitude')).toBeInTheDocument();
     expect(apiClient.get).toHaveBeenCalledWith('/equipos/', expect.objectContaining({
       params: { departamento_id: 3, page: 1, page_size: 20 },
     }));
@@ -62,7 +62,7 @@ describe('Tablero de activos', () => {
         params: { pendiente: 'sin_serie', page: 1, page_size: 20 },
       }),
     ));
-    expect(await screen.findByText('Notebook · Dell Latitude')).toBeInTheDocument();
+    expect(await screen.findByText('NOTEBOOK · Dell Latitude')).toBeInTheDocument();
     expect(screen.getByText(/1 equipos/)).toBeInTheDocument();
   });
 

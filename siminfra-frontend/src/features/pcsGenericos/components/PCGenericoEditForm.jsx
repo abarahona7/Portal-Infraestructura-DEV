@@ -37,7 +37,7 @@ export default function PCGenericoEditForm({
     <>
       <div>
         <label style={labelStyle}>Tipo de equipo</label>
-        <input aria-label="Tipo de equipo" value="PC Genérico" readOnly style={inputStyle} />
+        <input aria-label="Tipo de equipo" value="PC GENÉRICO" readOnly style={inputStyle} />
       </div>
       {/* Usuario Local */}
       <div>

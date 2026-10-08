@@ -37,7 +37,7 @@ export default function UserDepartmentCards({
       <div className="user-department-heading">
         <div>
           <h2>Departamentos / Áreas</h2>
-          <p>Selecciona una categoría para visualizar sus usuarios.</p>
+          <p>Selecciona un departamento para filtrar la lista de usuarios.</p>
         </div>
 
         {selectedDepartment && (

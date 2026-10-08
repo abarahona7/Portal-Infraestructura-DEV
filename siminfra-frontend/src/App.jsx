@@ -302,7 +302,6 @@ export default function App() {
   const moduleDataEnabled = !(
     activeModuleTab === 'activos-resumen'
     || activeModuleTab === 'papelera'
-    || (activeModuleTab === 'usuarios' && !selectedDpto && !normalizedSearch && !selectedEstadoGeneral)
     || (activeModuleTab === 'ips' && !selectedIpSegment && !normalizedSearch)
   );
 
@@ -1100,8 +1099,7 @@ export default function App() {
         {/* RESULTADOS DEL MÓDULO */}
         {(
           isEquipmentModule ||
-          (tab === 'usuarios' && selectedDpto) ||
-          isGlobalUserSearch ||
+          tab === 'usuarios' ||
           (tab === 'ips' && selectedIpSegment) ||
           isGlobalIpSearch ||
           (
@@ -1152,15 +1150,19 @@ export default function App() {
                 >
                   <div>
                     <span className="equipment-results-eyebrow">
-                      {isGlobalUserSearch
-                        ? 'Consulta global de usuarios'
-                        : 'Departamento / Área seleccionada'}
+                      {selectedDpto
+                        ? 'Departamento / Área seleccionada'
+                        : 'Consulta general de usuarios'}
                     </span>
 
                     <h2>
-                      {isGlobalUserSearch
-                        ? (normalizedSearch ? `Resultados para "${normalizedSearch}"` : 'Usuarios por estado')
-                        : selectedDepartmentLabel}
+                      {selectedDpto
+                        ? selectedDepartmentLabel
+                        : normalizedSearch
+                          ? `Resultados para "${normalizedSearch}"`
+                          : selectedEstadoGeneral
+                            ? 'Usuarios por estado'
+                            : 'Todos los usuarios'}
                     </h2>
                   </div>
 
@@ -1212,7 +1214,7 @@ export default function App() {
                 </div>
               )}
               {/* FILTROS Y ACCIONES */}
-              {!isGlobalUserSearch && !isGlobalIpSearch && (
+              {!isGlobalUserSearch && !isGlobalIpSearch && !(tab === 'usuarios' && !selectedDpto) && (
                 <ModuleToolbar
                   activeTab={activeModuleTab}
                   readOnly={isViewer}

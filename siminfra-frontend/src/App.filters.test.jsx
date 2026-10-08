@@ -52,6 +52,18 @@ describe('Filtros de estado en los listados', () => {
     vi.clearAllMocks();
   });
 
+  it('muestra el listado general de usuarios sin exigir seleccionar un departamento', () => {
+    render(<App />);
+
+    expect(screen.getByText('Todos los usuarios')).toBeInTheDocument();
+    expect(screen.getAllByRole('combobox', { name: 'Filtrar usuarios por estado' })).toHaveLength(1);
+    expect(useModuleData).toHaveBeenCalledWith(expect.objectContaining({
+      tab: 'usuarios',
+      selectedDpto: '',
+      enabled: true,
+    }));
+  });
+
   it('filtra usuarios después de seleccionar un departamento', () => {
     render(<App />);
     fireEvent.click(screen.getByText('TECNOLOGÍA').closest('button'));

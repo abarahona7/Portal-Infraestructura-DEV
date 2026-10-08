@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Download, RotateCcw, Trash2, X } from 'lucide-react';
+import { ChevronDown, Download, RotateCcw, Trash2, X } from 'lucide-react';
 import apiClient from '../../api/client';
 import './PapeleraPage.css';
 
@@ -11,11 +11,62 @@ const MODULE_NAMES = {
 
 const formatDate = (value) => value ? new Date(value).toLocaleString('es-CL') : 'Sin fecha';
 const labelFor = (field) => field.replaceAll('_', ' ').replace(/^./, (character) => character.toLocaleUpperCase('es-CL'));
-const visibleFields = (record) => Object.entries(record || {}).filter(([key, value]) => (
-  !['historial', 'equipos', 'archive_context', 'deleted_at', 'deleted_by'].includes(key)
-  && !/password|contraseña|pin|secret/i.test(key)
-  && (value === null || ['string', 'number', 'boolean'].includes(typeof value))
-));
+const PRIMARY_FIELDS = {
+  usuarios: [
+    ['Usuario de red', 'usuario_red'], ['Correo corporativo', 'correo_corp'],
+    ['Departamento', 'departamento_nombre', 'dpto_area'], ['Área', 'subarea_nombre'],
+    ['Cargo', 'cargo'], ['Estado al archivar', 'estado'],
+  ],
+  equipos: [
+    ['Tipo', 'tipo'], ['Marca', 'marca'], ['Modelo', 'modelo'],
+    ['N.º de serie', 'numero_serie'], ['Activo fijo', 'activo_fijo', 'af'],
+    ['Estado al archivar', 'estado'], ['Asignado a', 'usuario_nombre'],
+    ['Departamento', 'departamento_nombre'],
+  ],
+  'perfiles-genericos': [
+    ['Tipo', 'tipo'], ['Usuario', 'usuario'], ['Correo', 'correo'],
+    ['Departamento', 'departamento_nombre', 'dpto_area'], ['Estado al archivar', 'estado'],
+  ],
+  anexos: [['Número', 'numero_anexo'], ['Usuario', 'usuario_nombre'], ['Estado al archivar', 'estado']],
+  ips: [['Dirección IP', 'direccion_ip'], ['Estado al archivar', 'estado']],
+  'pcs-genericos': [
+    ['Usuario local', 'usuario_local'], ['Hostname', 'hostname'],
+    ['Departamento', 'departamento_nombre', 'dpto_area'],
+    ['N.º de serie', 'numero_serie'], ['Activo fijo', 'activo_fijo'],
+  ],
+  servidores: [['Hostname', 'hostname'], ['Dirección IP', 'ip'], ['Descripción', 'descripcion']],
+  departamentos: [['Nombre', 'nombre'], ['Activo', 'activo']],
+  subareas: [['Nombre', 'nombre'], ['Departamento', 'departamento_nombre'], ['Activo', 'activo']],
+};
+const HIDDEN_FIELDS = new Set([
+  'id', 'historial', 'equipos', 'archive_context', 'deleted_at', 'deleted_by',
+  'departamento', 'subarea', 'usuario', 'fecha_creacion', 'fecha_actualizacion',
+  'protocolos_estado', 'anexo_actual', 'nombre_completo', 'nombre',
+]);
+const hasValue = (value) => value !== null && value !== undefined && value !== '';
+const displayValue = (value) => typeof value === 'boolean' ? (value ? 'Sí' : 'No') : String(value);
+
+function recordFields(module, record) {
+  const used = new Set();
+  const primary = (PRIMARY_FIELDS[module] || []).flatMap(([label, ...keys]) => {
+    keys.forEach((key) => used.add(key));
+    const value = keys.map((key) => record?.[key]).find(hasValue);
+    return hasValue(value) ? [{ label, value: displayValue(value) }] : [];
+  });
+  const additional = Object.entries(record || {}).filter(([key, value]) => (
+    !used.has(key) && !HIDDEN_FIELDS.has(key)
+    && !/password|contraseña|pin|secret|token|normalizado|_configured$|_id$|_nombre$/i.test(key)
+    && hasValue(value) && value !== false
+    && ['string', 'number', 'boolean'].includes(typeof value)
+  )).map(([key, value]) => ({ label: labelFor(key), value: displayValue(value) }));
+  return { primary, additional };
+}
+
+function FieldGrid({ fields }) {
+  return <dl className="papelera-fields">{fields.map(({ label, value }) => (
+    <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
+  ))}</dl>;
+}
 
 export default function PapeleraPage({ requestConfirmation, showToast }) {
   const [rows, setRows] = useState([]);
@@ -26,6 +77,13 @@ export default function PapeleraPage({ requestConfirmation, showToast }) {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    if (!selected) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [selected]);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -110,6 +168,8 @@ export default function PapeleraPage({ requestConfirmation, showToast }) {
     }
   };
 
+  const selectedFields = selected ? recordFields(selected.modulo, selected.registro) : null;
+
   return (
     <section className="papelera-page">
       <header className="papelera-heading">
@@ -156,26 +216,38 @@ export default function PapeleraPage({ requestConfirmation, showToast }) {
       {selected && (
         <div className="papelera-overlay" role="presentation">
           <section className="papelera-detail" role="dialog" aria-modal="true" aria-label="Ficha archivada">
-            <header><div><small>{MODULE_NAMES[selected.modulo]} · ID {selected.id}</small><h3>{selected.nombre}</h3></div>
+            <header className="papelera-detail-header"><div><span className="papelera-module-tag">{MODULE_NAMES[selected.modulo]}</span><h3>{selected.nombre}</h3>
+              <p>Archivado el {formatDate(selected.eliminado_en)} · {selected.eliminado_por || 'Autor no registrado'}</p></div>
               <button type="button" onClick={() => setSelected(null)} aria-label="Cerrar ficha"><X size={20} /></button></header>
-            <p>Archivado el {formatDate(selected.eliminado_en)} por {selected.eliminado_por || 'autor no registrado'}.</p>
-            <dl className="papelera-fields">{visibleFields(selected.registro).map(([key, value]) => (
-              <div key={key}><dt>{labelFor(key)}</dt><dd>{value == null || value === '' ? 'Sin registrar' : String(value)}</dd></div>
-            ))}</dl>
-            <h4>Movimientos de Papelera</h4>
-            {selected.eventos?.map((event, index) => <p className="papelera-event" key={index}>
-              <strong>{event.accion}</strong> · {formatDate(event.fecha)} · {event.realizado_por || 'Autor no registrado'}<br />{event.detalle}
-            </p>)}
-            {selected.historial?.length > 0 && <>
-              <h4>Historial del módulo</h4>
-              <div className="papelera-history">{selected.historial.map((entry, index) => (
-                <details key={entry.id || index}>
-                  <summary>{entry.accion_nombre || entry.accion} · {formatDate(entry.fecha_movimiento)} · {entry.modificado_por || entry.realizado_por || 'Autor no registrado'}</summary>
-                  <p>{entry.observacion || 'Movimiento registrado sin observación adicional.'}</p>
-                </details>
-              ))}</div>
-            </>}
-            <button type="button" className="papelera-restore" onClick={() => restore(selected)}><RotateCcw size={16} /> Restaurar registro</button>
+            <div className="papelera-detail-body">
+              <section className="papelera-primary"><h4>Datos principales</h4>
+                {selectedFields.primary.length > 0
+                  ? <FieldGrid fields={selectedFields.primary} />
+                  : <p className="papelera-muted">No hay datos adicionales para mostrar.</p>}
+              </section>
+              {selectedFields.additional.length > 0 && <details className="papelera-detail-group">
+                <summary><span>Otros datos <small>{selectedFields.additional.length}</small></span><ChevronDown size={16} /></summary>
+                <FieldGrid fields={selectedFields.additional} />
+              </details>}
+              {(selected.eventos?.length > 0) && <details className="papelera-detail-group">
+                <summary><span>Movimientos en Papelera <small>{selected.eventos.length}</small></span><ChevronDown size={16} /></summary>
+                <div className="papelera-history">{selected.eventos.map((event, index) => <div className="papelera-event" key={index}>
+                  <strong>{event.accion}</strong><span>{formatDate(event.fecha)} · {event.realizado_por || 'Autor no registrado'}</span>
+                  {event.detalle && <p>{event.detalle}</p>}
+                </div>)}</div>
+              </details>}
+              {(selected.historial?.length > 0) && <details className="papelera-detail-group">
+                <summary><span>Historial del módulo <small>{selected.historial.length}</small></span><ChevronDown size={16} /></summary>
+                <div className="papelera-history">{selected.historial.map((entry, index) => (
+                  <details key={entry.id || index}>
+                    <summary>{entry.accion_nombre || entry.accion} · {formatDate(entry.fecha_movimiento)}</summary>
+                    <p>{entry.modificado_por || entry.realizado_por || 'Autor no registrado'} · {entry.observacion || 'Movimiento registrado sin observación adicional.'}</p>
+                  </details>
+                ))}</div>
+              </details>}
+            </div>
+            <footer className="papelera-detail-footer"><span>Registro #{selected.id} · En Papelera</span>
+              <button type="button" className="papelera-restore" onClick={() => restore(selected)}><RotateCcw size={16} /> Restaurar registro</button></footer>
           </section>
         </div>
       )}

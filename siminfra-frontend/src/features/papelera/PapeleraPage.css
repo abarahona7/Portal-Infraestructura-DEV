@@ -20,21 +20,40 @@
 .papelera-row-actions button, .papelera-restore { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .papelera-empty { padding: 28px; background: #fff; border: 1px solid #dbe3ef; border-radius: 10px; color: #64748b; }
 .papelera-overlay { position: fixed; z-index: 99997; inset: 0; display: grid; place-items: center; padding: 16px; background: #0f172a80; }
-.papelera-detail { width: min(620px, 100%); max-height: 90dvh; overflow: auto; padding: 22px; background: #fff; border-radius: 12px; box-shadow: 0 20px 50px #0003; }
-.papelera-detail header { display: flex; justify-content: space-between; gap: 12px; }
-.papelera-detail header h3 { margin: 3px 0 8px; }
-.papelera-detail header small { color: #64748b; }
-.papelera-detail header button { align-self: flex-start; border: 0; background: transparent; cursor: pointer; }
-.papelera-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.papelera-fields div { min-width: 0; padding: 8px; border-radius: 7px; background: #f8fafc; overflow-wrap: anywhere; }
-.papelera-fields dt { color: #64748b; font-size: .76rem; }
-.papelera-fields dd { margin: 3px 0 0; font-weight: 600; }
-.papelera-event { padding: 9px; border-left: 3px solid #60a5fa; background: #f8fafc; }
+.papelera-detail { display: flex; flex-direction: column; width: min(620px, 100%); max-height: min(90dvh, 820px); overflow: hidden; background: #fff; border-radius: 14px; box-shadow: 0 20px 50px #0003; }
+.papelera-detail-header { display: flex; justify-content: space-between; gap: 16px; padding: 22px 24px 18px; border-bottom: 1px solid #e2e8f0; }
+.papelera-detail-header > div { min-width: 0; }
+.papelera-module-tag { display: inline-block; padding: 4px 8px; border-radius: 6px; background: #eff6ff; color: #1d4ed8; font-size: .72rem; font-weight: 700; }
+.papelera-detail-header h3 { margin: 9px 0 6px; color: #0f172a; font-size: 1.2rem; line-height: 1.3; overflow-wrap: anywhere; }
+.papelera-detail-header p { margin: 0; color: #64748b; font-size: .82rem; }
+.papelera-detail-header button { align-self: flex-start; display: grid; place-items: center; flex: none; width: 32px; height: 32px; border: 0; border-radius: 7px; background: transparent; color: #475569; cursor: pointer; }
+.papelera-detail-header button:hover { background: #f1f5f9; }
+.papelera-detail-body { min-height: 0; overflow-y: auto; padding: 19px 24px 22px; }
+.papelera-primary h4 { margin: 0 0 12px; color: #334155; font-size: .88rem; }
+.papelera-muted { margin: 0; color: #64748b; font-size: .85rem; }
+.papelera-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 0; }
+.papelera-fields div { min-width: 0; padding: 10px 12px; border: 1px solid #edf2f8; border-radius: 8px; background: #f8fafc; overflow-wrap: anywhere; }
+.papelera-fields dt { color: #64748b; font-size: .73rem; }
+.papelera-fields dd { margin: 4px 0 0; color: #0f172a; font-size: .88rem; font-weight: 600; line-height: 1.35; }
+.papelera-detail-group { margin-top: 12px; border: 1px solid #dbe3ef; border-radius: 9px; background: #fff; }
+.papelera-detail-group > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; color: #1e3a5f; font-size: .86rem; font-weight: 600; cursor: pointer; list-style: none; }
+.papelera-detail-group > summary::-webkit-details-marker { display: none; }
+.papelera-detail-group > summary small { margin-left: 5px; padding: 2px 6px; border-radius: 5px; background: #eff6ff; color: #1d4ed8; font-size: .74rem; }
+.papelera-detail-group > summary svg { flex: none; transition: transform .16s ease; }
+.papelera-detail-group[open] > summary svg { transform: rotate(180deg); }
+.papelera-detail-group > .papelera-fields, .papelera-detail-group > .papelera-history { margin: 0 14px 14px; }
+.papelera-event { display: grid; gap: 3px; padding: 10px 12px; border-left: 3px solid #60a5fa; border-radius: 6px; background: #f8fafc; font-size: .82rem; overflow-wrap: anywhere; }
+.papelera-event strong { color: #1e3a5f; }
+.papelera-event span { color: #64748b; }
+.papelera-event p { margin: 3px 0 0; line-height: 1.4; white-space: pre-wrap; }
+.papelera-detail-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 24px; border-top: 1px solid #e2e8f0; background: #fff; }
+.papelera-detail-footer span { color: #64748b; font-size: .78rem; }
 .papelera-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 8px; color: #64748b; font-size: .85rem; }
 .papelera-pagination button { min-height: 36px; padding: 7px 12px; border: 1px solid #bfd1ee; border-radius: 7px; background: #fff; color: #1d4ed8; cursor: pointer; }
 .papelera-pagination button:disabled { opacity: .5; cursor: not-allowed; }
-.papelera-history { display: grid; gap: 5px; }
-.papelera-history details { padding: 8px; border: 1px solid #dbe3ef; border-radius: 7px; overflow-wrap: anywhere; }
+.papelera-history { display: grid; gap: 7px; }
+.papelera-history details { padding: 10px 12px; border: 1px solid #dbe3ef; border-radius: 7px; font-size: .82rem; overflow-wrap: anywhere; }
 .papelera-history summary { cursor: pointer; font-weight: 600; }
 .papelera-history p { margin: 8px 0 0; white-space: pre-wrap; font-size: .83rem; }
-@media (max-width: 700px) { .papelera-heading, .papelera-row { align-items: flex-start; flex-direction: column; } .papelera-row-actions { width: 100%; flex-wrap: wrap; } .papelera-fields { grid-template-columns: 1fr; } .papelera-filter, .papelera-filter select, .papelera-report-button { width: 100%; } .papelera-filter { flex-wrap: wrap; } }
+@media (max-width: 700px) { .papelera-heading, .papelera-row { align-items: flex-start; flex-direction: column; } .papelera-row-actions { width: 100%; flex-wrap: wrap; } .papelera-filter, .papelera-filter select, .papelera-report-button { width: 100%; } .papelera-filter { flex-wrap: wrap; } }
+@media (max-width: 480px) { .papelera-overlay { padding: 8px; } .papelera-detail { max-height: 96dvh; } .papelera-detail-header, .papelera-detail-body, .papelera-detail-footer { padding-left: 16px; padding-right: 16px; } .papelera-fields { grid-template-columns: 1fr; } .papelera-detail-footer span { display: none; } .papelera-restore { width: 100%; } }

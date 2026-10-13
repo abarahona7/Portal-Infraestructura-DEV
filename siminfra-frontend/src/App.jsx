@@ -73,6 +73,7 @@ import ModuleToolbar from './components/layout/ModuleToolbar';
 import DepartamentosSubareasPage
   from './features/departamentos/components/DepartamentosSubareasPage';
 import AssetDashboard from './features/activos/AssetDashboard';
+import BajaReviewsPage from './features/revisiones/BajaReviewsPage';
 import EquipoDetailModal from './features/equipos/components/EquipoDetailModal';
 
 import { formatEquipmentType } from './utils/formatEquipmentType';
@@ -110,6 +111,8 @@ export default function App() {
   const [legacyQrToken, setLegacyQrToken] = useState(() => window.location.pathname.match(/^\/qr\/a\/([0-9a-f-]{36})\/?$/i)?.[1] || null);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState(null);
   const [dashboardRevision, setDashboardRevision] = useState(0);
+  const [reviewsRevision, setReviewsRevision] = useState(0);
+  const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const [equipmentDetailRevision, setEquipmentDetailRevision] = useState(0);
 
   const confirmResolverRef = useRef(null);
@@ -300,6 +303,7 @@ export default function App() {
 
   const moduleDataEnabled = !(
     activeModuleTab === 'activos-resumen'
+    || activeModuleTab === 'revisiones-baja'
     || (activeModuleTab === 'ips' && !selectedIpSegment && !normalizedSearch)
   );
 
@@ -324,6 +328,15 @@ export default function App() {
     enabled: moduleDataEnabled,
   });
 
+  useEffect(() => {
+    if (!token || authUser?.role === 'Visualizador') return undefined;
+    const controller = new AbortController();
+    apiClient.get('/revisiones-baja/', { params: { page: 1 }, signal: controller.signal })
+      .then(({ data: result }) => setPendingReviewCount(result.pendientes))
+      .catch(() => {});
+    return () => controller.abort();
+  }, [token, authUser?.role, reviewsRevision]);
+
   const refreshVisibleChanges = (modules) => {
     if (modules.includes(activeModuleTab)) refreshData();
     if (modules.includes('activos-resumen') && tab === 'activos-resumen') {
@@ -332,6 +345,7 @@ export default function App() {
     if (modules.includes('equipos') && selectedEquipmentId) {
       setEquipmentDetailRevision((value) => value + 1);
     }
+    if (modules.includes('revisiones-baja')) setReviewsRevision((value) => value + 1);
     const referenceSections = new Set();
     if (modules.includes(activeModuleTab)) {
       const primarySections = {
@@ -361,6 +375,7 @@ export default function App() {
     onChanges: refreshVisibleChanges,
     onReconnect: () => refreshVisibleChanges([
       activeModuleTab,
+      'revisiones-baja',
       ...(tab === 'activos-resumen' ? ['activos-resumen'] : []),
     ]),
     onUnauthorized: logout,
@@ -565,6 +580,16 @@ export default function App() {
     } catch (error) {
       console.error('Error cargando historial IP:', error.response?.data || error);
       showToast('No se pudo cargar el historial de la IP.', 'error');
+    }
+  };
+
+  const openReviewedResource = async (resource) => {
+    if (resource.tipo === 'equipo') {
+      setSelectedEquipmentId(resource.id);
+    } else if (resource.tipo === 'ip') {
+      await openIpHistory({ id: resource.id, direccion_ip: resource.nombre });
+    } else if (resource.tipo === 'anexo') {
+      await openDetailedItem('anexos', { id: resource.id }, setHistoryAnexo);
     }
   };
 
@@ -979,6 +1004,8 @@ export default function App() {
           activeTab={tab}
           role={authUser?.role}
           onOpenSidebar={openSidebar}
+          onOpenNotifications={() => handleSelectTab('revisiones-baja')}
+          pendingReviewCount={pendingReviewCount}
         />
 
         {/* FILTROS Y ACCIONES */}
@@ -1079,6 +1106,8 @@ export default function App() {
 
         {tab === 'activos-resumen' && <AssetDashboard revision={dashboardRevision} onOpenAsset={(item) => setSelectedEquipmentId(item.id)} onEditAsset={openDashboardAssetForEdit} />}
 
+        {tab === 'revisiones-baja' && <BajaReviewsPage revision={reviewsRevision} onOpenResource={openReviewedResource} onCountChange={setPendingReviewCount} showToast={showToast} />}
+
         {tab === 'departamentos' && (
           <DepartamentosSubareasPage
             departamentos={data}
@@ -1100,6 +1129,7 @@ export default function App() {
             tab !== 'ips' &&
             tab !== 'departamentos' &&
             tab !== 'activos-resumen'
+            && tab !== 'revisiones-baja'
           )
         ) && (
             <>

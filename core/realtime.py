@@ -36,6 +36,7 @@ MODULE_DEPENDENCIES = {
     'PerfilGenerico': ('perfiles',),
     'Departamento': ('departamentos', 'usuarios', 'perfiles', 'pcs-genericos', 'activos-resumen'),
     'SubArea': ('departamentos', 'usuarios', 'perfiles', 'pcs-genericos'),
+    'RevisionBajaUsuario': ('revisiones-baja',),
 }
 
 

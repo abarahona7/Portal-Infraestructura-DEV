@@ -31,6 +31,11 @@ describe('Navegación por rol', () => {
     expect(screen.getByRole('button', { name: 'Notebook' })).toBeInTheDocument();
   });
 
+  it('no agrega un módulo de revisiones al menú', () => {
+    render(<Sidebar {...props} role="Operador Infraestructura" />);
+    expect(screen.queryByRole('button', { name: /Revisiones/ })).not.toBeInTheDocument();
+  });
+
   it('ofrece cerrar sesión desde el sidebar y cierra el menú móvil', () => {
     const onClose = vi.fn();
     const onLogout = vi.fn();

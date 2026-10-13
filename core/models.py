@@ -594,6 +594,24 @@ class HistorialUsuario(models.Model):
         ]
 
 
+class RevisionBajaUsuario(models.Model):
+    """Revisión compartida de recursos liberados por Baja o Licencia Médica."""
+
+    usuario = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True)
+    motivo = models.CharField(max_length=20, choices=[('BAJA', 'Baja'), ('LICENCIA', 'Licencia Médica')], default='BAJA')
+    usuario_nombre = models.CharField(max_length=150)
+    usuario_red = models.CharField(max_length=50)
+    recursos = models.JSONField(default=list)
+    creado_por = models.CharField(max_length=150, blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    revisado_por = models.CharField(max_length=150, blank=True)
+    revisado_en = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-creado_en', '-pk']
+        indexes = [models.Index(fields=['revisado_en', '-creado_en'], name='idx_rev_baja_pendiente')]
+
+
 def registrar_relacion_usuario(
     usuario_id,
     *,

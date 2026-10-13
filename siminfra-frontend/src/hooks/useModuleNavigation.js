@@ -8,6 +8,7 @@ const VALID_TABS = new Set([
   'usuarios',
   'pcs-genericos',
   'activos-resumen',
+  'revisiones-baja',
   'servidores',
   'perfiles',
   'ips',

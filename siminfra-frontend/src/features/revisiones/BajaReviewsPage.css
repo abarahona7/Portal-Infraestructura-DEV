@@ -1,0 +1,22 @@
+.baja-reviews { max-width: 1120px; margin: 20px auto; display: grid; gap: 16px; }
+.baja-reviews-heading, .baja-review-title, .baja-review-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.baja-reviews h2, .baja-review-card h3 { margin: 0 0 4px; color: #102345; }
+.baja-reviews-heading p, .baja-review-title span, .baja-review-footer span { margin: 0; color: #62748e; font-size: .86rem; }
+.baja-reviews-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.baja-reviews button { border: 1px solid #c9d6e9; border-radius: 8px; color: #2457a2; background: #fff; padding: 8px 12px; cursor: pointer; font: inherit; }
+.baja-reviews button:hover, .baja-reviews-tabs .is-active { background: #eaf2ff; }
+.baja-reviews button:disabled { opacity: .5; cursor: not-allowed; }
+.baja-review-card { background: #fff; border: 1px solid #d9e3f0; border-radius: 12px; padding: 18px; box-shadow: 0 3px 12px #1637620a; }
+.baja-review-title strong { color: #2053a2; white-space: nowrap; }
+.baja-review-resources { list-style: none; padding: 0; margin: 14px 0; }
+.baja-review-resources li { display: flex; align-items: center; gap: 12px; border-top: 1px solid #e9eef5; padding: 11px 0; }
+.baja-review-resource { flex: 1; min-width: 0; display: grid; gap: 2px; overflow-wrap: anywhere; }
+.baja-review-resource b { color: #162c4b; font-size: .9rem; }
+.baja-review-resource small { color: #62748e; }
+.baja-review-check input { width: 18px; height: 18px; accent-color: #2457a2; }
+.baja-review-footer { border-top: 1px solid #e9eef5; padding-top: 13px; }
+.baja-review-footer button { background: #245bc0; color: white; border-color: #245bc0; }
+.baja-review-footer button:hover { background: #1d4d9f; }
+.baja-reviews-empty, .baja-reviews-error { padding: 22px; background: #fff; border: 1px solid #d9e3f0; border-radius: 10px; }
+.baja-reviews-pagination { display: flex; justify-content: center; align-items: center; gap: 14px; }
+@media (max-width: 700px) { .baja-reviews-heading, .baja-review-footer { align-items: stretch; flex-direction: column; } .baja-review-resources li { flex-wrap: wrap; } .baja-review-resources li > button { margin-left: 30px; } }

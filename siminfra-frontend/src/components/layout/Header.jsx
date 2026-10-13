@@ -1,4 +1,4 @@
-import { Menu } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 
 import './Header.css';
 import {
@@ -10,6 +10,8 @@ export default function Header({
   activeTab,
   role,
   onOpenSidebar,
+  onOpenNotifications,
+  pendingReviewCount = 0,
 }) {
   const getTitle = () => {
     if (isEquipmentTab(activeTab)) {
@@ -25,6 +27,9 @@ export default function Header({
 
       case 'activos-resumen':
         return 'Equipos / Tablero de activos';
+
+      case 'revisiones-baja':
+        return 'Notificaciones / Recursos por revisar';
 
       case 'pcs-genericos':
         return 'PCs Genéricos';
@@ -79,6 +84,20 @@ export default function Header({
           </p>
         </div>
       </div>
+
+      {role !== 'Visualizador' && (
+        <button
+          type="button"
+          className={`header-notifications-button ${activeTab === 'revisiones-baja' ? 'is-active' : ''}`}
+          onClick={onOpenNotifications}
+          aria-label={`Notificaciones: ${pendingReviewCount} ${pendingReviewCount === 1 ? 'liberación pendiente' : 'liberaciones pendientes'}`}
+          aria-current={activeTab === 'revisiones-baja' ? 'page' : undefined}
+          title="Ver notificaciones de recursos liberados"
+        >
+          <Bell size={21} aria-hidden="true" />
+          {pendingReviewCount > 0 && <span className="header-notifications-count" aria-hidden="true">{pendingReviewCount > 99 ? '99+' : pendingReviewCount}</span>}
+        </button>
+      )}
 
     </header>
   );

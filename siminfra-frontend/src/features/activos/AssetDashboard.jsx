@@ -125,7 +125,7 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
         </div>
       </div>
       <section className="asset-overview-card">
-        <h3>Pendientes por revisar</h3>
+        <h3>PENDIENTES POR REVISAR</h3>
         <p className="asset-overview-help">Selecciona un motivo para ver los equipos. Los equipos sin usuario asignado pueden estar disponibles, en reparación o dados de baja.</p>
         <div className="asset-overview-reasons">
           {reasons.map(([key, label, countKey]) => <button type="button" key={key}

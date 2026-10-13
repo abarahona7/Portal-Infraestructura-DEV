@@ -566,7 +566,7 @@ def _build_equipment_table(
                                 "af",
                                 "",
                             ),
-                            "Sin AF",
+                            "SIN AF",
                         ),
                         styles["table_cell"],
                     ),

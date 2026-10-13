@@ -1611,7 +1611,7 @@ class ActaEntregaPdfTests(SimpleTestCase):
         table = _build_equipment_table(usuario, _build_styles())
         self.assertEqual(table._cellvalues[1][2].text, 'Sin accesorios')
         self.assertEqual(table._cellvalues[1][3].text, 'Sin número de serie')
-        self.assertEqual(table._cellvalues[1][4].text, 'Sin AF')
+        self.assertEqual(table._cellvalues[1][4].text, 'SIN AF')
         self.assertEqual(table._cellvalues[1][5].text, 'Sin estado')
         self.assertEqual(table._cellvalues[2][3].text, 'SER-123')
         self.assertEqual(table._cellvalues[2][4].text, '000123')

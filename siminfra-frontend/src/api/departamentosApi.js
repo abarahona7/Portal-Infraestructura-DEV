@@ -18,9 +18,6 @@ export const updateDepartamento = async (id, payload) => {
   return response.data;
 };
 
-export const deleteDepartamento = async (id) => {
-  await apiClient.delete(`/departamentos/${id}/`);
-};
 
 export const getSubareas = async (params = {}) => {
   const response = await apiClient.get('/subareas/', { params });
@@ -35,8 +32,4 @@ export const createSubarea = async (payload) => {
 export const updateSubarea = async (id, payload) => {
   const response = await apiClient.patch(`/subareas/${id}/`, payload);
   return response.data;
-};
-
-export const deleteSubarea = async (id) => {
-  await apiClient.delete(`/subareas/${id}/`);
 };

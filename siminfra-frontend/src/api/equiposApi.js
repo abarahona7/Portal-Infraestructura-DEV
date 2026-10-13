@@ -24,7 +24,3 @@ export const updateEquipo = async (id, equipo, category) => {
 
   return response.data;
 };
-
-export const deleteEquipo = async (id) => {
-  await apiClient.delete(`/equipos/${id}/`);
-};

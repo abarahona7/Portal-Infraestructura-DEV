@@ -1,6 +1,5 @@
 import {
   Edit,
-  Trash2,
   History,
   UserRound,
 } from 'lucide-react';
@@ -13,7 +12,6 @@ export default function UsuariosTable({
   onSelectUser,
   onShowHistory,
   onEdit,
-  onDelete,
   renderStatusBadge,
 }) {
   const getLineasCorporativas = (usuario) => getCorporateLineNumbers(usuario).join(' / ') || 'N/I';
@@ -46,18 +44,6 @@ export default function UsuariosTable({
         <Edit size={18} />
       </button>
 
-      <button
-        type="button"
-        className="usuario-action usuario-action-delete"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(usuario.id, usuario.nombre_completo);
-        }}
-        title="Eliminar"
-        aria-label={`Eliminar ${usuario.nombre_completo || 'usuario'}`}
-      >
-        <Trash2 size={18} />
-      </button>
     </div>
   );
 

@@ -30,8 +30,8 @@ class PortalRolePermission(BasePermission):
 
     - Visualizador: solo lectura en los viewsets que lo habiliten
       explícitamente con ``viewer_read_only = True``.
-    - Operador Infraestructura: lectura, creación y edición; sin DELETE.
-    - Administrador/superuser: acceso completo.
+    - Operador Infraestructura y Administrador: lectura, creación y edición.
+    - Ningún rol del portal puede retirar registros por DELETE.
 
     De esta forma no dependemos de ocultar botones en el frontend.
     """
@@ -53,6 +53,6 @@ class PortalRolePermission(BasePermission):
             return True
 
         if request.method == 'DELETE':
-            return role == ROLE_ADMIN
+            return False
 
         return role in {ROLE_OPERATOR, ROLE_ADMIN}

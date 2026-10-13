@@ -26,7 +26,3 @@ export const updatePerfil = async (id, perfil) => {
 
   return response.data;
 };
-
-export const deletePerfil = async (id) => {
-  await apiClient.delete(`/perfiles-genericos/${id}/`);
-};

@@ -20,7 +20,3 @@ export const updateAnexo = async (id, anexo) => {
 
   return response.data;
 };
-
-export const deleteAnexo = async (id) => {
-  await apiClient.delete(`/anexos/${id}/`);
-};

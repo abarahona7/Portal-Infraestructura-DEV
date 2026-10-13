@@ -9,10 +9,12 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 from rest_framework.test import APIClient
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import AccessToken
 from cryptography.fernet import Fernet
 from core.models import Usuario, PerfilGenerico, IP, Equipamiento, Anexo, SecurityAuditLog, Departamento, SubArea, PCGenerico, PortalSession, Servidor
 from core.services.acta_entrega_pdf import _build_equipment_table, _build_styles, generar_acta_entrega_pdf
+from core.services.papelera import archive_record
 
 @override_settings(FIELD_ENCRYPTION_KEY=Fernet.generate_key().decode(), LEGACY_DJANGO_SECRET_KEY='legacy-key')
 class SecurityTests(TestCase):
@@ -405,7 +407,7 @@ class SecurityTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('subarea', response.json())
 
-    def test_admin_can_delete_unused_subarea(self):
+    def test_admin_cannot_archive_unused_subarea_from_api(self):
         self.auth(self.admin)
         departamento = Departamento.objects.create(nombre='Tecnología')
         subarea = SubArea.objects.create(
@@ -415,8 +417,8 @@ class SecurityTests(TestCase):
 
         response = self.client.delete(f'/api/subareas/{subarea.pk}/')
 
-        self.assertEqual(response.status_code, 204)
-        self.assertFalse(SubArea.objects.filter(pk=subarea.pk).exists())
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(SubArea.objects.filter(pk=subarea.pk).exists())
 
     def test_admin_cannot_delete_subarea_in_use(self):
         self.auth(self.admin)
@@ -431,9 +433,11 @@ class SecurityTests(TestCase):
 
         response = self.client.delete(f'/api/subareas/{subarea.pk}/')
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 403)
         self.assertTrue(SubArea.objects.filter(pk=subarea.pk).exists())
         self.assertIn('detail', response.json())
+        with self.assertRaises(ValidationError):
+            archive_record(subarea)
 
     def test_admin_can_delete_empty_department_but_not_one_with_subareas(self):
         self.auth(self.admin)
@@ -451,9 +455,12 @@ class SecurityTests(TestCase):
             f'/api/departamentos/{used_structure.pk}/'
         )
 
-        self.assertEqual(deleted.status_code, 204)
-        self.assertEqual(blocked.status_code, 400)
+        self.assertEqual(deleted.status_code, 403)
+        self.assertEqual(blocked.status_code, 403)
+        self.assertTrue(Departamento.objects.filter(pk=empty_department.pk).exists())
         self.assertTrue(Departamento.objects.filter(pk=used_structure.pk).exists())
+        with self.assertRaises(ValidationError):
+            archive_record(used_structure)
 
     def test_ip_rejects_unknown_segment(self):
         self.auth(self.admin)
@@ -515,13 +522,14 @@ class SecurityTests(TestCase):
         )
 
         blocked = self.client.delete(f'/api/ips/{ip.pk}/')
-        self.assertEqual(blocked.status_code, 400)
+        self.assertEqual(blocked.status_code, 403)
         self.assertTrue(IP.objects.filter(pk=ip.pk).exists())
 
         ip.usuario = None
         ip.save()
         deleted = self.client.delete(f'/api/ips/{ip.pk}/')
-        self.assertEqual(deleted.status_code, 204)
+        self.assertEqual(deleted.status_code, 403)
+        archive_record(ip)
         self.assertFalse(IP.objects.filter(pk=ip.pk).exists())
 
     def test_usuario_can_have_only_one_ip(self):
@@ -653,7 +661,7 @@ class SecurityTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('subarea', response.json())
 
-    def test_admin_can_permanently_delete_perfil_generico(self):
+    def test_admin_cannot_archive_perfil_generico_from_api(self):
         self.auth(self.admin)
         perfil = PerfilGenerico.objects.create(
             nombre='Perfil Histórico',
@@ -666,8 +674,8 @@ class SecurityTests(TestCase):
             f'/api/perfiles-genericos/{perfil.pk}/'
         )
 
-        self.assertEqual(response.status_code, 204)
-        self.assertFalse(PerfilGenerico.objects.filter(pk=perfil.pk).exists())
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(PerfilGenerico.objects.filter(pk=perfil.pk).exists())
 
     def test_operator_can_deactivate_perfil_with_patch(self):
         self.auth(self.operator)
@@ -755,8 +763,12 @@ class SecurityTests(TestCase):
             f'/api/departamentos/{departamento.pk}/'
         )
 
-        self.assertEqual(subarea_response.status_code, 400)
-        self.assertEqual(departamento_response.status_code, 400)
+        self.assertEqual(subarea_response.status_code, 403)
+        self.assertEqual(departamento_response.status_code, 403)
+        with self.assertRaises(ValidationError):
+            archive_record(subarea)
+        with self.assertRaises(ValidationError):
+            archive_record(departamento)
         self.assertTrue(SubArea.objects.filter(pk=subarea.pk).exists())
         self.assertTrue(Departamento.objects.filter(pk=departamento.pk).exists())
 
@@ -1058,10 +1070,11 @@ class ServerIpIntegrationTests(TestCase):
         self.assertEqual(self.second_ip.estado, 'RESERVADA')
 
         blocked_delete = self.client.delete(f'/api/ips/{self.second_ip.pk}/')
-        self.assertEqual(blocked_delete.status_code, 400)
+        self.assertEqual(blocked_delete.status_code, 403)
 
         deleted = self.client.delete(f'/api/servidores/{servidor_id}/')
-        self.assertEqual(deleted.status_code, 204)
+        self.assertEqual(deleted.status_code, 403)
+        archive_record(Servidor.objects.get(pk=servidor_id))
         self.second_ip.refresh_from_db()
         self.assertEqual(self.second_ip.estado, 'LIBRE')
         self.assertIsNone(self.second_ip.asignado_otro)
@@ -1207,7 +1220,8 @@ class PCGenericoIpIntegrationTests(TestCase):
         )
         self.assertEqual(reassigned.status_code, 200)
         deleted = self.client.delete(f'/api/pcs-genericos/{pc_id}/')
-        self.assertEqual(deleted.status_code, 204)
+        self.assertEqual(deleted.status_code, 403)
+        archive_record(PCGenerico.objects.get(pk=pc_id))
         self.first_ip.refresh_from_db()
         self.assertEqual(self.first_ip.estado, 'LIBRE')
         self.assertIsNone(self.first_ip.asignado_otro)

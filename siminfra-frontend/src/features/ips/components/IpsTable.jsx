@@ -1,7 +1,6 @@
 import {
   Edit,
   History,
-  Trash2,
   Network
 } from 'lucide-react';
 
@@ -12,14 +11,8 @@ export default function IpsTable({
   renderIpStatusBadge,
   onShowHistory,
   onEdit,
-  onDelete,
 }) {
-  const Actions = ({ ip }) => {
-    const deleteBlocked = Boolean(
-      ip.tipo_asignacion || ip.usuario || ip.asignado_otro
-    );
-
-    return (
+  const Actions = ({ ip }) => (
       <div className="ips-actions">
         <button
           type="button"
@@ -41,36 +34,8 @@ export default function IpsTable({
           <Edit size={18} />
         </button>
 
-        <button
-          type="button"
-          className="ip-action ip-action-delete"
-          onClick={() => {
-            if (!deleteBlocked) {
-              onDelete(ip.id, ip.direccion_ip);
-            }
-          }}
-          disabled={deleteBlocked}
-          title={
-            deleteBlocked
-              ? 'Libera esta IP desde el módulo que administra su asignación'
-              : 'Eliminar'
-          }
-          aria-label={
-            deleteBlocked
-              ? 'IP asignada; no se puede eliminar'
-              : 'Eliminar IP'
-          }
-          style={
-            deleteBlocked
-              ? { opacity: 0.4, cursor: 'not-allowed' }
-              : undefined
-          }
-        >
-          <Trash2 size={18} />
-        </button>
       </div>
-    );
-  };
+  );
 
   return (
     <>

@@ -32,9 +32,3 @@ export const updateServidor = async (
 
   return response.data;
 };
-
-export const deleteServidor = async (id) => {
-  await apiClient.delete(
-    `/servidores/${id}/`
-  );
-};

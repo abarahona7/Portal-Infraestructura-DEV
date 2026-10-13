@@ -4,12 +4,14 @@ from django.db import IntegrityError
 from django.test import TestCase, TransactionTestCase
 from rest_framework.test import APIClient
 
+from core.audit import reset_current_audit_user, set_current_audit_user
 from core.management.commands.limpiar_datos_v11 import DELETE_ORDER
 from core.models import (
     Departamento,
     HistorialPerfilGenerico,
     PerfilGenerico,
 )
+from core.services.papelera import archive_record
 
 
 class ProfileHistoryApiTests(TestCase):
@@ -77,8 +79,12 @@ class ProfileHistoryApiTests(TestCase):
             ['MODIFICACION', 'CREACION'],
         )
 
-        deleted = self.client.delete(f'/api/perfiles-genericos/{profile_id}/')
-        self.assertEqual(deleted.status_code, 204)
+        self.assertEqual(self.client.delete(f'/api/perfiles-genericos/{profile_id}/').status_code, 403)
+        token = set_current_audit_user(self.admin)
+        try:
+            archive_record(PerfilGenerico.objects.get(pk=profile_id), reason='Solicitud técnica')
+        finally:
+            reset_current_audit_user(token)
         deletion_history = HistorialPerfilGenerico.objects.get(
             perfil_id=profile_id,
             perfil_usuario='perfil.auditado',

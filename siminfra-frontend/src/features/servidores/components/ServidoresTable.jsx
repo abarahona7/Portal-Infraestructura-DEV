@@ -1,7 +1,6 @@
 import {
   Edit,
   History,
-  Trash2,
   Server
 } from 'lucide-react';
 
@@ -11,7 +10,6 @@ export default function ServidoresTable({
   servidores,
   onShowHistory,
   onEdit,
-  onDelete,
 }) {
   const Actions = ({ servidor }) => (
     <div className="servidores-actions">
@@ -37,20 +35,6 @@ export default function ServidoresTable({
         <Edit size={18} />
       </button>
 
-      <button
-        type="button"
-        className="servidor-action servidor-action-delete"
-        onClick={() =>
-          onDelete(
-            servidor.id,
-            servidor.hostname
-          )
-        }
-        title="Eliminar"
-        aria-label="Eliminar servidor"
-      >
-        <Trash2 size={18} />
-      </button>
     </div>
   );
 

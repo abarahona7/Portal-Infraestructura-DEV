@@ -30,8 +30,8 @@ reemplaza las validaciones del backend.
 
 - `Visualizador`: acceso únicamente a Anexos, solo lectura.
 - `Operador Infraestructura`: lectura, creación, edición y asignación; no elimina ni revela secretos.
-- `Administrador`: acceso completo y revelado de secretos tras reautenticación.
-- Superuser: tratado como Administrador.
+- `Administrador`: gestión y revelado de secretos tras reautenticación; no elimina registros desde el portal.
+- Superuser: tratado como Administrador en la API. El archivo técnico se opera fuera del portal.
 
 ## Desarrollo local
 
@@ -80,6 +80,8 @@ iniciar el portal.
 Seguir [PRODUCTION_RUNBOOK.md](PRODUCTION_RUNBOOK.md) para preparar MySQL,
 migrar los datos, compilar el frontend, validar el despliegue y configurar los
 respaldos.
+Para preparar una copia de código limpia y verificable para QA, seguir
+[Entrega a QA](docs/ENTREGA_QA.md).
 
 ## Documentación técnica
 
@@ -92,5 +94,6 @@ respaldos.
 - [Acceso al entorno DEV desde la oficina](docs/ACCESO_OFICINA_DEV.md)
 - [Histórico de importación v1.1](docs/historico/importacion/IMPORTACION_V11.md)
 - [Histórico de rendimiento v1.1](docs/historico/rendimiento/RENDIMIENTO_V11.md)
+- [Archivo técnico y protocolos](docs/PAPELERA_Y_PROTOCOLOS.md)
 
 La entrega no incluye bases de datos, `.env` reales, claves, `node_modules`, `venv`, caches, backups ni `.git`.

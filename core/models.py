@@ -1310,6 +1310,7 @@ class PapeleraEvento(models.Model):
     realizado_por = models.CharField(max_length=150, null=True, blank=True)
     fecha = models.DateTimeField(auto_now_add=True)
     detalle = models.TextField(blank=True, default='')
+    contexto = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ['-fecha', '-pk']

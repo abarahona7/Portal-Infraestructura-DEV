@@ -7,7 +7,6 @@ import {
   Plus,
   Power,
   Search,
-  Trash2,
 } from 'lucide-react';
 
 import CreateModal from '../../../components/common/CreateModal';
@@ -15,8 +14,6 @@ import EditModal from '../../../components/common/EditModal';
 import {
   createDepartamento,
   createSubarea,
-  deleteDepartamento,
-  deleteSubarea,
   updateDepartamento,
   updateSubarea,
 } from '../../../api/departamentosApi';
@@ -55,14 +52,12 @@ export default function DepartamentosSubareasPage({
   onRefresh,
   showToast,
   requestConfirmation,
-  role,
 }) {
   const [selectedDepartmentId, setSelectedDepartmentId] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [modal, setModal] = useState(null);
   const [saving, setSaving] = useState(false);
-  const canDelete = role === 'Administrador';
 
   const filteredDepartments = useMemo(() => {
     const term = normalize(search);
@@ -297,45 +292,6 @@ export default function DepartamentosSubareasPage({
     }
   };
 
-  const removeSubarea = async (subarea) => {
-    const confirmed = await requestConfirmation?.({
-      title: 'Enviar área a Papelera',
-      message: `¿Deseas enviar "${subarea.nombre}" a Papelera? Esta acción solo se permite si no tiene registros activos asociados.`,
-      confirmText: 'Enviar a Papelera',
-      danger: true,
-    });
-
-    if (confirmed === false) return;
-
-    try {
-      await deleteSubarea(subarea.id);
-      showToast?.('Área enviada a Papelera.', 'success');
-      await onRefresh?.();
-    } catch (error) {
-      showToast?.(getApiErrorMessage(error), 'error');
-    }
-  };
-
-  const removeDepartment = async (department) => {
-    const confirmed = await requestConfirmation?.({
-      title: 'Enviar departamento a Papelera',
-      message: `¿Deseas enviar "${department.nombre}" a Papelera? Solo se permite si no tiene registros activos asociados.`,
-      confirmText: 'Enviar a Papelera',
-      danger: true,
-    });
-
-    if (confirmed === false) return;
-
-    try {
-      await deleteDepartamento(department.id);
-      showToast?.('Departamento enviado a Papelera.', 'success');
-      setSelectedDepartmentId(null);
-      await onRefresh?.();
-    } catch (error) {
-      showToast?.(getApiErrorMessage(error), 'error');
-    }
-  };
-
   const modalTitle = (() => {
     switch (modal?.type) {
       case 'department-create':
@@ -495,17 +451,6 @@ export default function DepartamentosSubareasPage({
                 {selectedDepartment.activo ? <Power size={15} /> : <CheckCircle2 size={15} />}
                 {selectedDepartment.activo ? 'Desactivar' : 'Activar'}
               </button>
-              {canDelete && (
-                <button
-                  type="button"
-                  className="department-secondary-action is-danger"
-                  onClick={() => removeDepartment(selectedDepartment)}
-                  title="Eliminar departamento definitivamente"
-                >
-                  <Trash2 size={15} />
-                  Eliminar
-                </button>
-              )}
             </div>
           </div>
 
@@ -571,17 +516,6 @@ export default function DepartamentosSubareasPage({
                       >
                         {subarea.activo ? <Power size={14} /> : <CheckCircle2 size={14} />}
                       </button>
-                      {canDelete && (
-                        <button
-                          type="button"
-                          className="is-delete"
-                          onClick={() => removeSubarea(subarea)}
-                          title="Eliminar área definitivamente"
-                          aria-label={`Eliminar ${subarea.nombre}`}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
                     </div>
                   </div>
                   ))}

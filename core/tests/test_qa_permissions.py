@@ -89,7 +89,7 @@ class QAMatrizRolesTests(TestCase):
             format='json',
         ).status_code, 403)
 
-    def test_administrador_y_superusuario_pueden_eliminar_recurso_libre(self):
+    def test_administrador_y_superusuario_no_pueden_archivar_desde_api(self):
         for index, role in enumerate(('Administrador', 'Superusuario'), 1):
             with self.subTest(role=role):
                 extension = Anexo.objects.create(numero_anexo=f'861{index}')
@@ -100,8 +100,8 @@ class QAMatrizRolesTests(TestCase):
                 ).status_code, 200)
                 self.assertEqual(self.client.delete(
                     f'/api/anexos/{extension.pk}/',
-                ).status_code, 204)
-                self.assertFalse(Anexo.objects.filter(pk=extension.pk).exists())
+                ).status_code, 403)
+                self.assertTrue(Anexo.objects.filter(pk=extension.pk).exists())
 
     def test_tablero_y_ficha_qr_exigen_sesion(self):
         self.authenticate(None)

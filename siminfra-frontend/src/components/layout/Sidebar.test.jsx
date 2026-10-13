@@ -40,4 +40,9 @@ describe('Navegación por rol', () => {
     expect(onClose).toHaveBeenCalledOnce();
     expect(onLogout).toHaveBeenCalledOnce();
   });
+
+  it('no muestra Papelera al Administrador', () => {
+    render(<Sidebar {...props} role="Administrador" />);
+    expect(screen.queryByRole('button', { name: 'Papelera' })).not.toBeInTheDocument();
+  });
 });

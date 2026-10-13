@@ -4,8 +4,8 @@ Este procedimiento publica el portal con MySQL 8.4, HTTPS y el perfil
 `config.settings_production`. Los secretos reales se guardan únicamente en el
 `.env` del servidor y nunca se agregan a Git.
 
-Estado actual de la reconstrucción: las migraciones hasta `core.0062` y las
-pruebas funcionales se validaron en MySQL **DEV**. Antes de aplicar 0059/0060 se
+Estado actual de la reconstrucción: las migraciones hasta `core.0063` están
+aplicadas en MySQL **DEV**. Antes de aplicar 0059/0060 se
 restauró un respaldo nuevo en MySQL 8.4 aislado y se verificaron conteos y QR;
 el resultado está en [la guía de actualización](docs/ACTUALIZACION_MYSQL_84.md).
 QA y producción necesitan sus propias bases,
@@ -228,7 +228,8 @@ restringir el acceso a los registros.
 1. Iniciar sesión y recargar la página sin perder la sesión.
 2. Esperar cinco minutos sin actividad y comprobar el cierre automático.
 3. Crear, cambiar y liberar una IP de usuario; crear y cambiar la IP de un
-   servidor de prueba, y confirmar que al eliminar ese servidor se libera.
+   servidor de prueba. Si se ensaya su retiro técnico, confirmar que libera
+   la IP y que su historial conserva el movimiento.
 4. Asignar un notebook y confirmar la IP sincronizada.
    Con otra sesión abierta en el listado, confirmar que la ficha y el listado
    muestran el cambio sin F5. Cortar y restablecer la red para comprobar la

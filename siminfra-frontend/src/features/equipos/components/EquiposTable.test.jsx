@@ -22,7 +22,6 @@ describe('Listado de equipos', () => {
       onSelectEquipment={onSelectEquipment}
       onShowHistory={onShowHistory}
       onEdit={onEdit}
-      onDelete={vi.fn()}
       role="Administrador"
     />);
 
@@ -43,5 +42,6 @@ describe('Listado de equipos', () => {
     expect(onShowHistory).toHaveBeenCalledWith(equipment);
     expect(onSelectEquipment).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: /QR/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Eliminar/i })).not.toBeInTheDocument();
   });
 });

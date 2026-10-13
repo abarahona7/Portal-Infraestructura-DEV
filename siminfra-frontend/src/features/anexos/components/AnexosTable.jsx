@@ -1,6 +1,5 @@
 import {
   Edit,
-  Trash2,
   History,
   PhoneCall
 } from 'lucide-react';
@@ -12,7 +11,6 @@ export default function AnexosTable({
   renderAnexoStatusBadge,
   onShowHistory,
   onEdit,
-  onDelete,
   role,
 }) {
   const canModify = role !== 'Visualizador';
@@ -43,20 +41,6 @@ export default function AnexosTable({
             <Edit size={18} />
           </button>
 
-          <button
-            type="button"
-            className="anexo-action anexo-action-delete"
-            onClick={() =>
-              onDelete(
-                anexo.id,
-                anexo.numero_anexo
-              )
-            }
-            title="Eliminar"
-            aria-label="Eliminar anexo"
-          >
-            <Trash2 size={18} />
-          </button>
         </>
       )}
     </div>

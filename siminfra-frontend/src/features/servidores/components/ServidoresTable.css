@@ -196,18 +196,6 @@
 }
 
 
-/* ELIMINAR */
-
-.servidor-action-delete {
-  color: #dc2626;
-
-  background-color: #fef2f2;
-}
-
-.servidor-action-delete:hover {
-  background-color: #fee2e2;
-}
-
 
 /* =========================
    CARDS RESPONSIVE

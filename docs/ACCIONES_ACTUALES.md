@@ -10,11 +10,13 @@ que el backend vuelve a validar. Las diferencias detectadas para QA están en
 | --- | --- | --- | --- | --- | --- |
 | Visualizador | Solo Anexos: listado, búsqueda, filtros, paginación e historial | No | No | No | No |
 | Operador Infraestructura | Usuarios, Departamentos/Áreas, Equipos, Tablero de activos, Ficha QR, PCs genéricos, Gestión de IP, Servidores, Anexos y Perfiles genéricos | Donde existe la acción; Tablero y QR son de consulta | Donde existe la exportación | No | No |
-| Administrador | Todos los módulos | Sí | Sí | Sí, según las reglas del módulo | Sí, tras reautenticación |
-| Superusuario | Igual que Administrador | Sí | Sí | Sí, según las reglas del módulo | Sí, tras reautenticación |
+| Administrador | Todos los módulos | Sí | Sí | No | Sí, tras reautenticación |
+| Superusuario | Igual que Administrador | Sí | Sí | No desde la API; archivo técnico fuera del portal | Sí, tras reautenticación |
 
 La autorización se comprueba en el backend. Ocultar un botón en la interfaz
 mejora la experiencia, pero no es el control de seguridad definitivo.
+Los retiros excepcionales se gestionan con el comando técnico documentado en
+[Archivo técnico y protocolos](PAPELERA_Y_PROTOCOLOS.md); la API rechaza `DELETE`.
 
 ## Acciones por módulo
 
@@ -23,7 +25,7 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
 - Seleccionar un departamento o área y consultar sus usuarios, o buscar por
   nombre y otros datos en todas las áreas.
 - Buscar con actualización diferida breve, paginar y exportar el resultado.
-- Agregar, editar, eliminar con permiso administrativo y abrir la ficha.
+- Agregar, editar y abrir la ficha. El cambio a `BAJA` conserva el registro.
 - Elegir primero el segmento de red y luego una IP disponible.
 - Consultar IP, hostname, teléfono, anexo, equipos y credenciales asociados.
 - Asignar equipos y anexo mediante sus módulos relacionados.
@@ -48,7 +50,7 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
 - Buscar, filtrar por estado, paginar y exportar. Al crear un equipo desde una
   categoría, el tipo queda fijado; en Periféricos solo se ofrecen tipos de
   periférico. El backend valida la misma relación al guardar.
-- Agregar, editar, eliminar con permiso administrativo y consultar historial.
+- Agregar, editar y consultar historial.
 - Asignar o desasignar un usuario.
 - Ver en Notebook la IP que pertenece al usuario asignado.
 - Revelar PIN u otro secreto admitido como administrador, previa
@@ -67,14 +69,14 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
 - Mantener un único propietario: usuario, servidor, PC genérico u otro uso.
 - Sincronizar automáticamente la dirección, el propietario y el estado.
 - Liberar una IP desde el módulo que posee la asignación.
-- Eliminar como administrador solo cuando su estado es `LIBRE` y no existe un
-  vínculo activo con usuario, servidor, PC genérico u otra asignación. Una
-  asignación activa impide además el borrado directo por ORM.
+- El archivo técnico solo admite una IP `LIBRE` sin vínculo activo con usuario,
+  servidor, PC genérico u otra asignación. Una asignación activa impide además
+  el borrado directo por ORM.
 
 ### Anexos
 
 - Listar, buscar, filtrar, paginar y exportar.
-- Agregar, editar y eliminar con permiso administrativo.
+- Agregar y editar.
 - Asignar o liberar un usuario y mantener coherentes dueño y estado.
 - Consultar el historial de movimientos.
 - Permitir al Visualizador únicamente las acciones de consulta e historial.
@@ -83,7 +85,7 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
 
 - Filtrar por departamento o subárea, buscar, paginar y exportar.
 - Agregar, editar, activar, desactivar y consultar historial.
-- Eliminar con permiso administrativo.
+- El retiro excepcional se realiza fuera del portal mediante el archivo técnico.
 - Revelar la contraseña como administrador, previa reautenticación.
 
 ### Departamentos y subáreas
@@ -92,8 +94,8 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
 - Agregar, editar, activar o desactivar departamentos.
 - Agregar una subárea cuando el departamento está activo.
 - Editar, activar o desactivar subáreas sin perder las relaciones existentes.
-- Eliminar como administrador solo cuando no existen usuarios, perfiles, PCs
-  genéricos ni subáreas relacionados, según el tipo de registro.
+- El archivo técnico bloquea el retiro si existen usuarios, perfiles, PCs
+  genéricos o subáreas activos relacionados, según el tipo de registro.
 
 ### PCs genéricos
 
@@ -101,16 +103,16 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
 - Agregar, editar y relacionar departamento o subárea.
 - Elegir un segmento y luego una IP disponible.
 - Mostrar la IP asignada y sincronizar sus cambios con Gestión de IP.
-- Consultar historial, revelar contraseña como administrador y eliminar con
-  permiso administrativo.
+- Consultar historial y revelar contraseña como administrador. El retiro
+  excepcional se realiza mediante el archivo técnico.
 
 ### Servidores
 
 - Buscar, paginar y exportar.
 - Agregar y editar seleccionando una IP disponible de `172.23.1.0/24`.
 - Cambiar la IP y sincronizar su estado en Gestión de IP. La API exige una IP
-  al crear o editar; eliminar el servidor libera su IP.
-- Consultar historial y eliminar con permiso administrativo.
+  al crear o editar; archivar técnicamente el servidor libera su IP.
+- Consultar historial. El retiro excepcional se realiza fuera del portal.
 
 ## Flujo común al confirmar
 
@@ -124,5 +126,5 @@ mejora la experiencia, pero no es el control de seguridad definitivo.
    seguridad.
 5. La interfaz informa el resultado y actualiza los registros afectados.
 
-Texto contrastado con la implementación del repositorio al 05-10-2026. El
+Texto revisado para la entrega a QA del 13-10-2026. El
 diagrama histórico conserva su fecha original hasta su actualización.

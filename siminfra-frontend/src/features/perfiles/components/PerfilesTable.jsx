@@ -4,7 +4,6 @@ import {
   History,
   Power,
   PowerOff,
-  Trash2,
   UserCog,
 } from 'lucide-react';
 
@@ -17,7 +16,6 @@ export default function PerfilesTable({
   renderAccountTypeBadge,
   onShowHistory,
   onEdit,
-  onDelete,
   onToggleStatus,
   role,
   onRevealSecret,
@@ -99,22 +97,6 @@ export default function PerfilesTable({
           {active ? <PowerOff size={17} /> : <Power size={17} />}
         </button>
 
-        {role === 'Administrador' && (
-          <button
-            type="button"
-            className="perfil-action perfil-action-delete"
-            onClick={() =>
-              onDelete?.(
-                perfil.id,
-                perfil.nombre || perfil.usuario || 'Perfil Genérico'
-              )
-            }
-            title="Eliminar perfil permanentemente"
-            aria-label={`Eliminar ${perfil.nombre || perfil.usuario || 'perfil'}`}
-          >
-            <Trash2 size={17} />
-          </button>
-        )}
       </div>
     );
   };

@@ -2,7 +2,9 @@ from django.contrib.auth.models import Group, User
 from django.test import TestCase
 from rest_framework.test import APIClient
 
+from core.audit import reset_current_audit_user, set_current_audit_user
 from core.models import HistorialServidor, IP, Servidor
+from core.services.papelera import archive_record
 
 
 class ServerHistoryApiTests(TestCase):
@@ -69,12 +71,15 @@ class ServerHistoryApiTests(TestCase):
             ['MODIFICACION', 'CREACION'],
         )
 
-    def test_delete_is_audited_and_releases_ip(self):
+    def test_technical_archive_is_audited_and_releases_ip(self):
         server_id = self.create_server()
 
-        deleted = self.client.delete(f'/api/servidores/{server_id}/')
-
-        self.assertEqual(deleted.status_code, 204)
+        self.assertEqual(self.client.delete(f'/api/servidores/{server_id}/').status_code, 403)
+        token = set_current_audit_user(self.admin)
+        try:
+            archive_record(Servidor.objects.get(pk=server_id), reason='Solicitud técnica')
+        finally:
+            reset_current_audit_user(token)
         self.assertFalse(Servidor.objects.filter(pk=server_id).exists())
         self.first_ip.refresh_from_db()
         self.assertEqual(self.first_ip.estado, 'LIBRE')

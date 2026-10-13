@@ -21,9 +21,6 @@ export const updateIp = async (id, ip) => {
   return response.data;
 };
 
-export const deleteIp = async (id) => {
-  await apiClient.delete(`/ips/${id}/`);
-};
 
 export const getIpAssignmentHistory = async (id) => {
   const response = await apiClient.get(`/ips/${id}/historial/`);

@@ -1,6 +1,5 @@
 import {
   Edit,
-  Trash2,
   History,
   Eye,
   MonitorCog
@@ -19,7 +18,6 @@ export default function PCsGenericosTable({
   pcs,
   onShowHistory,
   onEdit,
-  onDelete,
   role,
   onRevealSecret,
 }) {
@@ -81,20 +79,6 @@ export default function PCsGenericosTable({
         <Edit size={18} />
       </button>
 
-      <button
-        type="button"
-        className="pc-action pc-action-delete"
-        onClick={() =>
-          onDelete(
-            pc.id,
-            pc.hostname
-          )
-        }
-        title="Eliminar"
-        aria-label="Eliminar PC Genérico"
-      >
-        <Trash2 size={18} />
-      </button>
     </div>
   );
 

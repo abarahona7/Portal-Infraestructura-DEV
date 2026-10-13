@@ -1,6 +1,5 @@
 import {
   Edit,
-  Trash2,
   History,
   Laptop,
   Monitor,
@@ -65,7 +64,6 @@ export default function EquiposTable({
   onShowHistory,
   onSelectEquipment,
   onEdit,
-  onDelete,
   role,
   onRevealSecret,
 }) {
@@ -109,22 +107,6 @@ export default function EquiposTable({
         <Edit size={18} />
       </button>
 
-      <button
-        type="button"
-        className="equipo-action equipo-action-delete"
-        onClick={(event) => {
-          event.stopPropagation();
-          onDelete(
-            equipo.id,
-            `${equipo.marca || ''} ${equipo.modelo || ''
-            }`
-          );
-        }}
-        title="Eliminar"
-        aria-label="Eliminar equipo"
-      >
-        <Trash2 size={18} />
-      </button>
     </div>
   );
 

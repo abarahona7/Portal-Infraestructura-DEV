@@ -20,7 +20,6 @@ export default function ModuleTable({
   onShowIpHistory,
   onShowProfileHistory,
   onEdit,
-  onDelete,
   onToggleProfileStatus,
   renderAnexoStatusBadge,
   onShowAnexoHistory,
@@ -36,7 +35,6 @@ export default function ModuleTable({
         onSelectUser={onSelectUser}
         onShowHistory={onShowUserHistory}
         onEdit={onEdit}
-        onDelete={onDelete}
         role={role}
         onRevealSecret={onRevealSecret}
         renderStatusBadge={renderUsuarioStatusBadge}
@@ -52,7 +50,6 @@ export default function ModuleTable({
         onShowHistory={onShowEquipmentHistory}
         onSelectEquipment={onSelectEquipment}
         onEdit={onEdit}
-        onDelete={onDelete}
         role={role}
         onRevealSecret={onRevealSecret}
       />
@@ -66,7 +63,6 @@ export default function ModuleTable({
         renderAccountTypeBadge={renderAccountTypeBadge}
         onShowHistory={onShowProfileHistory}
         onEdit={onEdit}
-        onDelete={onDelete}
         onToggleStatus={onToggleProfileStatus}
         role={role}
         onRevealSecret={onRevealSecret}
@@ -81,7 +77,6 @@ export default function ModuleTable({
         renderIpStatusBadge={renderIpStatusBadge}
         onShowHistory={onShowIpHistory}
         onEdit={onEdit}
-        onDelete={onDelete}
       />
     );
   }
@@ -93,7 +88,6 @@ export default function ModuleTable({
         renderAnexoStatusBadge={renderAnexoStatusBadge}
         onShowHistory={onShowAnexoHistory}
         onEdit={onEdit}
-        onDelete={onDelete}
         role={role}
       />
     );
@@ -105,7 +99,6 @@ export default function ModuleTable({
         pcs={data}
         onShowHistory={onShowPCGenericoHistory}
         onEdit={onEdit}
-        onDelete={onDelete}
         role={role}
         onRevealSecret={onRevealSecret}
       />
@@ -118,7 +111,6 @@ export default function ModuleTable({
         servidores={data}
         onShowHistory={onShowServidorHistory}
         onEdit={onEdit}
-        onDelete={onDelete}
       />
     );
   }

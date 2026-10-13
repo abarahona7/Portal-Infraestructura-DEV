@@ -1,6 +1,5 @@
 import { createItemByTab } from '../services/createItemService';
 import { updateItemByTab } from '../services/updateItemService';
-import { deleteItemByTab } from '../services/deleteItemService';
 import { getItemDetailsByTab } from '../services/getItemService';
 
 import { prepareCreatePayload } from '../utils/prepareCreatePayload';
@@ -248,53 +247,8 @@ export const useModuleCrud = ({
     }
   };
 
-  const handleDelete = async (id, nombre) => {
-    const confirmed = await requestConfirmation?.({
-      title: 'Enviar a Papelera',
-      message: `¿Quieres enviar "${nombre}" a Papelera? Podrás consultar y restaurar el registro después. Las asignaciones liberadas deberán revisarse manualmente.`,
-      confirmText: 'Enviar a Papelera',
-      danger: true,
-    });
-
-    if (confirmed === false) {
-      return;
-    }
-
-    try {
-      await deleteItemByTab(tab, id);
-
-      showToast?.(
-        'Registro enviado a Papelera.',
-        'success'
-      );
-
-      try {
-        await refreshAllData();
-      } catch (refreshError) {
-        console.error(
-          'Registro eliminado, pero ocurrió un error actualizando los datos:',
-          refreshError
-        );
-      }
-    } catch (error) {
-      console.error(
-        'Error al eliminar registro:',
-        error.response?.data || error
-      );
-
-      showToast?.(
-        extractApiErrorMessage(
-          error,
-          'No se pudo eliminar el registro.'
-        ),
-        'error'
-      );
-    }
-  };
-
   return {
     handleCreateSave,
     handleSave,
-    handleDelete,
   };
 };

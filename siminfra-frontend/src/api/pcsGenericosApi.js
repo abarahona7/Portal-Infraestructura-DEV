@@ -29,9 +29,3 @@ export const updatePcGenerico = async (id, pc) => {
 
   return response.data;
 };
-
-export const deletePcGenerico = async (id) => {
-  await apiClient.delete(
-    `/pcs-genericos/${id}/`
-  );
-};

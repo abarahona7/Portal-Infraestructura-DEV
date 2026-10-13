@@ -73,7 +73,6 @@ import ModuleToolbar from './components/layout/ModuleToolbar';
 import DepartamentosSubareasPage
   from './features/departamentos/components/DepartamentosSubareasPage';
 import AssetDashboard from './features/activos/AssetDashboard';
-import PapeleraPage from './features/papelera/PapeleraPage';
 import EquipoDetailModal from './features/equipos/components/EquipoDetailModal';
 
 import { formatEquipmentType } from './utils/formatEquipmentType';
@@ -301,7 +300,6 @@ export default function App() {
 
   const moduleDataEnabled = !(
     activeModuleTab === 'activos-resumen'
-    || activeModuleTab === 'papelera'
     || (activeModuleTab === 'ips' && !selectedIpSegment && !normalizedSearch)
   );
 
@@ -432,7 +430,6 @@ export default function App() {
   const {
     handleCreateSave,
     handleSave,
-    handleDelete,
   } = useModuleCrud({
     tab: activeModuleTab,
     equipmentCategory,
@@ -1082,17 +1079,12 @@ export default function App() {
 
         {tab === 'activos-resumen' && <AssetDashboard revision={dashboardRevision} onOpenAsset={(item) => setSelectedEquipmentId(item.id)} onEditAsset={openDashboardAssetForEdit} />}
 
-        {tab === 'papelera' && authUser?.role === 'Administrador' && (
-          <PapeleraPage requestConfirmation={requestConfirmation} showToast={showToast} />
-        )}
-
         {tab === 'departamentos' && (
           <DepartamentosSubareasPage
             departamentos={data}
             onRefresh={refreshAllData}
             showToast={showToast}
             requestConfirmation={requestConfirmation}
-            role={authUser?.role}
           />
         )}
 
@@ -1108,7 +1100,6 @@ export default function App() {
             tab !== 'ips' &&
             tab !== 'departamentos' &&
             tab !== 'activos-resumen'
-            && tab !== 'papelera'
           )
         ) && (
             <>
@@ -1321,7 +1312,6 @@ export default function App() {
                     handleOpenEditModal
                   }
 
-                  onDelete={handleDelete}
                   onToggleProfileStatus={handleToggleProfileStatus}
                   role={authUser?.role}
                   onRevealSecret={setSecretRequest}

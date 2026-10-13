@@ -78,7 +78,7 @@ class QAIpServidorTests(TestCase):
 
         for ip in (other, server_ip, pc_ip):
             with self.subTest(ip=ip.direccion_ip):
-                self.assertEqual(self.client.delete(f'/api/ips/{ip.pk}/').status_code, 400)
+                self.assertEqual(self.client.delete(f'/api/ips/{ip.pk}/').status_code, 403)
                 self.assertTrue(IP.objects.filter(pk=ip.pk).exists())
                 self.assertTrue(AsignacionIP.objects.filter(ip=ip).exists())
 
@@ -108,7 +108,7 @@ class QAIpServidorTests(TestCase):
 
         response = self.client.delete(f'/api/ips/{ip.pk}/')
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 403)
         self.assertTrue(IP.objects.filter(pk=ip.pk).exists())
 
 

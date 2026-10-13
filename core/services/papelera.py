@@ -1,12 +1,15 @@
 """Archivado reversible de los registros administrados por el portal."""
 
+import hashlib
+import json
+
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from core.audit import get_current_audit_username
 from core.models import (
-    Anexo, Departamento, Equipamiento, HistorialAnexo, HistorialAsignacionIP,
+    Anexo, AsignacionIP, Departamento, Equipamiento, HistorialAnexo, HistorialAsignacionIP,
     HistorialEquipo, HistorialPCGenerico, HistorialPerfilGenerico,
     HistorialServidor, HistorialUsuario, IP, PapeleraEvento, PCGenerico,
     PerfilGenerico, Servidor, SubArea, TipoAsignacionIP, Usuario,
@@ -61,21 +64,100 @@ def _module_for(instance):
     return next(key for key, model in ARCHIVABLE_MODELS.items() if isinstance(instance, model))
 
 
+def build_archive_impact(instance, *, lock=False):
+    """Describe las relaciones activas que deben revisarse antes del retiro."""
+    def rows(queryset, *fields):
+        if lock:
+            queryset = queryset.select_for_update()
+        return list(queryset.order_by('pk').values(*fields))
+
+    impact = {
+        'modulo': _module_for(instance),
+        'id': instance.pk,
+        'nombre': str(instance),
+    }
+    if isinstance(instance, Usuario):
+        impact.update({
+            'estado': instance.estado,
+            'departamento_id': instance.departamento_id,
+            'subarea_id': instance.subarea_id,
+            'equipos': rows(Equipamiento.objects.filter(usuario=instance),
+                            'id', 'tipo', 'numero_serie', 'estado'),
+            'ips': rows(IP.objects.filter(usuario=instance), 'id', 'direccion_ip'),
+            'asignaciones_ip': rows(AsignacionIP.objects.filter(usuario=instance),
+                                   'id', 'ip_id'),
+            'anexos': rows(Anexo.objects.filter(usuario=instance), 'id', 'numero_anexo'),
+        })
+    elif isinstance(instance, Equipamiento):
+        impact.update({
+            'usuario_id': instance.usuario_id,
+            'estado': instance.estado,
+            'fecha_asignacion': (instance.fecha_asignacion.isoformat()
+                                 if instance.fecha_asignacion else None),
+        })
+    elif isinstance(instance, Anexo):
+        impact['usuario_id'] = instance.usuario_id
+    elif isinstance(instance, (Servidor, PCGenerico)):
+        impact['ip_id'] = instance.ip_id
+        if isinstance(instance, PCGenerico):
+            impact.update(departamento_id=instance.departamento_id,
+                          subarea_id=instance.subarea_id)
+    elif isinstance(instance, IP):
+        assignment = rows(AsignacionIP.objects.filter(ip=instance),
+                          'id', 'tipo', 'usuario_id', 'servidor_id',
+                          'pc_generico_id', 'detalle')
+        impact.update(estado=instance.estado, usuario_id=instance.usuario_id,
+                      asignado_otro=instance.asignado_otro,
+                      servidores=rows(Servidor.objects.filter(ip=instance), 'id', 'hostname'),
+                      pcs_genericos=rows(PCGenerico.objects.filter(ip=instance), 'id', 'hostname'),
+                      asignaciones=assignment)
+    elif isinstance(instance, Departamento):
+        impact.update({
+            'usuarios': rows(Usuario.objects.filter(departamento=instance), 'id', 'nombre_completo'),
+            'perfiles_genericos': rows(PerfilGenerico.objects.filter(departamento=instance), 'id', 'nombre'),
+            'pcs_genericos': rows(PCGenerico.objects.filter(departamento=instance), 'id', 'hostname'),
+            'subareas': rows(SubArea.objects.filter(departamento=instance), 'id', 'nombre'),
+        })
+    elif isinstance(instance, SubArea):
+        impact.update({
+            'departamento_id': instance.departamento_id,
+            'usuarios': rows(Usuario.objects.filter(subarea=instance), 'id', 'nombre_completo'),
+            'perfiles_genericos': rows(PerfilGenerico.objects.filter(subarea=instance), 'id', 'nombre'),
+            'pcs_genericos': rows(PCGenerico.objects.filter(subarea=instance), 'id', 'hostname'),
+        })
+    elif isinstance(instance, PerfilGenerico):
+        impact.update(departamento_id=instance.departamento_id,
+                      subarea_id=instance.subarea_id)
+    return impact
+
+
+def impact_fingerprint(impact):
+    payload = json.dumps(impact, sort_keys=True, ensure_ascii=False, default=str)
+    return hashlib.sha256(payload.encode('utf-8')).hexdigest()
+
+
 @transaction.atomic
-def archive_record(instance):
+def archive_record(instance, *, reason='', expected_fingerprint=None):
     """Retira el registro de la operación activa sin borrar sus datos ni su PK."""
     instance = type(instance).objects.select_for_update().get(pk=instance.pk)
-    context = {}
-    history_parts = ['Registro:::Activo:::En Papelera']
+    impact = build_archive_impact(instance, lock=True)
+    if (expected_fingerprint is not None
+            and impact_fingerprint(impact) != expected_fingerprint):
+        raise ValidationError({'detail': 'Las relaciones cambiaron desde la revisión. Inspecciona nuevamente el registro.'})
+    if isinstance(instance, (Departamento, SubArea)) and any(
+        impact.get(key) for key in ('usuarios', 'perfiles_genericos', 'pcs_genericos', 'subareas')
+    ):
+        raise ValidationError({'detail': 'El área o departamento tiene registros activos asociados. Desactívalo o revisa las dependencias.'})
+
+    context = {'impacto': impact, 'motivo': reason.strip()}
+    history_parts = ['Registro:::Activo:::Archivado']
     if isinstance(instance, Usuario):
-        context = {'estado': instance.estado, 'departamento_id': instance.departamento_id}
         assign_ip_to_user(instance.pk, None)
         liberar_equipos_usuario(instance)
         for anexo in Anexo.objects.select_for_update().filter(usuario=instance):
             anexo.usuario = None
             anexo.save(update_fields=['usuario', 'estado'])
     elif isinstance(instance, Equipamiento):
-        context = {'usuario_id': instance.usuario_id, 'estado': instance.estado}
         if instance.usuario_id:
             history_parts.append(f'Usuario asignado:::{instance.usuario.nombre_completo}:::Sin asignar')
             instance.usuario = None
@@ -84,13 +166,11 @@ def archive_record(instance):
             instance.fecha_asignacion = None
             instance.save(update_fields=['usuario', 'estado', 'fecha_asignacion'])
     elif isinstance(instance, Anexo):
-        context = {'usuario_id': instance.usuario_id}
         if instance.usuario_id:
             history_parts.append(f'Usuario asignado:::{instance.usuario.nombre_completo}:::Sin asignar')
             instance.usuario = None
             instance.save(update_fields=['usuario', 'estado'])
     elif isinstance(instance, (Servidor, PCGenerico)):
-        context = {'ip_id': instance.ip_id}
         if instance.ip_id:
             history_parts.append(f'Dirección IP:::{instance.ip.direccion_ip}:::Liberada')
             kind = TipoAsignacionIP.SERVIDOR if isinstance(instance, Servidor) else TipoAsignacionIP.PC_GENERICO
@@ -101,8 +181,11 @@ def archive_record(instance):
         if (instance.estado != 'LIBRE' or instance.usuario_id or instance.asignado_otro
                 or hasattr(instance, 'servidor') or hasattr(instance, 'pc_generico')
                 or hasattr(instance, 'asignacion_activa')):
-            raise ValidationError({'detail': 'Solo se puede enviar a Papelera una IP libre y sin asignaciones.'})
+            raise ValidationError({'detail': 'Solo se puede archivar una IP libre y sin asignaciones.'})
 
+    if reason.strip():
+        safe_history_reason = reason.strip().replace('||', ' / ').replace(':::', ' - ')
+        history_parts.append(f'Motivo:::N/I:::{safe_history_reason}')
     type(instance).all_objects.filter(pk=instance.pk).update(
         deleted_at=timezone.now(), deleted_by=get_current_audit_username() or 'Sistema',
         archive_context=context,
@@ -112,14 +195,16 @@ def archive_record(instance):
     PapeleraEvento.objects.create(
         modulo=_module_for(instance), registro_id=instance.pk,
         accion='ARCHIVO', realizado_por=get_current_audit_username() or 'Sistema',
-        detalle='Registro enviado a Papelera; las asignaciones liberadas no se recuperan automáticamente.',
+        detalle=(f'Motivo: {reason.strip()}. ' if reason.strip() else '')
+                + 'Registro archivado; las asignaciones liberadas no se recuperan automáticamente.',
+        contexto=context,
     )
     schedule_change(instance, 'deleted')
     return instance
 
 
 @transaction.atomic
-def restore_record(module, record_id):
+def restore_record(module, record_id, *, reason=''):
     model = ARCHIVABLE_MODELS.get(module)
     if model is None:
         raise ValidationError({'detail': 'Módulo desconocido.'})
@@ -127,24 +212,28 @@ def restore_record(module, record_id):
         pk=record_id, deleted_at__isnull=False,
     ).first()
     if instance is None:
-        raise ValidationError({'detail': 'El registro no está en Papelera.'})
+        raise ValidationError({'detail': 'El registro no está archivado.'})
 
     for parent_field in ('departamento', 'subarea'):
         parent_id = getattr(instance, f'{parent_field}_id', None)
         if parent_id:
-            parent = getattr(instance, parent_field)
+            parent_model = instance._meta.get_field(parent_field).remote_field.model
+            parent = parent_model.all_objects.select_for_update().get(pk=parent_id)
             if parent.deleted_at is not None:
                 raise ValidationError({'detail': f'Restaura primero el {parent_field} relacionado.'})
 
+    archive_context = instance.archive_context or {}
     model.all_objects.filter(pk=instance.pk).update(
         deleted_at=None, deleted_by=None, archive_context={},
     )
     instance.refresh_from_db()
-    _write_history(instance, 'RESTAURACION', 'Registro:::En Papelera:::Activo')
+    _write_history(instance, 'RESTAURACION', 'Registro:::Archivado:::Activo')
     PapeleraEvento.objects.create(
         modulo=module, registro_id=instance.pk,
         accion='RESTAURACION', realizado_por=get_current_audit_username() or 'Sistema',
-        detalle='Registro restaurado; las asignaciones deben revisarse antes de reasignarlas.',
+        detalle=(f'Motivo: {reason.strip()}. ' if reason.strip() else '')
+                + 'Registro restaurado; las asignaciones deben revisarse antes de reasignarlas.',
+        contexto=archive_context,
     )
     schedule_change(instance, 'created')
     return instance

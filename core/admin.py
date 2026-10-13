@@ -18,7 +18,7 @@ class DepartamentoAdmin(admin.ModelAdmin):
     ordering = ('nombre',)
 
     def has_delete_permission(self, request, obj=None):
-        return False  # El archivado se hace desde la Papelera del portal.
+        return False  # El retiro se gestiona mediante el comando técnico.
 
 
 @admin.register(SubArea)
@@ -49,6 +49,9 @@ class AsignacionIPAdmin(admin.ModelAdmin):
         'detalle',
     )
     readonly_fields = ('fecha_asignacion', 'fecha_actualizacion')
+
+    def has_delete_permission(self, request, obj=None):
+        return False  # La IP se libera mediante los servicios de asignación.
 
 
 @admin.register(HistorialAsignacionIP)

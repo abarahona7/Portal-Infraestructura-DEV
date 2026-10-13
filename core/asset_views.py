@@ -96,7 +96,12 @@ class ResumenEquiposView(APIView):
             sin_activo_fijo=Count('id', filter=Q(af__isnull=True) | Q(af='')),
             sin_custodio=Count('id', filter=Q(usuario__isnull=True)),
             custodio_no_activo=Count('id', filter=Q(usuario__isnull=False) & ~Q(usuario__estado='ACTIVO')),
+            custodio_baja=Count('id', filter=Q(usuario__estado='BAJA')),
         )
+        tipos = equipos.values('tipo').annotate(
+            total=Count('id'),
+            asignados=Count('id', filter=Q(usuario__isnull=False)),
+        ).order_by('-total', 'tipo')
         departamentos = Departamento.objects.annotate(
             total=Count(
                 'usuarios__equipos', distinct=True,
@@ -105,6 +110,7 @@ class ResumenEquiposView(APIView):
         ).order_by('-total', 'nombre')
         response = Response({
             'conteos': counts,
+            'tipos': list(tipos),
             'departamentos': [{'id': row.id, 'nombre': row.nombre, 'total': row.total}
                               for row in departamentos],
         })

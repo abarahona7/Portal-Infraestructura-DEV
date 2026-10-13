@@ -510,6 +510,11 @@ class EquipamientoViewSet(
             if not department_id.isdecimal() or int(department_id) < 1:
                 raise serializers.ValidationError({'departamento_id': 'Indique un departamento válido.'})
             queryset = queryset.filter(usuario__departamento_id=int(department_id))
+        assigned = self.request.query_params.get('asignado')
+        if assigned is not None:
+            if assigned not in ('si', 'no'):
+                raise serializers.ValidationError({'asignado': 'Indique si o no.'})
+            queryset = queryset.filter(usuario__isnull=(assigned == 'no'))
         pending = self.request.query_params.get('pendiente')
         if pending == 'sin_serie':
             queryset = queryset.filter(Q(numero_serie__isnull=True) | Q(numero_serie=''))
@@ -519,6 +524,8 @@ class EquipamientoViewSet(
             queryset = queryset.filter(usuario__isnull=True)
         elif pending == 'custodio_no_activo':
             queryset = queryset.filter(usuario__isnull=False).exclude(usuario__estado='ACTIVO')
+        elif pending == 'custodio_baja':
+            queryset = queryset.filter(usuario__estado='BAJA')
         elif pending:
             raise serializers.ValidationError({'pendiente': 'Seleccione un motivo de revisión válido.'})
         return queryset.order_by('tipo', 'marca', 'modelo', 'pk')

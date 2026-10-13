@@ -43,14 +43,28 @@ class AssetDashboardQrTests(TestCase):
         self.assertEqual(counts['total'], 3)
         self.assertEqual(counts['asignados'], 2)
         self.assertEqual(counts['disponibles'], 1)
+        self.assertEqual(counts['custodio_baja'], 1)
+        self.assertEqual(
+            response.data['tipos'],
+            [
+                {'tipo': 'Notebook', 'total': 2, 'asignados': 1},
+                {'tipo': 'Celular', 'total': 1, 'asignados': 1},
+            ],
+        )
         self.assertEqual(
             {row['nombre']: row['total'] for row in response.data['departamentos']},
             {'Tecnología': 1, 'Ventas': 1},
         )
-        for reason in ('sin_serie', 'sin_activo_fijo', 'sin_custodio', 'custodio_no_activo'):
+        for reason in ('sin_serie', 'sin_activo_fijo', 'sin_custodio',
+                       'custodio_no_activo', 'custodio_baja'):
             filtered = self.client.get('/api/equipos/', {'pendiente': reason})
             self.assertEqual(filtered.status_code, 200)
             self.assertEqual(filtered.data['count'], counts[reason])
+        notebooks = self.client.get('/api/equipos/', {'tipo': 'Notebook'})
+        self.assertEqual(notebooks.data['count'], response.data['tipos'][0]['total'])
+        assigned_assets = self.client.get('/api/equipos/', {'asignado': 'si'})
+        self.assertEqual(assigned_assets.data['count'], counts['asignados'])
+        self.assertEqual(self.client.get('/api/equipos/', {'asignado': 'tal vez'}).status_code, 400)
         department_assets = self.client.get(
             '/api/equipos/', {'departamento_id': self.department.pk},
         )
@@ -80,6 +94,21 @@ class AssetDashboardQrTests(TestCase):
         unassigned_detail = self.client.get(path)
         self.assertIsNone(unassigned_detail.data['equipo']['departamento'])
         self.assertIsNone(unassigned_detail.data['equipo']['usuario_nombre'])
+
+    def test_medical_leave_is_not_a_critical_assignment_alert(self):
+        license_user = Usuario.objects.create(
+            nombre_completo='Persona Licencia', usuario_red='licencia-alerta',
+            correo_corp='licencia-alerta@example.com', departamento=self.department,
+            estado='LICENCIA',
+        )
+        Equipamiento.objects.create(
+            usuario=license_user, tipo='Tablet', marca='Samsung', modelo='Tab A',
+            estado='ASIGNADO',
+        )
+
+        response = self.client.get('/api/activos/resumen/')
+        self.assertEqual(response.data['conteos']['custodio_no_activo'], 2)
+        self.assertEqual(response.data['conteos']['custodio_baja'], 1)
 
     def test_qr_requires_an_authorized_role(self):
         path = f'/api/activos/qr/{self.assigned.token_qr}/'

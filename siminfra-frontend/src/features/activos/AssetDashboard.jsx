@@ -3,11 +3,11 @@ import apiClient from '../../api/client';
 import { formatEquipmentTypeLabel } from '../../utils/formatEquipmentType';
 import './AssetDashboard.css';
 
-const reasons = [
-  ['sin_serie', 'SIN NÚMERO DE SERIE', 'sin_serie'],
-  ['sin_activo_fijo', 'SIN ACTIVO FIJO', 'sin_activo_fijo'],
-  ['sin_custodio', 'SIN USUARIO ASIGNADO', 'sin_custodio'],
-  ['custodio_no_activo', 'ASIGNADOS A USUARIOS NO ACTIVOS', 'custodio_no_activo'],
+const reviewReasons = [
+  { key: 'custodio_baja', label: 'Asignados a usuarios de baja', level: 'urgente', help: 'Revisar a quién corresponde el equipo.' },
+  { key: 'sin_serie', label: 'Sin número de serie', level: 'datos', help: 'Completar el identificador cuando esté disponible.' },
+  { key: 'sin_activo_fijo', label: 'Sin activo fijo', level: 'datos', help: 'Completarlo cuando corresponda al equipo.' },
+  { key: 'sin_custodio', label: 'Sin usuario asignado', level: 'informativo', help: 'Puede estar en stock, reparación o baja.' },
 ];
 
 export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 }) {
@@ -44,9 +44,18 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
   useEffect(() => {
     if (!selection) return undefined;
     const controller = new AbortController();
-    const params = selection.kind === 'departamento'
-      ? { departamento_id: selection.id, page, page_size: 20 }
-      : { pendiente: selection.key, page, page_size: 20 };
+    const filters = selection.kind === 'departamento'
+      ? { departamento_id: selection.id }
+      : selection.kind === 'tipo'
+        ? { tipo: selection.id }
+        : selection.kind === 'estado'
+          ? { estado: selection.id }
+          : selection.kind === 'asignados'
+            ? { asignado: 'si' }
+            : selection.kind === 'pendiente'
+              ? { pendiente: selection.key }
+              : {};
+    const params = { ...filters, page, page_size: 20 };
     apiClient.get('/equipos/', { params, signal: controller.signal })
       .then(({ data }) => { setList(data); setListError(''); })
       .catch((error) => { if (error.code !== 'ERR_CANCELED') setListError('No se pudo cargar la lista de equipos.'); });
@@ -65,6 +74,10 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
   };
   const counts = summary?.conteos;
   const departments = summary?.departamentos || [];
+  const types = summary?.tipos || [];
+  const visibleReasons = counts
+    ? reviewReasons.filter(({ key }) => (counts[key] || 0) > 0)
+    : [];
   const maxCount = Math.max(1, ...departments.map((department) => department.total));
 
   return <div className="asset-overview">
@@ -117,21 +130,44 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
           </div>
         </section>
         <div className="asset-overview-stats" aria-label="Estado de equipos">
-          <div><span>Equipos registrados</span><strong>{counts.total}</strong></div>
-          <div><span>Con usuario asignado</span><strong>{counts.asignados}</strong></div>
-          <div><span>Disponibles</span><strong>{counts.disponibles}</strong></div>
-          <div><span>Dados de baja</span><strong>{counts.baja}</strong></div>
-          <div><span>En reparación</span><strong>{counts.reparacion}</strong></div>
+          {[
+            ['todos', null, 'Equipos registrados', counts.total],
+            ['asignados', null, 'Con usuario asignado', counts.asignados],
+            ['estado', 'STOCK', 'Disponibles', counts.disponibles],
+            ['estado', 'BAJA', 'Dados de baja', counts.baja],
+            ['estado', 'MANTENCION', 'En reparación', counts.reparacion],
+          ].map(([kind, id, label, count]) => <button type="button" key={label}
+            aria-label={`${label}: ${count}. Ver equipos`}
+            aria-expanded={selection?.kind === kind && selection?.id === id}
+            onClick={() => select({ kind, id, label })}>
+            <span>{label}</span><strong>{count}</strong>
+          </button>)}
         </div>
       </div>
+      {types.length > 0 && <section className="asset-overview-card asset-overview-types">
+        <div className="asset-overview-section-heading"><h3>Inventario por tipo</h3><p className="asset-overview-help">Selecciona un tipo para ver sus equipos.</p></div>
+        <div className="asset-overview-type-grid">
+          {types.map((item) => <button type="button" key={item.tipo}
+            aria-expanded={selection?.kind === 'tipo' && selection.id === item.tipo}
+            onClick={() => select({ kind: 'tipo', id: item.tipo, label: formatEquipmentTypeLabel(item.tipo) })}>
+            <span>{formatEquipmentTypeLabel(item.tipo)}</span>
+            <strong>{item.total}</strong>
+            <small>{item.asignados} con usuario</small>
+          </button>)}
+        </div>
+      </section>}
       <section className="asset-overview-card">
-        <h3>PENDIENTES POR REVISAR</h3>
-        <p className="asset-overview-help">Selecciona un motivo para ver los equipos. Los equipos sin usuario asignado pueden estar disponibles, en reparación o dados de baja.</p>
+        <div className="asset-overview-section-heading">
+          <h3>Atención y revisión</h3>
+          <p className="asset-overview-help">La asignación a una persona de baja requiere revisión. Los datos incompletos y los equipos sin usuario se muestran por separado.</p>
+        </div>
+        {counts.custodio_baja === 0 && <p className="asset-overview-ok">Sin equipos asignados a usuarios de baja.</p>}
+        {visibleReasons.length === 0 && <p className="asset-overview-help">No hay equipos pendientes de revisión.</p>}
         <div className="asset-overview-reasons">
-          {reasons.map(([key, label, countKey]) => <button type="button" key={key}
+          {visibleReasons.map(({ key, label, level, help }) => <button type="button" key={key} className={`asset-overview-reason asset-overview-reason--${level}`}
             aria-expanded={selection?.kind === 'pendiente' && selection.key === key}
             onClick={() => select({ kind: 'pendiente', key, label })}>
-            <span>{label}</span><strong>{counts[countKey]}</strong>
+            <span><b>{label}</b><small>{help}</small></span><strong>{counts[key]}</strong>
           </button>)}
         </div>
       </section>

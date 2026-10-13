@@ -10,10 +10,18 @@
 .asset-overview button:hover, .asset-overview button[aria-expanded=true] { background: #eff6ff; }
 .asset-overview-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(170px, 220px); align-items: start; gap: 1rem; }
 .asset-overview-stats { display: grid; grid-template-columns: minmax(0, 1fr); gap: .75rem; }
-.asset-overview-stats > div, .asset-overview-card { background: white; border: 1px solid #dce5f1; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 7px #0f172a08; }
-.asset-overview-stats > div { display: grid; gap: .35rem; border-left: 3px solid #60a5fa; }
+.asset-overview-stats > button, .asset-overview-card { background: white; border: 1px solid #dce5f1; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 7px #0f172a08; }
+.asset-overview .asset-overview-stats > button { display: grid; gap: .35rem; border: 1px solid #dce5f1; border-left: 3px solid #60a5fa; padding: 1rem; text-align: left; color: #0f172a; }
+.asset-overview .asset-overview-stats > button:hover, .asset-overview .asset-overview-stats > button[aria-expanded=true] { border-color: #93c5fd; background: #eff6ff; }
 .asset-overview-stats span { color: #52627a; font-size: .8rem; }
 .asset-overview-stats strong { color: #174ea6; font-size: 1.5rem; }
+.asset-overview-section-heading { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem 1rem; flex-wrap: wrap; }
+.asset-overview-type-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: .5rem; margin-top: .8rem; }
+.asset-overview .asset-overview-type-grid button { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .15rem .5rem; min-width: 0; padding: .6rem .7rem; text-align: left; }
+.asset-overview-type-grid span { min-width: 0; color: #33466c; font-size: .78rem; overflow-wrap: normal; word-break: normal; hyphens: none; }
+.asset-overview-type-grid strong { color: #174ea6; font-size: 1rem; font-variant-numeric: tabular-nums; }
+.asset-overview-type-grid small { grid-column: 1 / -1; color: #64748b; font-size: .7rem; }
+.asset-overview-ok { display: inline-flex; align-items: center; margin: .7rem 0 0; padding: .4rem .65rem; border-radius: 8px; background: #ecfdf5; color: #047857; font-size: .8rem; font-weight: 600; }
 .asset-overview-chart { min-width: 0; container-type: inline-size; }
 .asset-overview-chart-heading { min-height: 3.5rem; padding-bottom: .65rem; border-bottom: 1px solid #e2e8f0; }
 .asset-overview-bars, .asset-overview-reasons, .asset-overview-items { display: grid; margin-top: .8rem; }
@@ -30,8 +38,14 @@
 .asset-overview-bar:hover .asset-overview-bar-fill, .asset-overview-bar[aria-expanded=true] .asset-overview-bar-fill { filter: saturate(1.25); }
 .asset-overview-bar-name { min-width: 0; overflow-wrap: normal; word-break: normal; hyphens: none; color: #33466c; font-size: .78rem; font-weight: 700; line-height: 1.15; }
 .asset-overview-reasons button { display: flex; justify-content: space-between; align-items: center; gap: .5rem; text-align: left; border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; color: #15345d; }
-.asset-overview-reasons button > span { min-width: 0; overflow-wrap: anywhere; }
+.asset-overview-reasons button > span { display: grid; gap: .1rem; min-width: 0; overflow-wrap: anywhere; }
+.asset-overview-reasons button small { color: #64748b; font-size: .74rem; font-weight: 400; }
 .asset-overview-reasons strong { flex: 0 0 auto; padding: .1rem .55rem; background: #e9f0fd; border-radius: 7px; }
+.asset-overview-reasons .asset-overview-reason--urgente { border-left: 3px solid #dc2626; padding-left: .75rem; }
+.asset-overview-reasons .asset-overview-reason--urgente strong { background: #fee2e2; color: #991b1b; }
+.asset-overview-reasons .asset-overview-reason--datos { border-left: 3px solid #f59e0b; padding-left: .75rem; }
+.asset-overview-reasons .asset-overview-reason--datos strong { background: #fef3c7; color: #92400e; }
+.asset-overview-reasons .asset-overview-reason--informativo { border-left: 3px solid #60a5fa; padding-left: .75rem; }
 .asset-overview-detail { scroll-margin-top: 1rem; }
 .asset-overview-items article { display: flex; justify-content: space-between; gap: 1rem; padding: .8rem; border-top: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; }
 .asset-overview-items article:hover { background: #f8fafc; }

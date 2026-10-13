@@ -20,7 +20,9 @@ const summary = {
   conteos: {
     total: 1, asignados: 1, disponibles: 0, reparacion: 0, baja: 0,
     sin_serie: 1, sin_activo_fijo: 0, sin_custodio: 0, custodio_no_activo: 0,
+    custodio_baja: 0,
   },
+  tipos: [{ tipo: 'Notebook', total: 1, asignados: 1 }],
   departamentos: [{ id: 3, nombre: 'Tecnología', total: 1 }],
 };
 
@@ -64,6 +66,50 @@ describe('Tablero de activos', () => {
     ));
     expect(await screen.findByText('NOTEBOOK · Dell Latitude')).toBeInTheDocument();
     expect(screen.getByText(/1 equipos/)).toBeInTheDocument();
+  });
+
+  it('abre los equipos del tipo y los indicadores de asignación y estado', async () => {
+    render(<AssetDashboard onOpenAsset={vi.fn()} onEditAsset={vi.fn()} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /NOTEBOOK.*1 con usuario/i }));
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith(
+      '/equipos/', expect.objectContaining({
+        params: { tipo: 'Notebook', page: 1, page_size: 20 },
+      }),
+    ));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Con usuario asignado: 1. Ver equipos' }));
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith(
+      '/equipos/', expect.objectContaining({
+        params: { asignado: 'si', page: 1, page_size: 20 },
+      }),
+    ));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Disponibles: 0. Ver equipos' }));
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith(
+      '/equipos/', expect.objectContaining({
+        params: { estado: 'STOCK', page: 1, page_size: 20 },
+      }),
+    ));
+  });
+
+  it('separa la alerta de usuarios de baja de los equipos sin usuario', async () => {
+    apiClient.get.mockResolvedValueOnce({ data: {
+      ...summary,
+      conteos: { ...summary.conteos, custodio_baja: 1, sin_custodio: 2 },
+    } });
+    render(<AssetDashboard onOpenAsset={vi.fn()} onEditAsset={vi.fn()} />);
+
+    const urgent = await screen.findByRole('button', { name: /Asignados a usuarios de baja/i });
+    expect(urgent).toHaveClass('asset-overview-reason--urgente');
+    const informational = screen.getByRole('button', { name: /Sin usuario asignado/i });
+    expect(informational).toHaveClass('asset-overview-reason--informativo');
+    fireEvent.click(urgent);
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith(
+      '/equipos/', expect.objectContaining({
+        params: { pendiente: 'custodio_baja', page: 1, page_size: 20 },
+      }),
+    ));
   });
 
   it('muestra todas las áreas devueltas por la API, incluidas las vacías', async () => {

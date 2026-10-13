@@ -4,7 +4,7 @@ Este procedimiento publica el portal con MySQL 8.4, HTTPS y el perfil
 `config.settings_production`. Los secretos reales se guardan únicamente en el
 `.env` del servidor y nunca se agregan a Git.
 
-Estado actual de la reconstrucción: las migraciones hasta `core.0060` y las
+Estado actual de la reconstrucción: las migraciones hasta `core.0062` y las
 pruebas funcionales se validaron en MySQL **DEV**. Antes de aplicar 0059/0060 se
 restauró un respaldo nuevo en MySQL 8.4 aislado y se verificaron conteos y QR;
 el resultado está en [la guía de actualización](docs/ACTUALIZACION_MYSQL_84.md).
@@ -25,11 +25,13 @@ prueba funcional en QA ni la revisión del entorno productivo definitivo. La
 suite incluye la migración 0060, el bloqueo del borrado de IP asignada y la
 protección de `loaddata` sobre bases con datos operacionales.
 También se restauró un respaldo de DEV en MySQL 8 aislado: los 365 equipos
-conservaron sus ID y QR y no faltaron migraciones. En el DEV actual, las nuevas
-reglas de integridad detectan dos números móviles compartidos entre cuatro
-equipos asignados a personas distintas (IDs 44, 93, 101 y 204). Es necesario
-confirmar la titularidad y conciliar estos registros antes de exigir que la
-validación de integridad vuelva a pasar; no se modificaron automáticamente.
+conservaron sus ID y QR y no faltaron migraciones. El 13 de octubre de 2026 se
+conciliaron en DEV dos líneas móviles duplicadas con la titularidad confirmada.
+Se retiraron los números de los equipos incorrectos sin cambiar sus
+asignaciones. Los cambios se registraron en el historial, se verificó un
+respaldo local previo y las 23 reglas de `validar_integridad_portal` pasaron.
+El resultado se resume en la
+[revisión de ambigüedades](docs/REVISION_AMBIGUEDADES_PRODUCCION.md).
 
 Para habilitar QA se deben confirmar la base MySQL independiente y los permisos
 para aplicar migraciones, la URL y el certificado HTTPS propios, `PORTAL_PUBLIC_URL`

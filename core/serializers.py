@@ -15,7 +15,6 @@ from .models import (
     Equipamiento,
     HistorialEquipo,
     HistorialUsuario,
-    RevisionBajaUsuario,
     PerfilGenerico,
     IP,
     Anexo,
@@ -1064,25 +1063,6 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
             raise serializers.ValidationError({
                 'protocolo_confirmaciones': 'El estado cambió. Vuelve a revisar el usuario antes de guardar.',
             })
-        nuevo_estado = validated_data.get('estado')
-        desvinculacion_nueva = nuevo_estado in {'BAJA', 'LICENCIA'} and instance.estado != nuevo_estado
-        recursos_liberados = []
-        if desvinculacion_nueva and nuevo_estado == 'BAJA':
-            recursos_liberados.extend({
-                'clave': f'equipo:{equipo.pk}', 'tipo': 'equipo', 'id': equipo.pk,
-                'nombre': f'{equipo.tipo} · {equipo.marca} {equipo.modelo}',
-                'detalle': equipo.numero_serie or equipo.af or 'Sin serie ni activo fijo',
-            } for equipo in Equipamiento.objects.filter(usuario=instance).order_by('pk'))
-        if desvinculacion_nueva:
-            recursos_liberados.extend({
-                'clave': f'ip:{ip.pk}', 'tipo': 'ip', 'id': ip.pk,
-                'nombre': ip.direccion_ip, 'detalle': 'Dirección IP liberada',
-            } for ip in IP.objects.filter(usuario=instance).order_by('pk'))
-        if desvinculacion_nueva and nuevo_estado == 'BAJA':
-            recursos_liberados.extend({
-                'clave': f'anexo:{anexo.pk}', 'tipo': 'anexo', 'id': anexo.pk,
-                'nombre': anexo.numero_anexo, 'detalle': 'Anexo liberado',
-            } for anexo in Anexo.objects.filter(usuario=instance).order_by('pk'))
         ip_enviada = 'ip_seleccionada' in validated_data
 
         # Una línea puede estar registrada solo en el celular asignado (datos
@@ -1125,25 +1105,6 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
                 modificado_por=get_current_audit_username(),
                 observacion=confirmation_observation(required),
             )
-
-        if recursos_liberados:
-            revision = RevisionBajaUsuario.objects.create(
-                usuario=usuario,
-                motivo=nuevo_estado,
-                usuario_nombre=usuario.nombre_completo,
-                usuario_red=usuario.usuario_red,
-                recursos=recursos_liberados,
-                creado_por=get_current_audit_username() or '',
-            )
-            HistorialUsuario.objects.create(
-                usuario=usuario, accion=f'REVISION_{nuevo_estado}_PENDIENTE',
-                modificado_por=get_current_audit_username(),
-                modulo_relacionado='revisiones-baja',
-                objeto_relacionado_id=str(revision.pk),
-                observacion=f'Pendiente revisar {len(recursos_liberados)} recurso(s) liberado(s).',
-            )
-            from .realtime import schedule_change
-            schedule_change(revision, 'created')
 
         for equipo in equipos_de_la_linea:
             if equipo.numero_telefono != usuario.celular:

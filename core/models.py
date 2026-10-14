@@ -294,6 +294,8 @@ class Usuario(ArchivableRecord):
             self.password_vpn = encrypt_val(self.password_vpn)
 
         with transaction.atomic():
+            if self.pk and not self._state.adding:
+                type(self).all_objects.select_for_update().only('pk').get(pk=self.pk)
             super().save(*args, **kwargs)
 
     def __str__(self):
@@ -2191,6 +2193,7 @@ def track_historial_usuario(sender, instance, **kwargs):
     if kwargs.get('raw'):
         return
 
+    instance._release_transition = None
     if instance.pk:
         try:
             usr_previo = Usuario.objects.get(pk=instance.pk)
@@ -2198,6 +2201,12 @@ def track_historial_usuario(sender, instance, **kwargs):
             usr_previo = None
 
         if usr_previo:
+            from .services.user_status import build_release_transition
+            instance._release_transition = build_release_transition(
+                instance,
+                usr_previo.estado,
+                kwargs.get('update_fields'),
+            )
             cambios = []
             def add_cambio(campo, ant, act):
                 if str(ant) != str(act):
@@ -2288,23 +2297,9 @@ def registrar_creacion_usuario(sender, instance, created, **kwargs):
 
 
 def liberar_equipos_usuario(usuario):
-    """Libera y audita cada equipo asociado dentro de una transacciÃ³n."""
-    with transaction.atomic():
-        equipos = Equipamiento.objects.select_for_update().filter(
-            usuario=usuario
-        )
-
-        for equipo in equipos:
-            equipo.usuario = None
-            equipo.estado = 'STOCK'
-            equipo.fecha_asignacion = None
-            equipo.save(
-                update_fields=[
-                    'usuario',
-                    'estado',
-                    'fecha_asignacion',
-                ]
-            )
+    """Compatibilidad para flujos que liberan equipos de un usuario."""
+    from .services.user_status import release_user_equipment
+    release_user_equipment(usuario)
 
 
 @receiver(post_save, sender=Usuario)
@@ -2312,29 +2307,23 @@ def auto_sync_usuario(sender, instance, created, **kwargs):
     if kwargs.get('raw'):
         return
 
-    # Baja y Licencia Médica liberan la IP. La licencia conserva el resto
-    # de los activos asignados al usuario.
-    if instance.estado in {'BAJA', 'LICENCIA'}:
-        from .services.asignacion_ips import assign_ip_to_user
-        assign_ip_to_user(instance.pk, None)
+    update_fields = kwargs.get('update_fields')
+    effective_state = instance.estado
+    if not created and update_fields is not None and 'estado' not in update_fields:
+        effective_state = Usuario.all_objects.only('estado').get(pk=instance.pk).estado
+
+    from .services.user_status import apply_user_status_rules
+    apply_user_status_rules(
+        instance,
+        effective_state=effective_state,
+        transition=getattr(instance, '_release_transition', None),
+        operation='created' if created else 'updated',
+    )
 
     # =====================================
     # USUARIO DADO DE BAJA
     # =====================================
-    if instance.estado == 'BAJA':
-
-        # Liberar todos sus equipos
-        liberar_equipos_usuario(instance)
-
-        # Liberar su anexo
-        anexo = Anexo.objects.filter(
-            usuario=instance
-        ).first()
-
-        if anexo:
-            anexo.usuario = None
-            anexo.save()
-
+    if effective_state == 'BAJA':
         return
 
     # =====================================

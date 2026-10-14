@@ -1,8 +1,11 @@
 from django.contrib.auth.models import Group, User
 from django.test import TestCase
 from rest_framework.test import APIClient
+from unittest.mock import patch
 
+from core.audit import reset_current_audit_user, set_current_audit_user
 from core.models import Anexo, Departamento, Equipamiento, HistorialUsuario, IP, RevisionBajaUsuario, Usuario
+from core.realtime import EDITOR_GROUP
 
 
 class RevisionBajaTests(TestCase):
@@ -68,6 +71,68 @@ class RevisionBajaTests(TestCase):
         self.assertEqual(self.client.get('/api/revisiones-baja/').data['pendientes'], 0)
         self.assertEqual(self.client.post(confirm_url, {'confirmaciones': []}, format='json').status_code, 409)
         self.assertTrue(HistorialUsuario.objects.filter(usuario=self.usuario, accion='REVISION_BAJA_CONFIRMADA', modificado_por=self.operator.username).exists())
+        self.assertEqual(HistorialUsuario.objects.filter(
+            usuario=self.usuario, accion='REVISION_BAJA_CONFIRMADA',
+        ).count(), 1)
+
+    def test_direct_model_save_uses_same_release_review_and_actor_rules(self):
+        equipment = Equipamiento.objects.create(
+            usuario=self.usuario, tipo='Notebook', marca='Dell', modelo='Latitude', numero_serie='DIRECT-1',
+        )
+        ip = IP.objects.create(direccion_ip='172.23.1.235', estado='RESERVADA', usuario=self.usuario)
+        annex = Anexo.objects.create(numero_anexo='5701', usuario=self.usuario)
+        token = set_current_audit_user(self.admin)
+        try:
+            self.usuario.estado = 'BAJA'
+            self.usuario.save(update_fields=['estado'])
+        finally:
+            reset_current_audit_user(token)
+
+        equipment.refresh_from_db(); ip.refresh_from_db(); annex.refresh_from_db()
+        self.assertIsNone(equipment.usuario_id)
+        self.assertIsNone(ip.usuario_id)
+        self.assertIsNone(annex.usuario_id)
+        revision = RevisionBajaUsuario.objects.get()
+        self.assertEqual(revision.creado_por, self.admin.username)
+        self.assertEqual({item['clave'] for item in revision.recursos}, {
+            f'equipo:{equipment.pk}', f'ip:{ip.pk}', f'anexo:{annex.pk}',
+        })
+
+    def test_partial_save_without_estado_does_not_release_resources(self):
+        equipment = Equipamiento.objects.create(
+            usuario=self.usuario, tipo='Notebook', marca='Dell', modelo='Latitude', numero_serie='PARTIAL-1',
+        )
+        self.usuario.estado = 'BAJA'
+        self.usuario.cargo = 'Analista'
+        self.usuario.save(update_fields=['cargo'])
+
+        self.usuario.refresh_from_db(); equipment.refresh_from_db()
+        self.assertEqual(self.usuario.estado, 'ACTIVO')
+        self.assertEqual(equipment.usuario_id, self.usuario.pk)
+        self.assertFalse(RevisionBajaUsuario.objects.exists())
+
+    def test_api_status_change_emits_one_user_event_and_one_review_event(self):
+        Equipamiento.objects.create(
+            usuario=self.usuario, tipo='Notebook', marca='Dell', modelo='Latitude', numero_serie='EVENT-1',
+        )
+        url = f'/api/usuarios/{self.usuario.pk}/'
+        checks = [item['id'] for item in self.client.get(url).data['protocolos_estado']['BAJA']]
+        with patch('core.realtime.get_channel_layer'), patch('core.realtime.async_to_sync') as to_sync:
+            with self.captureOnCommitCallbacks(execute=True):
+                response = self.client.patch(url, {
+                    'estado': 'BAJA', 'protocolo_confirmaciones': checks,
+                }, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        editor_events = [
+            call.args[1] for call in to_sync.return_value.call_args_list
+            if call.args[0] == EDITOR_GROUP
+        ]
+        self.assertEqual([event['model'] for event in editor_events].count('Usuario'), 1)
+        self.assertEqual([event['model'] for event in editor_events].count('RevisionBajaUsuario'), 1)
+        user_event = next(event for event in editor_events if event['model'] == 'Usuario')
+        self.assertEqual(set(user_event['modules']), {
+            'usuarios', 'equipos', 'ips', 'anexos', 'activos-resumen',
+        })
 
     def test_no_alert_without_resources_and_no_duplicate_on_later_edit(self):
         url = f'/api/usuarios/{self.usuario.pk}/'

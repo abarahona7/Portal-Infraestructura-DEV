@@ -69,7 +69,8 @@ class AuditUserMixin:
         try:
             with transaction.atomic():
                 instance = serializer.save()
-                schedule_change(instance, 'created')
+                if not isinstance(instance, Usuario):
+                    schedule_change(instance, 'created')
         except IntegrityError as exc:
             raise serializers.ValidationError({
                 'detail': 'El identificador pertenece a un registro activo o archivado. Solicita una revisión técnica antes de crear otro.',
@@ -82,7 +83,8 @@ class AuditUserMixin:
         try:
             with transaction.atomic():
                 instance = serializer.save()
-                schedule_change(instance, 'updated')
+                if not isinstance(instance, Usuario):
+                    schedule_change(instance, 'updated')
         except IntegrityError as exc:
             raise serializers.ValidationError({
                 'detail': 'El identificador pertenece a un registro activo o archivado. Solicita una revisión técnica antes de guardar.',

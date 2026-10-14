@@ -14,14 +14,14 @@ from core.models import (
     Anexo, AsignacionIP, Departamento, Equipamiento, HistorialAnexo,
     HistorialAsignacionIP, HistorialEquipo, HistorialPCGenerico,
     HistorialPerfilGenerico, HistorialServidor, HistorialUsuario, IP,
-    PCGenerico, PerfilGenerico, PortalSession, PapeleraEvento, SecurityAuditLog, Servidor,
-    SubArea, Usuario,
+    PCGenerico, PerfilGenerico, PortalSession, PapeleraEvento, RevisionBajaUsuario,
+    SecurityAuditLog, Servidor, SubArea, Usuario,
 )
 
 
 DELETE_ORDER = (
-    PortalSession, AsignacionIP, Anexo, Equipamiento, Servidor,
-    PerfilGenerico, PCGenerico, Usuario, IP, HistorialAnexo,
+    PortalSession, AsignacionIP, RevisionBajaUsuario, Anexo, Equipamiento,
+    Servidor, PerfilGenerico, PCGenerico, Usuario, IP, HistorialAnexo,
     HistorialAsignacionIP, HistorialEquipo, HistorialPCGenerico,
     HistorialPerfilGenerico, HistorialServidor, HistorialUsuario,
     SecurityAuditLog, PapeleraEvento, SubArea, Departamento,

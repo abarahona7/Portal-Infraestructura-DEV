@@ -143,6 +143,27 @@ class RevisionBajaTests(TestCase):
         self.assertEqual(self.client.patch(url, {'cargo': 'Analista'}, format='json').status_code, 200)
         self.assertFalse(RevisionBajaUsuario.objects.exists())
 
+    def test_baja_is_separated_from_default_user_list_and_stats(self):
+        active_user = Usuario.objects.create(
+            nombre_completo='Persona Vigente', usuario_red='active.user',
+            correo_corp='active@example.com', departamento=self.usuario.departamento,
+        )
+        self.usuario.estado = 'BAJA'
+        self.usuario.save(update_fields=['estado'])
+
+        default_response = self.client.get('/api/usuarios/')
+        inactive_response = self.client.get('/api/usuarios/', {'estado': 'BAJA'})
+        stats_response = self.client.get('/api/reference-data/', {'include': 'usuarios_stats'})
+
+        self.assertEqual(default_response.status_code, 200)
+        self.assertEqual([item['id'] for item in default_response.data['results']], [active_user.pk])
+        self.assertEqual([item['id'] for item in inactive_response.data['results']], [self.usuario.pk])
+        self.assertEqual(stats_response.data['usuarios_stats']['total'], 1)
+        self.assertEqual(stats_response.data['usuarios_stats']['baja'], 1)
+        self.assertEqual(stats_response.data['usuarios_stats']['departamentos'], [
+            {'nombre': self.usuario.departamento.nombre, 'total': 1},
+        ])
+
     def test_licencia_creates_review_only_for_released_ip(self):
         notebook = Equipamiento.objects.create(
             usuario=self.usuario, tipo='Notebook', marca='Lenovo', modelo='T14', numero_serie='REV-LIC-1',

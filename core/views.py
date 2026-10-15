@@ -364,6 +364,9 @@ class UsuarioViewSet(
         if self.action == 'retrieve':
             queryset = queryset.prefetch_related('historial')
 
+        if self.action == 'list' and not self.request.query_params.get('estado'):
+            queryset = queryset.exclude(estado='BAJA')
+
         department_filter = self.request.query_params.get('dpto_area')
         if department_filter and department_filter.strip():
             value = department_filter.strip()
@@ -752,10 +755,14 @@ class ReferenceDataView(APIView):
         if 'usuarios_stats' in sections:
             department_counts = {}
             total_users = 0
+            inactive_users = 0
             rows = Usuario.objects.values(
                 'departamento__nombre',
                 'dpto_area',
-            ).annotate(total=Count('id'))
+            ).annotate(
+                total=Count('id', filter=~Q(estado='BAJA')),
+                bajas=Count('id', filter=Q(estado='BAJA')),
+            )
 
             for row in rows:
                 department_name = (
@@ -764,13 +771,16 @@ class ReferenceDataView(APIView):
                     or 'Sin Departamento'
                 ).strip() or 'Sin Departamento'
                 row_total = row['total']
-                department_counts[department_name] = (
-                    department_counts.get(department_name, 0) + row_total
-                )
+                if row_total:
+                    department_counts[department_name] = (
+                        department_counts.get(department_name, 0) + row_total
+                    )
                 total_users += row_total
+                inactive_users += row['bajas']
 
             payload['usuarios_stats'] = {
                 'total': total_users,
+                'baja': inactive_users,
                 'departamentos': [
                     {
                         'nombre': name,

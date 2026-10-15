@@ -1018,7 +1018,15 @@ export default function App() {
           <UserDepartmentCards
             stats={usuariosStats}
             selectedDepartment={selectedDpto}
-            onSelectDepartment={setSelectedDpto}
+            onSelectDepartment={(department) => {
+              setSelectedDpto(department);
+              if (department) setSelectedEstadoGeneral('');
+            }}
+            selectedStatus={selectedEstadoGeneral}
+            onSelectStatus={(status) => {
+              setSelectedDpto('');
+              setSelectedEstadoGeneral(status);
+            }}
           />
         )}
 
@@ -1181,9 +1189,11 @@ export default function App() {
                         ? selectedDepartmentLabel
                         : normalizedSearch
                           ? `Resultados para "${normalizedSearch}"`
-                          : selectedEstadoGeneral
-                            ? 'Usuarios por estado'
-                            : 'Todos los usuarios'}
+                          : selectedEstadoGeneral === 'BAJA'
+                            ? 'Usuarios dados de baja'
+                            : selectedEstadoGeneral
+                              ? 'Usuarios por estado'
+                              : 'Usuarios vigentes'}
                     </h2>
                   </div>
 

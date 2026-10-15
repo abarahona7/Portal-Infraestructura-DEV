@@ -23,6 +23,7 @@ vi.mock('./hooks/useReferenceData', () => ({
     usuariosList: [],
     usuariosStats: {
       total: 1,
+      baja: 2,
       departamentos: [{ nombre: 'TECNOLOGÍA', total: 1 }],
     },
     ipsList: [],
@@ -55,12 +56,27 @@ describe('Filtros de estado en los listados', () => {
   it('muestra el listado general de usuarios sin exigir seleccionar un departamento', () => {
     render(<App />);
 
-    expect(screen.getByText('Todos los usuarios')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Usuarios vigentes' })).toBeInTheDocument();
     expect(screen.getAllByRole('combobox', { name: 'Filtrar usuarios por estado' })).toHaveLength(1);
     expect(useModuleData).toHaveBeenCalledWith(expect.objectContaining({
       tab: 'usuarios',
       selectedDpto: '',
       enabled: true,
+    }));
+  });
+
+  it('separa los usuarios dados de baja del listado vigente', () => {
+    render(<App />);
+
+    const inactiveUsers = screen.getByRole('button', { name: /usuarios de baja/i });
+    expect(inactiveUsers).toHaveTextContent('2');
+    fireEvent.click(inactiveUsers);
+
+    expect(screen.getByText('Usuarios dados de baja')).toBeInTheDocument();
+    expect(useModuleData).toHaveBeenLastCalledWith(expect.objectContaining({
+      tab: 'usuarios',
+      selectedDpto: '',
+      selectedEstadoGeneral: 'BAJA',
     }));
   });
 

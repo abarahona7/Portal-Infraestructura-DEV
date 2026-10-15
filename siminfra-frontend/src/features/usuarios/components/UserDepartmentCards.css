@@ -24,6 +24,44 @@
   font-size: 0.78rem;
 }
 
+.user-department-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-inactive-button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fff7f7;
+  color: #b42318;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 750;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.user-inactive-button:hover,
+.user-inactive-button.is-active {
+  border-color: #ef4444;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.user-inactive-button strong {
+  min-width: 22px;
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+  background: #fff;
+  text-align: center;
+}
+
 .user-department-clear {
   min-height: 32px;
   padding: 0.35rem 0.65rem;
@@ -115,6 +153,11 @@
 @media (max-width: 639px) {
   .user-department-heading {
     flex-direction: column;
+  }
+
+  .user-department-heading-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .user-department-grid {

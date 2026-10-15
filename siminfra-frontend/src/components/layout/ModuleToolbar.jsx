@@ -95,12 +95,14 @@ export default function ModuleToolbar({
               value={selectedGeneralStatus || ''}
               onChange={(event) => onGeneralStatusChange(event.target.value)}
             >
-              <option value="">Todos los estados</option>
+              <option value="">
+                {activeTab === 'usuarios' ? 'Usuarios vigentes' : 'Todos los estados'}
+              </option>
               {activeTab === 'usuarios' ? (
                 <>
                   <option value="ACTIVO">Activo</option>
                   <option value="LICENCIA">Licencia médica</option>
-                  <option value="BAJA">Dado de baja</option>
+                  <option value="BAJA">Baja</option>
                 </>
               ) : (
                 <>

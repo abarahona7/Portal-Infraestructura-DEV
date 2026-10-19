@@ -662,10 +662,6 @@ export default function EquipoEditForm({
             Stock / Disponible
           </option>
 
-          <option value="MANTENCION">
-            En Mantención
-          </option>
-
           <option value="BAJA">
             Dado de Baja
           </option>

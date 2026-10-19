@@ -143,10 +143,15 @@ class RevisionBajaTests(TestCase):
         self.assertEqual(self.client.patch(url, {'cargo': 'Analista'}, format='json').status_code, 200)
         self.assertFalse(RevisionBajaUsuario.objects.exists())
 
-    def test_baja_is_separated_from_default_user_list_and_stats(self):
+    def test_default_user_list_and_stats_only_include_active_users(self):
         active_user = Usuario.objects.create(
             nombre_completo='Persona Vigente', usuario_red='active.user',
             correo_corp='active@example.com', departamento=self.usuario.departamento,
+        )
+        Usuario.objects.create(
+            nombre_completo='Persona Licencia', usuario_red='license.user',
+            correo_corp='license@example.com', departamento=self.usuario.departamento,
+            estado='LICENCIA',
         )
         self.usuario.estado = 'BAJA'
         self.usuario.save(update_fields=['estado'])

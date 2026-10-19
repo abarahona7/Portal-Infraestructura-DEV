@@ -40,7 +40,7 @@ export default function UserDepartmentCards({
       <div className="user-department-heading">
         <div>
           <h2>Departamentos / Áreas</h2>
-          <p>Usuarios activos o con licencia médica, agrupados por departamento.</p>
+          <p>Usuarios activos agrupados por departamento.</p>
         </div>
 
         <div className="user-department-heading-actions">

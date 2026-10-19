@@ -18,7 +18,7 @@ const equipment = {
 
 const summary = {
   conteos: {
-    total: 1, asignados: 1, disponibles: 0, reparacion: 0, baja: 0,
+    total: 1, asignados: 1, disponibles: 0, baja: 0,
     sin_serie: 1, sin_activo_fijo: 0, sin_custodio: 0, custodio_no_activo: 0,
     custodio_baja: 0,
   },
@@ -91,6 +91,7 @@ describe('Tablero de activos', () => {
         params: { estado: 'STOCK', page: 1, page_size: 20 },
       }),
     ));
+    expect(screen.queryByText('En reparación')).not.toBeInTheDocument();
   });
 
   it('separa la alerta de usuarios de baja de los equipos sin usuario', async () => {

@@ -7,7 +7,7 @@ const reviewReasons = [
   { key: 'custodio_baja', label: 'Asignados a usuarios de baja', level: 'urgente', help: 'Revisar a quién corresponde el equipo.' },
   { key: 'sin_serie', label: 'Sin número de serie', level: 'datos', help: 'Completar el identificador cuando esté disponible.' },
   { key: 'sin_activo_fijo', label: 'Sin activo fijo', level: 'datos', help: 'Completarlo cuando corresponda al equipo.' },
-  { key: 'sin_custodio', label: 'Sin usuario asignado', level: 'informativo', help: 'Puede estar en stock, reparación o baja.' },
+  { key: 'sin_custodio', label: 'Sin usuario asignado', level: 'informativo', help: 'Puede estar en stock o dado de baja.' },
 ];
 
 export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 }) {
@@ -131,7 +131,6 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
             ['asignados', null, 'Con usuario asignado', counts.asignados],
             ['estado', 'STOCK', 'Disponibles', counts.disponibles],
             ['estado', 'BAJA', 'Dados de baja', counts.baja],
-            ['estado', 'MANTENCION', 'En reparación', counts.reparacion],
           ].map(([kind, id, label, count]) => <button type="button" key={label}
             aria-label={`${label}: ${count}. Ver equipos`}
             aria-expanded={selection?.kind === kind && selection?.id === id}

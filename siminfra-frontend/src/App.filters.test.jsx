@@ -56,16 +56,19 @@ describe('Filtros de estado en los listados', () => {
   it('muestra el listado general de usuarios sin exigir seleccionar un departamento', () => {
     render(<App />);
 
-    expect(screen.getByRole('heading', { name: 'Usuarios vigentes' })).toBeInTheDocument();
-    expect(screen.getAllByRole('combobox', { name: 'Filtrar usuarios por estado' })).toHaveLength(1);
+    expect(screen.getByRole('heading', { name: 'Usuarios activos' })).toBeInTheDocument();
+    const status = screen.getByRole('combobox', { name: 'Filtrar usuarios por estado' });
+    expect(status).toHaveValue('ACTIVO');
+    expect(screen.queryByRole('option', { name: 'Usuarios vigentes' })).not.toBeInTheDocument();
     expect(useModuleData).toHaveBeenCalledWith(expect.objectContaining({
       tab: 'usuarios',
       selectedDpto: '',
+      selectedEstadoGeneral: 'ACTIVO',
       enabled: true,
     }));
   });
 
-  it('separa los usuarios dados de baja del listado vigente', () => {
+  it('separa los usuarios dados de baja del listado activo', () => {
     render(<App />);
 
     const inactiveUsers = screen.getByRole('button', { name: /usuarios de baja/i });

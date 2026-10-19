@@ -243,6 +243,9 @@ export default function App() {
   const isEquipmentModule = isEquipmentTab(tab);
   const equipmentCategory = getEquipmentCategoryByTab(tab);
   const activeModuleTab = getModuleTab(tab);
+  const effectiveGeneralStatus = activeModuleTab === 'usuarios'
+    ? selectedEstadoGeneral || 'ACTIVO'
+    : selectedEstadoGeneral;
 
   const {
     editingItem,
@@ -293,7 +296,7 @@ export default function App() {
   const isGlobalUserSearch = (
     activeModuleTab === 'usuarios'
     && !selectedDpto
-    && Boolean(normalizedSearch || selectedEstadoGeneral)
+    && Boolean(normalizedSearch || effectiveGeneralStatus)
   );
   const isGlobalIpSearch = (
     activeModuleTab === 'ips'
@@ -323,7 +326,7 @@ export default function App() {
     selectedIpSegment,
     selectedEstadoIP,
     selectedEstadoAnexo,
-    selectedEstadoGeneral,
+    selectedEstadoGeneral: effectiveGeneralStatus,
     onUnauthorized: logout,
     enabled: moduleDataEnabled,
   });
@@ -1022,7 +1025,7 @@ export default function App() {
               setSelectedDpto(department);
               if (department) setSelectedEstadoGeneral('');
             }}
-            selectedStatus={selectedEstadoGeneral}
+            selectedStatus={effectiveGeneralStatus}
             onSelectStatus={(status) => {
               setSelectedDpto('');
               setSelectedEstadoGeneral(status);
@@ -1043,7 +1046,7 @@ export default function App() {
         {tab === 'usuarios' && !selectedDpto && (
           <ModuleToolbar
             activeTab={tab}
-            selectedGeneralStatus={selectedEstadoGeneral}
+            selectedGeneralStatus={effectiveGeneralStatus}
             onGeneralStatusChange={setSelectedEstadoGeneral}
             readOnly={isViewer}
             departments={dptosList}
@@ -1101,7 +1104,7 @@ export default function App() {
 
             selectedAnexoStatus={selectedEstadoAnexo}
                   onAnexoStatusChange={setSelectedEstadoAnexo}
-                  selectedGeneralStatus={selectedEstadoGeneral}
+                  selectedGeneralStatus={effectiveGeneralStatus}
                   onGeneralStatusChange={setSelectedEstadoGeneral}
 
             search={search}
@@ -1189,11 +1192,11 @@ export default function App() {
                         ? selectedDepartmentLabel
                         : normalizedSearch
                           ? `Resultados para "${normalizedSearch}"`
-                          : selectedEstadoGeneral === 'BAJA'
+                          : effectiveGeneralStatus === 'BAJA'
                             ? 'Usuarios dados de baja'
-                            : selectedEstadoGeneral
-                              ? 'Usuarios por estado'
-                              : 'Usuarios vigentes'}
+                            : effectiveGeneralStatus === 'LICENCIA'
+                              ? 'Usuarios con licencia médica'
+                              : 'Usuarios activos'}
                     </h2>
                   </div>
 
@@ -1264,7 +1267,7 @@ export default function App() {
                   onAnexoStatusChange={
                     setSelectedEstadoAnexo
                   }
-                  selectedGeneralStatus={selectedEstadoGeneral}
+                  selectedGeneralStatus={effectiveGeneralStatus}
                   onGeneralStatusChange={setSelectedEstadoGeneral}
                   search={search}
                   onSearchChange={setSearch}

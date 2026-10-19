@@ -365,7 +365,7 @@ class UsuarioViewSet(
             queryset = queryset.prefetch_related('historial')
 
         if self.action == 'list' and not self.request.query_params.get('estado'):
-            queryset = queryset.exclude(estado='BAJA')
+            queryset = queryset.filter(estado='ACTIVO')
 
         department_filter = self.request.query_params.get('dpto_area')
         if department_filter and department_filter.strip():
@@ -760,7 +760,7 @@ class ReferenceDataView(APIView):
                 'departamento__nombre',
                 'dpto_area',
             ).annotate(
-                total=Count('id', filter=~Q(estado='BAJA')),
+                total=Count('id', filter=Q(estado='ACTIVO')),
                 bajas=Count('id', filter=Q(estado='BAJA')),
             )
 

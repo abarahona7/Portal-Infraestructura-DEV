@@ -43,6 +43,7 @@ class AssetDashboardQrTests(TestCase):
         self.assertEqual(counts['total'], 3)
         self.assertEqual(counts['asignados'], 2)
         self.assertEqual(counts['disponibles'], 1)
+        self.assertNotIn('reparacion', counts)
         self.assertEqual(counts['custodio_baja'], 1)
         self.assertEqual(
             response.data['tipos'],
@@ -145,6 +146,13 @@ class AssetDashboardQrTests(TestCase):
         self.assertIn('tipo', wrong_edit.data)
         self.assigned.refresh_from_db()
         self.assertEqual(self.assigned.tipo, 'Notebook')
+
+        removed_state = self.client.patch(
+            f'/api/equipos/{self.assigned.pk}/?categoria=Notebook',
+            {'estado': 'MANTENCION'}, format='json',
+        )
+        self.assertEqual(removed_state.status_code, 400)
+        self.assertIn('estado', removed_state.data)
 
         wrong_peripheral = self.client.post('/api/equipos/?categoria=PERIFERICOS', {
             'tipo': 'Mac', 'marca': 'Apple', 'modelo': 'Mini',

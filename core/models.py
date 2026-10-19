@@ -23,7 +23,6 @@ ESTADOS_PERFIL = [
 ESTADOS_EQUIPO = [
     ('ASIGNADO', 'Asignado'),
     ('STOCK', 'Stock / Disponible'),
-    ('MANTENCION', 'En Mantención'),
     ('BAJA', 'Dado de Baja'),
 ]
 
@@ -765,11 +764,11 @@ class Equipamiento(ArchivableRecord):
                     models.Q(
                         usuario__isnull=True,
                         fecha_asignacion__isnull=True,
-                        estado__in=['STOCK', 'MANTENCION', 'BAJA'],
+                        estado__in=['STOCK', 'BAJA'],
                     )
                     | models.Q(
                         usuario__isnull=False,
-                        estado__in=['ASIGNADO', 'MANTENCION', 'BAJA'],
+                        estado__in=['ASIGNADO', 'BAJA'],
                     )
                 ),
                 name='ck_equipo_asignacion_valida',

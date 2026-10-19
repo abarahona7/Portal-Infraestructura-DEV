@@ -90,7 +90,6 @@ class ResumenEquiposView(APIView):
             total=Count('id'),
             asignados=Count('id', filter=Q(usuario__isnull=False)),
             disponibles=Count('id', filter=Q(estado='STOCK')),
-            reparacion=Count('id', filter=Q(estado='MANTENCION')),
             baja=Count('id', filter=Q(estado='BAJA')),
             sin_serie=Count('id', filter=Q(numero_serie__isnull=True) | Q(numero_serie='')),
             sin_activo_fijo=Count('id', filter=Q(af__isnull=True) | Q(af='')),

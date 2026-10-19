@@ -12,6 +12,29 @@ QA ni producción. El archivo
 está preparado como ejemplo y **no está instalado** en Nginx. Los valores
 `portal-dev.example.cl` y `203.0.113.10` son marcadores de ejemplo.
 
+## Estado actual en la red privada
+
+El portal ya se ejecuta directamente en `simidev` y arranca con la VM:
+
+- `portal-infraestructura-dev.service` mantiene Daphne en `127.0.0.1:8005`.
+- Nginx sirve el frontend compilado en `http://10.0.0.28:5178`.
+- Nginx envía `/api/`, `/admin/` y `/ws/` hacia Daphne.
+- Nginx y Daphne están habilitados mediante `systemd`.
+- Vite no se usa para el servicio permanente.
+
+Comandos de operación:
+
+```bash
+sudo systemctl status portal-infraestructura-dev.service nginx
+sudo systemctl restart portal-infraestructura-dev.service
+sudo systemctl reload nginx
+sudo journalctl -u portal-infraestructura-dev.service -f
+```
+
+La oficina todavía no tiene una ruta directa hacia `10.0.0.28`. El puente SSH
+puede seguir usándose como acceso temporal. La publicación HTTPS descrita en
+este documento elimina también esa dependencia del PC.
+
 ## Datos que debe confirmar Infraestructura
 
 1. Nombre DNS exacto para DEV y certificado HTTPS válido para ese nombre,
@@ -26,9 +49,10 @@ está preparado como ejemplo y **no está instalado** en Nginx. Los valores
    proyecto `simidata-project-db-ws`, red `vpc-drsimi-db-ws`, etiqueta de la VM
    `simidev`. La cuenta de la VM no puede consultar/modificar el firewall por
    falta de alcance de autenticación.
-4. Acceso de administración al Nginx de la VM y una forma de mantener el backend
-   Daphne activo tras reinicios. La configuración Nginx vigente sigue siendo la
-   predeterminada y no se ha modificado.
+4. Acceso de administración al Nginx de la VM. Daphne ya se mantiene activo con
+   `portal-infraestructura-dev.service`; Nginx tiene instalado el sitio privado
+   `portal-infraestructura-dev` en `10.0.0.28:5178`. La configuración HTTPS de
+   ejemplo todavía no está instalada.
 
 ## Preparar la publicación en DEV
 
@@ -58,13 +82,13 @@ está preparado como ejemplo y **no está instalado** en Nginx. Los valores
    .venv/bin/python manage.py collectstatic --noinput
    ```
 
-5. Iniciar Django con Daphne (ASGI) escuchando **solo** en `127.0.0.1:8005`, bajo el
-   gestor de servicios que utilice Infraestructura. Los WebSockets no funcionan con
-   el proceso WSGI de Waitress. `runserver` y Vite son para desarrollo:
+5. Reiniciar el servicio Django después de desplegar cambios. Daphne escucha
+   **solo** en `127.0.0.1:8005`. Los WebSockets no funcionan con el proceso WSGI
+   de Waitress. `runserver` y Vite son para desarrollo:
 
    ```bash
-   cd /opt/proyectos/Portal-Infraestructura-DEV
-   .venv/bin/daphne -b 127.0.0.1 -p 8005 config.asgi:application
+   sudo systemctl restart portal-infraestructura-dev.service
+   sudo systemctl status portal-infraestructura-dev.service --no-pager
    ```
 
    Antes de sustituir el proceso actual, comprobar la conexión MySQL DEV y el

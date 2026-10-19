@@ -1,0 +1,22 @@
+[Unit]
+Description=Portal de Infraestructura DEV (Django ASGI)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=tiangelo
+Group=tiangelo
+WorkingDirectory=/opt/proyectos/Portal-Infraestructura-DEV
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/proyectos/Portal-Infraestructura-DEV/.venv/bin/daphne -b 127.0.0.1 -p 8005 config.asgi:application
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+PrivateTmp=true
+NoNewPrivileges=true
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target

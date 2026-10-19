@@ -14,8 +14,7 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
   const [summary, setSummary] = useState(null);
   const [summaryError, setSummaryError] = useState('');
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
-  const [refreshing, setRefreshing] = useState(true);
-  const [reload, setReload] = useState(0);
+  const [syncedRevision, setSyncedRevision] = useState(null);
   const [selection, setSelection] = useState(null);
   const [page, setPage] = useState(1);
   const [list, setList] = useState(null);
@@ -37,9 +36,9 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
           setSummaryError('No se pudo cargar el tablero.');
         }
       })
-      .finally(() => { if (!controller.signal.aborted) setRefreshing(false); });
+      .finally(() => { if (!controller.signal.aborted) setSyncedRevision(revision); });
     return () => controller.abort();
-  }, [reload, revision]);
+  }, [revision]);
 
   useEffect(() => {
     if (!selection) return undefined;
@@ -60,7 +59,7 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
       .then(({ data }) => { setList(data); setListError(''); })
       .catch((error) => { if (error.code !== 'ERR_CANCELED') setListError('No se pudo cargar la lista de equipos.'); });
     return () => controller.abort();
-  }, [selection, page, reload, revision]);
+  }, [selection, page, revision]);
 
   useEffect(() => {
     if (selection) detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -79,21 +78,18 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
     ? reviewReasons.filter(({ key }) => (counts[key] || 0) > 0)
     : [];
   const maxCount = Math.max(1, ...departments.map((department) => department.total));
+  const refreshing = syncedRevision !== revision;
 
   return <div className="asset-overview">
     <div className="asset-overview-heading">
       <div><h2>Tablero de activos</h2><p>Estado general y equipos que necesitan revisión.</p></div>
-      <div className="asset-overview-actions">
-        <button type="button" disabled={refreshing} onClick={() => {
-          setRefreshing(true);
-          setReload((value) => value + 1);
-        }}>
-          {refreshing ? 'Actualizando...' : 'Actualizar'}
-        </button>
+      <div className="asset-overview-sync">
         <small role="status" aria-live="polite">
-          {lastUpdatedAt
-            ? <>Última actualización: <time dateTime={lastUpdatedAt.toISOString()}>{lastUpdatedAt.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time></>
-            : 'Aún sin actualizar'}
+          {refreshing
+            ? 'Sincronizando cambios...'
+            : lastUpdatedAt
+              ? <>Actualización automática · Última sincronización: <time dateTime={lastUpdatedAt.toISOString()}>{lastUpdatedAt.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time></>
+              : 'Esperando sincronización automática'}
         </small>
       </div>
     </div>

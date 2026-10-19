@@ -131,7 +131,7 @@ describe('Tablero de activos', () => {
     expect(screen.getByRole('region', { name: 'Gráfico de equipos por departamento' })).toBeInTheDocument();
   });
 
-  it('actualiza la hora al terminar una recarga correcta', async () => {
+  it('actualiza automáticamente el tablero cuando cambia la revisión', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       vi.setSystemTime(new Date('2026-10-07T12:00:00.000Z'));
@@ -140,19 +140,21 @@ describe('Tablero de activos', () => {
         .mockResolvedValueOnce({ data: summary })
         .mockImplementationOnce(() => new Promise((resolve) => { completeRefresh = resolve; }));
 
-      const { container } = render(<AssetDashboard onOpenAsset={vi.fn()} onEditAsset={vi.fn()} />);
-      await screen.findByText(/Última actualización:/);
+      const props = { onOpenAsset: vi.fn(), onEditAsset: vi.fn() };
+      const { container, rerender } = render(<AssetDashboard {...props} />);
+      await screen.findByText(/Actualización automática/);
       const updatedAt = container.querySelector('time');
       expect(updatedAt).toHaveAttribute('dateTime', '2026-10-07T12:00:00.000Z');
+      expect(screen.queryByRole('button', { name: 'Actualizar' })).not.toBeInTheDocument();
 
       vi.setSystemTime(new Date('2026-10-07T12:05:07.000Z'));
-      fireEvent.click(screen.getByRole('button', { name: 'Actualizar' }));
-      expect(screen.getByRole('button', { name: 'Actualizando...' })).toBeDisabled();
-      expect(updatedAt).toHaveAttribute('dateTime', '2026-10-07T12:00:00.000Z');
+      rerender(<AssetDashboard {...props} revision={1} />);
+      expect(screen.getByText('Sincronizando cambios...')).toBeInTheDocument();
+      expect(container.querySelector('time')).not.toBeInTheDocument();
 
       await act(async () => { completeRefresh({ data: summary }); });
-      await waitFor(() => expect(updatedAt).toHaveAttribute('dateTime', '2026-10-07T12:05:07.000Z'));
-      expect(screen.getByRole('button', { name: 'Actualizar' })).toBeEnabled();
+      await waitFor(() => expect(container.querySelector('time')).toHaveAttribute('dateTime', '2026-10-07T12:05:07.000Z'));
+      expect(screen.getByText(/Actualización automática/)).toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }

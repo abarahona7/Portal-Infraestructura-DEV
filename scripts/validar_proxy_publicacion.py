@@ -90,8 +90,8 @@ def main():
                 replacements.update({
                     '/etc/letsencrypt/live/portal-dev.example.cl/fullchain.pem': str(certificate),
                     '/etc/letsencrypt/live/portal-dev.example.cl/privkey.pem': str(key),
-                    '/opt/Portal-Infraestructura-DEV/siminfra-frontend/dist': str(DIST),
-                    '/opt/Portal-Infraestructura-DEV/staticfiles/': str(temp / 'staticfiles') + '/',
+                    '/opt/proyectos/Portal-Infraestructura-DEV/siminfra-frontend/dist': str(DIST),
+                    '/opt/proyectos/Portal-Infraestructura-DEV/staticfiles/': str(temp / 'staticfiles') + '/',
                     'http://127.0.0.1:8005': f'http://127.0.0.1:{backend.server_port}',
                     'allow 203.0.113.10;': 'allow 127.0.0.1;',
                 })

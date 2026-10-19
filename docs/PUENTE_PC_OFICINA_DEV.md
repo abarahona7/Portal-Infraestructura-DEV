@@ -16,14 +16,14 @@ proxy HTTPS descrito en [`ACCESO_OFICINA_DEV.md`](ACCESO_OFICINA_DEV.md).
 En la VM, abrir una terminal para Django:
 
 ```bash
-cd /opt/Portal-Infraestructura-DEV
+cd /opt/proyectos/Portal-Infraestructura-DEV
 .venv/bin/daphne -b 127.0.0.1 -p 8005 config.asgi:application
 ```
 
 En otra terminal, iniciar Vite:
 
 ```bash
-cd /opt/Portal-Infraestructura-DEV/siminfra-frontend
+cd /opt/proyectos/Portal-Infraestructura-DEV/siminfra-frontend
 npm run dev:lan
 ```
 

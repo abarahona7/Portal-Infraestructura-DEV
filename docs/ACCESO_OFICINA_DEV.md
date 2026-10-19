@@ -51,7 +51,7 @@ está preparado como ejemplo y **no está instalado** en Nginx. Los valores
 4. Compilar el frontend y generar estáticos de Django en la VM:
 
    ```bash
-   cd /opt/Portal-Infraestructura-DEV/siminfra-frontend
+   cd /opt/proyectos/Portal-Infraestructura-DEV/siminfra-frontend
    npm ci
    npm run build
    cd ..
@@ -63,7 +63,7 @@ está preparado como ejemplo y **no está instalado** en Nginx. Los valores
    el proceso WSGI de Waitress. `runserver` y Vite son para desarrollo:
 
    ```bash
-   cd /opt/Portal-Infraestructura-DEV
+   cd /opt/proyectos/Portal-Infraestructura-DEV
    .venv/bin/daphne -b 127.0.0.1 -p 8005 config.asgi:application
    ```
 

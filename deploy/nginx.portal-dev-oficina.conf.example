@@ -16,7 +16,7 @@ server {
     allow 203.0.113.10;
     deny all;
 
-    root /opt/Portal-Infraestructura-DEV/siminfra-frontend/dist;
+    root /opt/proyectos/Portal-Infraestructura-DEV/siminfra-frontend/dist;
     index index.html;
 
     add_header X-Content-Type-Options "nosniff" always;
@@ -51,7 +51,7 @@ server {
     }
 
     location /static/ {
-        alias /opt/Portal-Infraestructura-DEV/staticfiles/;
+        alias /opt/proyectos/Portal-Infraestructura-DEV/staticfiles/;
     }
 
     location /assets/ {

@@ -79,6 +79,12 @@ def _include_derived_update_fields(kwargs, *field_names):
 
 
 class ArchivableQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        """Invalida formularios abiertos también ante cambios internos directos."""
+        if 'version' not in kwargs:
+            kwargs['version'] = models.F('version') + 1
+        return super().update(**kwargs)
+
     def delete(self):
         from .services.papelera import archive_record
 
@@ -98,6 +104,7 @@ class ActiveRecordsManager(models.Manager.from_queryset(ArchivableQuerySet)):
 class ArchivableRecord(models.Model):
     """Conserva el registro y su identidad; el portal solo consulta los activos."""
 
+    version = models.PositiveBigIntegerField(default=1, editable=False)
     deleted_at = models.DateTimeField(null=True, blank=True, db_index=True, editable=False)
     deleted_by = models.CharField(max_length=150, null=True, blank=True, editable=False)
     archive_context = models.JSONField(default=dict, blank=True, editable=False)
@@ -115,6 +122,18 @@ class ArchivableRecord(models.Model):
 
         archive_record(self)
         return 1, {self._meta.label: 1}
+
+    def save(self, *args, **kwargs):
+        """Incrementa la versión para detectar formularios abiertos con datos antiguos."""
+        is_update = not self._state.adding
+        if is_update:
+            self.version = models.F('version') + 1
+            _include_derived_update_fields(kwargs, 'version')
+
+        super().save(*args, **kwargs)
+
+        if is_update:
+            self.refresh_from_db(fields=['version'])
 
 
 class Departamento(ArchivableRecord):

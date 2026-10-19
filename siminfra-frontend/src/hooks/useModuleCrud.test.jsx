@@ -45,4 +45,39 @@ describe('Confirmación de baja del usuario', () => {
       undefined,
     );
   });
+
+  it('cierra el formulario y recarga los datos ante una edición obsoleta', async () => {
+    updateItemByTab.mockRejectedValue({
+      response: {
+        status: 409,
+        data: {
+          code: 'stale_update',
+          detail: 'El registro fue actualizado por otra persona. Recarga los datos antes de guardar.',
+        },
+      },
+    });
+    const setEditingItem = vi.fn();
+    const refreshAllData = vi.fn().mockResolvedValue();
+    const showToast = vi.fn();
+    const { result } = renderHook(() => useModuleCrud({
+      tab: 'perfiles',
+      data: [{ id: 9, version: 1, nombre: 'Perfil' }],
+      editingItem: { id: 9, version: 1, nombre: 'Perfil editado' },
+      refreshAllData,
+      requestConfirmation: vi.fn().mockResolvedValue(true),
+      showToast,
+      setEditingItem,
+    }));
+
+    await act(async () => {
+      await result.current.handleSave({ preventDefault: vi.fn() });
+    });
+
+    expect(setEditingItem).toHaveBeenCalledWith(null);
+    expect(refreshAllData).toHaveBeenCalledOnce();
+    expect(showToast).toHaveBeenCalledWith(
+      'El registro fue actualizado por otra persona. Recarga los datos antes de guardar.',
+      'error',
+    );
+  });
 });

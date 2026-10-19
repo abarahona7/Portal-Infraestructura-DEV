@@ -3,7 +3,7 @@
 import hashlib
 import json
 
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
@@ -188,7 +188,7 @@ def archive_record(instance, *, reason='', expected_fingerprint=None):
         history_parts.append(f'Motivo:::N/I:::{safe_history_reason}')
     type(instance).all_objects.filter(pk=instance.pk).update(
         deleted_at=timezone.now(), deleted_by=get_current_audit_username() or 'Sistema',
-        archive_context=context,
+        archive_context=context, version=models.F('version') + 1,
     )
     instance.refresh_from_db()
     _write_history(instance, 'ARCHIVO', '||'.join(history_parts))
@@ -225,6 +225,7 @@ def restore_record(module, record_id, *, reason=''):
     archive_context = instance.archive_context or {}
     model.all_objects.filter(pk=instance.pk).update(
         deleted_at=None, deleted_by=None, archive_context={},
+        version=models.F('version') + 1,
     )
     instance.refresh_from_db()
     _write_history(instance, 'RESTAURACION', 'Registro:::Archivado:::Activo')

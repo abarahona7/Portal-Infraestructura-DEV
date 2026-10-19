@@ -510,7 +510,7 @@ export default function App() {
     if (!confirmed) return;
 
     try {
-      await updatePerfil(perfil.id, { estado: nextStatus });
+      await updatePerfil(perfil.id, { estado: nextStatus, version: perfil.version });
       await refreshAllData();
       showToast(
         isActive
@@ -520,7 +520,13 @@ export default function App() {
       );
     } catch (error) {
       console.error('Error actualizando estado del perfil:', error.response?.data || error);
-      showToast('No se pudo actualizar el estado del Perfil Genérico.', 'error');
+      if (error?.response?.status === 409 && error?.response?.data?.code === 'stale_update') {
+        await refreshAllData();
+      }
+      showToast(
+        error?.response?.data?.detail || 'No se pudo actualizar el estado del Perfil Genérico.',
+        'error'
+      );
     }
   };
 

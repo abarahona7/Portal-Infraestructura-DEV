@@ -9,6 +9,7 @@ from .services.acta_entrega_pdf import (
 )
 
 from rest_framework import viewsets, filters, serializers, status
+from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .permissions import PortalRolePermission
@@ -60,6 +61,13 @@ from .realtime import schedule_change
 from .services.papelera import archive_record
 from .equipment_categories import EQUIPMENT_CATEGORY_TYPES
 
+
+class StaleUpdateConflict(APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_code = 'stale_update'
+    default_detail = 'El registro fue actualizado por otra persona. Recarga los datos antes de guardar.'
+
+
 class AuditUserMixin:
     def perform_create(self, serializer):
         token = set_current_audit_user(
@@ -82,6 +90,27 @@ class AuditUserMixin:
         token = set_current_audit_user(self.request.user)
         try:
             with transaction.atomic():
+                model = type(serializer.instance)
+                manager = getattr(model, 'all_objects', model._default_manager)
+                current = manager.select_for_update().get(pk=serializer.instance.pk)
+                expected_version = self.request.data.get('version')
+
+                if expected_version not in (None, ''):
+                    try:
+                        expected_version = int(expected_version)
+                    except (TypeError, ValueError) as exc:
+                        raise serializers.ValidationError({
+                            'version': 'La versión del registro no es válida.',
+                        }) from exc
+
+                    if expected_version != current.version:
+                        raise StaleUpdateConflict({
+                            'detail': StaleUpdateConflict.default_detail,
+                            'code': 'stale_update',
+                            'current_version': current.version,
+                        })
+
+                serializer.instance = current
                 instance = serializer.save()
                 if not isinstance(instance, Usuario):
                     schedule_change(instance, 'updated')

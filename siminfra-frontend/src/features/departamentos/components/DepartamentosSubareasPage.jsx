@@ -211,7 +211,7 @@ export default function DepartamentosSubareasPage({
       }
 
       if (modal.type === 'department-edit') {
-        await updateDepartamento(modal.item.id, { nombre });
+        await updateDepartamento(modal.item.id, { nombre, version: modal.item.version });
         showToast?.('Departamento actualizado correctamente.', 'success');
       }
 
@@ -225,13 +225,17 @@ export default function DepartamentosSubareasPage({
       }
 
       if (modal.type === 'subarea-edit') {
-        await updateSubarea(modal.item.id, { nombre });
+        await updateSubarea(modal.item.id, { nombre, version: modal.item.version });
         showToast?.('Área actualizada correctamente.', 'success');
       }
 
       setModal(null);
       await onRefresh?.();
     } catch (error) {
+      if (error?.response?.status === 409 && error?.response?.data?.code === 'stale_update') {
+        setModal(null);
+        await onRefresh?.();
+      }
       showToast?.(getApiErrorMessage(error), 'error');
     } finally {
       setSaving(false);
@@ -252,7 +256,7 @@ export default function DepartamentosSubareasPage({
     if (confirmed === false) return;
 
     try {
-      await updateDepartamento(department.id, { activo: nextActive });
+      await updateDepartamento(department.id, { activo: nextActive, version: department.version });
       showToast?.(
         nextActive
           ? 'Departamento activado correctamente.'
@@ -261,6 +265,9 @@ export default function DepartamentosSubareasPage({
       );
       await onRefresh?.();
     } catch (error) {
+      if (error?.response?.status === 409 && error?.response?.data?.code === 'stale_update') {
+        await onRefresh?.();
+      }
       showToast?.(getApiErrorMessage(error), 'error');
     }
   };
@@ -279,7 +286,7 @@ export default function DepartamentosSubareasPage({
     if (confirmed === false) return;
 
     try {
-      await updateSubarea(subarea.id, { activo: nextActive });
+      await updateSubarea(subarea.id, { activo: nextActive, version: subarea.version });
       showToast?.(
         nextActive
           ? 'Área activada correctamente.'
@@ -288,6 +295,9 @@ export default function DepartamentosSubareasPage({
       );
       await onRefresh?.();
     } catch (error) {
+      if (error?.response?.status === 409 && error?.response?.data?.code === 'stale_update') {
+        await onRefresh?.();
+      }
       showToast?.(getApiErrorMessage(error), 'error');
     }
   };

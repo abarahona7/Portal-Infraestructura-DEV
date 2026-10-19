@@ -37,6 +37,13 @@ una capa de canales en memoria y en producción se requiere Redis privado para
 compartir los avisos entre procesos. El cliente reconecta con espera progresiva
 si se interrumpe la conexión.
 
+Cada registro editable y archivable incluye una versión incremental. El
+frontend envía la versión que tenía al abrir el formulario y el backend bloquea
+la fila antes de guardar. Si otra sesión o una relación interna ya modificó el
+registro, la API responde `409 Conflict`, descarta el formulario desactualizado
+y solicita nuevamente los datos. Así, el aviso WebSocket actualiza las vistas y
+la versión evita que un formulario antiguo sobrescriba el cambio más reciente.
+
 ### Autenticación y sesión
 
 - El access token JWT vive en memoria del frontend.

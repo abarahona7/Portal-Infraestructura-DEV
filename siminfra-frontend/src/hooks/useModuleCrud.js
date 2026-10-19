@@ -27,6 +27,11 @@ const extractApiErrorMessage = (error, fallback) => {
   return fallback;
 };
 
+const isStaleUpdateError = (error) => (
+  error?.response?.status === 409
+  && error?.response?.data?.code === 'stale_update'
+);
+
 const getUpdateConfirmation = (tab, editingItem, originalItem) => {
   const defaultConfirmation = {
     title: 'Guardar cambios',
@@ -236,6 +241,20 @@ export const useModuleCrud = ({
         'Error guardando cambios:',
         error.response?.data || error
       );
+
+      if (isStaleUpdateError(error)) {
+        setEditingItem(null);
+        try {
+          await refreshAllData();
+        } catch (refreshError) {
+          console.error('No se pudieron recargar los datos tras el conflicto:', refreshError);
+        }
+        showToast?.(
+          extractApiErrorMessage(error, 'El registro cambió. Vuelve a abrirlo antes de guardar.'),
+          'error'
+        );
+        return;
+      }
 
       showToast?.(
         extractApiErrorMessage(

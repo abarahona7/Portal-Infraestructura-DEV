@@ -116,6 +116,7 @@ class SubAreaSerializer(serializers.ModelSerializer):
         model = SubArea
         fields = [
             'id',
+            'version',
             'departamento',
             'departamento_nombre',
             'nombre',
@@ -172,6 +173,7 @@ class DepartamentoSerializer(serializers.ModelSerializer):
         model = Departamento
         fields = [
             'id',
+            'version',
             'nombre',
             'activo',
             'subareas',
@@ -1662,7 +1664,7 @@ class EquipamientoListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Equipamiento
         fields = [
-            'id', 'usuario', 'usuario_red', 'usuario_nombre', 'tipo', 'marca',
+            'id', 'version', 'usuario', 'usuario_red', 'usuario_nombre', 'tipo', 'marca',
             'modelo', 'numero_serie', 'hostname', 'af', 'accesorios',
             'fecha_asignacion', 'estado', 'numero_telefono', 'imei',
             'icloud_cuenta', 'icloud_password_configured', 'pin_configured',
@@ -1696,7 +1698,7 @@ class UsuarioListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         fields = [
-            'id', 'nombre_completo', 'usuario_red', 'correo_corp', 'dpto_area',
+            'id', 'version', 'nombre_completo', 'usuario_red', 'correo_corp', 'dpto_area',
             'departamento', 'departamento_nombre', 'subarea', 'subarea_nombre',
             'cargo', 'hostname', 'estado', 'gmail', 'celular', 'telefono',
             'anexo', 'sif', 'vpn_cisco', 'equipos', 'ip_actual', 'anexo_actual',
@@ -1737,7 +1739,7 @@ class AnexoListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Anexo
         fields = [
-            'id', 'numero_anexo', 'exterior', 'usuario', 'usuario_nombre',
+            'id', 'version', 'numero_anexo', 'exterior', 'usuario', 'usuario_nombre',
             'departamento', 'cargo', 'correo', 'estado', 'observaciones',
             'fecha_creacion', 'fecha_actualizacion',
         ]
@@ -1752,7 +1754,7 @@ class PCGenericoListSerializer(serializers.ModelSerializer):
     class Meta:
         model = PCGenerico
         fields = [
-            'id', 'usuario_local', 'password_configured', 'hostname',
+            'id', 'version', 'usuario_local', 'password_configured', 'hostname',
             'dpto_area', 'departamento', 'departamento_nombre', 'subarea',
             'subarea_nombre', 'marca', 'modelo', 'numero_serie', 'activo_fijo',
             'teamviewer_id', 'observaciones', 'fecha_creacion',
@@ -1774,7 +1776,7 @@ class ServidorListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Servidor
-        fields = ['id', 'ip', 'hostname', 'descripcion']
+        fields = ['id', 'version', 'ip', 'hostname', 'descripcion']
 
 
 class PerfilGenericoListSerializer(serializers.ModelSerializer):
@@ -1785,7 +1787,7 @@ class PerfilGenericoListSerializer(serializers.ModelSerializer):
     class Meta:
         model = PerfilGenerico
         fields = [
-            'id', 'nombre', 'usuario', 'password_configured', 'correo',
+            'id', 'version', 'nombre', 'usuario', 'password_configured', 'correo',
             'dpto_area', 'departamento', 'departamento_nombre', 'subarea',
             'subarea_nombre', 'tipo', 'estado', 'observaciones',
         ]

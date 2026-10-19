@@ -3,7 +3,6 @@ import {
   CalendarClock,
   ChevronDown,
   ChevronUp,
-  Download,
   History,
   UserRound,
   X,
@@ -36,8 +35,6 @@ export default function AuditHistoryModal({
   emptyMessage,
   onClose,
   getMetaRows,
-  onExport,
-  exportLabel = 'Exportar Excel',
 }) {
   const [expanded, setExpanded] = useState({});
   const closeModal = useCallback(() => {
@@ -73,17 +70,6 @@ export default function AuditHistoryModal({
           </div>
 
           <div className="audit-history-header-actions">
-            {onExport && (
-              <button
-                type="button"
-                className="audit-history-export"
-                onClick={onExport}
-              >
-                <Download size={17} />
-                <span>{exportLabel}</span>
-              </button>
-            )}
-
             <button
               type="button"
               className="audit-history-close"

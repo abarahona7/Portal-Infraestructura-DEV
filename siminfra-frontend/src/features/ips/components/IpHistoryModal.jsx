@@ -1,5 +1,4 @@
 import AuditHistoryModal from '../../../components/common/AuditHistoryModal';
-import { exportIpHistoryExcel } from '../../../utils/moduleExporters';
 
 export default function IpHistoryModal({ ip, onClose }) {
   const entries = (ip?.historial || []).map((entry) => ({
@@ -16,9 +15,6 @@ export default function IpHistoryModal({ ip, onClose }) {
       entries={entries}
       emptyMessage="Esta dirección IP todavía no registra asignaciones ni liberaciones."
       onClose={onClose}
-      onExport={entries.length > 0
-        ? () => exportIpHistoryExcel({ ip, rows: ip.historial })
-        : undefined}
       getMetaRows={(entry) => [
         {
           label: 'Tipo de asignación',

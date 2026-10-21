@@ -130,6 +130,7 @@ describe('Tablero de activos', () => {
     fireEvent.mouseLeave(zeroBar);
     expect(screen.getByText('Distribución actual de equipos por área.')).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Gráfico de equipos por departamento' })).toBeInTheDocument();
+    expect(screen.queryByText('Todas las áreas')).not.toBeInTheDocument();
   });
 
   it('actualiza automáticamente el tablero cuando cambia la revisión', async () => {

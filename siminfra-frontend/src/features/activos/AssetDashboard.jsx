@@ -1,4 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
+import {
+  CheckCircle2,
+  ChevronRight,
+  CircleAlert,
+  HardDrive,
+  Info,
+  Keyboard,
+  Laptop,
+  Layers3,
+  Monitor,
+  Package,
+  PowerOff,
+  Router,
+  ShieldCheck,
+  Smartphone,
+  Tablet,
+  Users,
+} from 'lucide-react';
 import apiClient from '../../api/client';
 import { getApiErrorMessage } from '../../utils/apiErrorMessage';
 import { formatEquipmentTypeLabel } from '../../utils/formatEquipmentType';
@@ -10,6 +28,20 @@ const reviewReasons = [
   { key: 'sin_activo_fijo', label: 'Sin activo fijo', level: 'datos', help: 'Completarlo cuando corresponda al equipo.' },
   { key: 'sin_custodio', label: 'Sin usuario asignado', level: 'informativo', help: 'Puede estar en stock o dado de baja.' },
 ];
+
+const typeIcons = {
+  Notebook: Laptop,
+  Celular: Smartphone,
+  Tablet,
+  Mac: Monitor,
+  'BAM / Router': Router,
+};
+
+const peripheralTypes = new Set([
+  'Monitor', 'Adaptador', 'Audífonos', 'Teclado', 'Mouse', 'Docking', 'Otro Periférico',
+]);
+
+const getTypeIcon = (type) => typeIcons[type] || (peripheralTypes.has(type) ? Keyboard : Package);
 
 export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 }) {
   const [summary, setSummary] = useState(null);
@@ -84,6 +116,12 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
     : [];
   const maxCount = Math.max(1, ...departments.map((department) => department.total));
   const refreshing = syncedRevision !== revision;
+  const stats = [
+    { kind: 'todos', id: null, label: 'Equipos registrados', count: counts?.total, icon: Package, tone: 'blue' },
+    { kind: 'asignados', id: null, label: 'Con usuario asignado', count: counts?.asignados, icon: Users, tone: 'green' },
+    { kind: 'estado', id: 'STOCK', label: 'Disponibles', count: counts?.disponibles, icon: HardDrive, tone: 'violet' },
+    { kind: 'estado', id: 'BAJA', label: 'Dados de baja', count: counts?.baja, icon: PowerOff, tone: 'orange' },
+  ];
 
   return <div className="asset-overview">
     <div className="asset-overview-heading">
@@ -104,12 +142,14 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
       <div className="asset-overview-main">
         <section className="asset-overview-card asset-overview-chart" aria-label="Gráfico de equipos por departamento">
           <div className="asset-overview-chart-heading">
-            <h3>Equipos asignados por departamento</h3>
-            <p className="asset-overview-help">
-              {highlightedDepartment
-                ? `${highlightedDepartment.nombre}: ${highlightedDepartment.total} ${highlightedDepartment.total === 1 ? 'equipo' : 'equipos'}`
-                : 'Distribución actual de equipos por área.'}
-            </p>
+            <span className="asset-overview-heading-icon asset-overview-heading-icon--blue"><Layers3 size={21} /></span>
+            <div><h3>Equipos asignados por departamento</h3>
+              <p className="asset-overview-help">
+                {highlightedDepartment
+                  ? `${highlightedDepartment.nombre}: ${highlightedDepartment.total} ${highlightedDepartment.total === 1 ? 'equipo' : 'equipos'}`
+                  : 'Distribución actual de equipos por área.'}
+              </p>
+            </div>
           </div>
           {!departments.length && <p>No hay departamentos registrados.</p>}
           <div className="asset-overview-bars" role="group" aria-label="Equipos asignados por departamento">
@@ -131,44 +171,51 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
           </div>
         </section>
         <div className="asset-overview-stats" aria-label="Estado de equipos">
-          {[
-            ['todos', null, 'Equipos registrados', counts.total],
-            ['asignados', null, 'Con usuario asignado', counts.asignados],
-            ['estado', 'STOCK', 'Disponibles', counts.disponibles],
-            ['estado', 'BAJA', 'Dados de baja', counts.baja],
-          ].map(([kind, id, label, count]) => <button type="button" key={label}
+          {stats.map(({ kind, id, label, count, icon: Icon, tone }) => <button type="button" key={label}
+            className={`asset-overview-stat asset-overview-stat--${tone}`}
             aria-label={`${label}: ${count}. Ver equipos`}
             aria-expanded={selection?.kind === kind && selection?.id === id}
             onClick={() => select({ kind, id, label })}>
-            <span>{label}</span><strong>{count}</strong>
+            <span className="asset-overview-stat-icon"><Icon size={22} /></span>
+            <span className="asset-overview-stat-label">{label}</span>
+            <strong>{count}</strong>
+            <small>Ver equipos <ChevronRight size={14} /></small>
           </button>)}
         </div>
       </div>
       {types.length > 0 && <section className="asset-overview-card asset-overview-types">
-        <div className="asset-overview-section-heading"><h3>Inventario por tipo</h3><p className="asset-overview-help">Selecciona un tipo para ver sus equipos.</p></div>
+        <div className="asset-overview-section-heading">
+          <div className="asset-overview-section-title"><span className="asset-overview-heading-icon asset-overview-heading-icon--blue"><Package size={21} /></span><div><h3>Inventario por tipo</h3><p className="asset-overview-help">Resumen de equipos por categoría.</p></div></div>
+          <p className="asset-overview-section-action">Selecciona un tipo para ver sus equipos <ChevronRight size={15} /></p>
+        </div>
         <div className="asset-overview-type-grid">
-          {types.map((item) => <button type="button" key={item.tipo}
-            aria-expanded={selection?.kind === 'tipo' && selection.id === item.tipo}
-            onClick={() => select({ kind: 'tipo', id: item.tipo, label: formatEquipmentTypeLabel(item.tipo) })}>
-            <span>{formatEquipmentTypeLabel(item.tipo)}</span>
-            <strong>{item.total}</strong>
-            <small>{item.asignados} con usuario</small>
-          </button>)}
+          {types.map((item) => {
+            const TypeIcon = getTypeIcon(item.tipo);
+            return <button type="button" key={item.tipo}
+              aria-expanded={selection?.kind === 'tipo' && selection.id === item.tipo}
+              onClick={() => select({ kind: 'tipo', id: item.tipo, label: formatEquipmentTypeLabel(item.tipo) })}>
+              <span className="asset-overview-type-icon"><TypeIcon size={23} /></span>
+              <span className="asset-overview-type-content"><span>{formatEquipmentTypeLabel(item.tipo)}</span><strong>{item.total}</strong><small>{item.asignados} con usuario</small></span>
+              <ChevronRight className="asset-overview-type-arrow" size={18} />
+            </button>;
+          })}
         </div>
       </section>}
       <section className="asset-overview-card">
         <div className="asset-overview-section-heading">
-          <h3>Atención y revisión</h3>
+          <div className="asset-overview-section-title"><span className="asset-overview-heading-icon asset-overview-heading-icon--blue"><ShieldCheck size={21} /></span><div><h3>Atención y revisión</h3>{counts.custodio_baja === 0 && <p className="asset-overview-ok"><CheckCircle2 size={14} /> Sin equipos asignados a usuarios de baja.</p>}</div></div>
           <p className="asset-overview-help">La asignación a una persona de baja requiere revisión. Los datos incompletos y los equipos sin usuario se muestran por separado.</p>
         </div>
-        {counts.custodio_baja === 0 && <p className="asset-overview-ok">Sin equipos asignados a usuarios de baja.</p>}
         {visibleReasons.length === 0 && <p className="asset-overview-help">No hay equipos pendientes de revisión.</p>}
         <div className="asset-overview-reasons">
-          {visibleReasons.map(({ key, label, level, help }) => <button type="button" key={key} className={`asset-overview-reason asset-overview-reason--${level}`}
-            aria-expanded={selection?.kind === 'pendiente' && selection.key === key}
-            onClick={() => select({ kind: 'pendiente', key, label })}>
-            <span><b>{label}</b><small>{help}</small></span><strong>{counts[key]}</strong>
-          </button>)}
+          {visibleReasons.map(({ key, label, level, help }) => {
+            const ReasonIcon = level === 'urgente' || level === 'datos' ? CircleAlert : Info;
+            return <button type="button" key={key} className={`asset-overview-reason asset-overview-reason--${level}`}
+              aria-expanded={selection?.kind === 'pendiente' && selection.key === key}
+              onClick={() => select({ kind: 'pendiente', key, label })}>
+              <ReasonIcon size={18} /><span><b>{label}</b><small>{help}</small></span><strong>{counts[key]}</strong><ChevronRight size={17} />
+            </button>;
+          })}
         </div>
       </section>
     </>}

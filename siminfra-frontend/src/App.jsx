@@ -615,7 +615,7 @@ export default function App() {
 
   const openReviewedResource = async (resource) => {
     if (resource.tipo === 'equipo') {
-      setSelectedEquipmentId(resource.id);
+      await openDetailedItem('equipos', { id: resource.id }, setHistoryEquipo);
     } else if (resource.tipo === 'ip') {
       await openIpHistory({ id: resource.id, direccion_ip: resource.nombre });
     } else if (resource.tipo === 'anexo') {

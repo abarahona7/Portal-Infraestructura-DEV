@@ -31,8 +31,10 @@ describe('Revisiones compartidas de bajas', () => {
     expect(await screen.findByText('Persona QA')).toBeInTheDocument();
     const confirmButton = screen.getByRole('button', { name: 'Confirmar revisión' });
     expect(confirmButton).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Ver ficha' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Ver historial' }));
+    const historyButtons = screen.getAllByRole('button', { name: 'Ver historial' });
+    expect(screen.queryByRole('button', { name: 'Ver ficha' })).not.toBeInTheDocument();
+    fireEvent.click(historyButtons[0]);
+    fireEvent.click(historyButtons[1]);
     expect(onOpenResource).toHaveBeenNthCalledWith(1, review.recursos[0]);
     expect(onOpenResource).toHaveBeenNthCalledWith(2, review.recursos[1]);
     expect(confirmButton).toBeDisabled();

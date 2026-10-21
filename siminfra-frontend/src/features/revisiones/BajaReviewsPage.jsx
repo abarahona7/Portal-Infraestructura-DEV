@@ -61,7 +61,7 @@ export default function BajaReviewsPage({ revision, onOpenResource, onCountChang
         <ul className="baja-review-resources">{item.recursos.map((resource) => <li key={resource.clave}>
           {status === 'pendientes' && <label className="baja-review-check"><input type="checkbox" checked={Boolean(checked[item.id]?.[resource.clave])} onChange={(event) => setChecked((current) => ({ ...current, [item.id]: { ...current[item.id], [resource.clave]: event.target.checked } }))} aria-label={`Confirmar ${resourceLabel[resource.tipo]} ${resource.nombre}`} /></label>}
           <div className="baja-review-resource"><b>{resourceLabel[resource.tipo]}: {resource.nombre}</b><small>{resource.detalle}</small></div>
-          <button type="button" onClick={() => onOpenResource(resource)}>Ver {resource.tipo === 'equipo' ? 'ficha' : 'historial'}</button>
+          <button type="button" onClick={() => onOpenResource(resource)}>Ver historial</button>
         </li>)}</ul>
         <div className="baja-review-footer">{item.revisado_en ? <span>Revisado por {item.revisado_por} · {new Date(item.revisado_en).toLocaleString('es-CL')}</span> : <><span>La alerta seguirá pendiente hasta confirmar todos los recursos.</span><button type="button" disabled={!allChecked || saving === item.id} onClick={() => confirm(item)}>{saving === item.id ? 'Guardando...' : 'Confirmar revisión'}</button></>}</div>
       </article>;

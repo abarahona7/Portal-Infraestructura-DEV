@@ -13,9 +13,9 @@ export default function AnexosTable({
   onEdit,
   role,
 }) {
-  const canModify = role !== 'Visualizador';
+  const canShowActions = role !== 'Visualizador';
 
-  const Actions = ({ anexo }) => (
+  const Actions = ({ anexo }) => canShowActions ? (
     <div className="anexos-actions">
       <button
         type="button"
@@ -29,22 +29,17 @@ export default function AnexosTable({
         <History size={18} />
       </button>
 
-      {canModify && (
-        <>
-          <button
-            type="button"
-            className="anexo-action anexo-action-edit"
-            onClick={() => onEdit(anexo)}
-            title="Editar"
-            aria-label="Editar anexo"
-          >
-            <Edit size={18} />
-          </button>
-
-        </>
-      )}
+      <button
+        type="button"
+        className="anexo-action anexo-action-edit"
+        onClick={() => onEdit(anexo)}
+        title="Editar"
+        aria-label="Editar anexo"
+      >
+        <Edit size={18} />
+      </button>
     </div>
-  );
+  ) : null;
 
   return (
     <>
@@ -62,9 +57,11 @@ export default function AnexosTable({
               <th>Estado</th>
               <th>Observaciones</th>
 
-              <th className="anexos-actions-header">
-                Acciones
-              </th>
+              {canShowActions && (
+                <th className="anexos-actions-header">
+                  Acciones
+                </th>
+              )}
             </tr>
           </thead>
 
@@ -113,9 +110,11 @@ export default function AnexosTable({
                     'Sin observaciones'}
                 </td>
 
-                <td className="anexos-actions-cell">
-                  <Actions anexo={anexo} />
-                </td>
+                {canShowActions && (
+                  <td className="anexos-actions-cell">
+                    <Actions anexo={anexo} />
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -195,13 +194,15 @@ export default function AnexosTable({
               />
             </div>
 
-            <div className="anexo-card-footer">
-              <span className="anexo-card-info">
-                Gestión de anexo
-              </span>
+            {canShowActions && (
+              <div className="anexo-card-footer">
+                <span className="anexo-card-info">
+                  Gestión de anexo
+                </span>
 
-              <Actions anexo={anexo} />
-            </div>
+                <Actions anexo={anexo} />
+              </div>
+            )}
           </article>
         ))}
       </div>

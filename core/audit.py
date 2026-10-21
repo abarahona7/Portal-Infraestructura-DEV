@@ -8,7 +8,17 @@ _current_audit_user = ContextVar(
 
 
 def set_current_audit_user(user):
-    return _current_audit_user.set(user)
+    if isinstance(user, str):
+        username = user.strip() or None
+    elif user and getattr(user, 'is_authenticated', False):
+        username = user.get_username()
+    else:
+        username = None
+
+    # No guardar SimpleLazyObject/request.user en el contexto. Al restaurar
+    # contexto bajo ASGI podría evaluarse dentro del loop async y consultar la
+    # sesión fuera del hilo síncrono.
+    return _current_audit_user.set(username)
 
 
 def reset_current_audit_user(token):
@@ -16,12 +26,4 @@ def reset_current_audit_user(token):
 
 
 def get_current_audit_username():
-    user = _current_audit_user.get()
-
-    if not user:
-        return None
-
-    if not getattr(user, 'is_authenticated', False):
-        return None
-
-    return user.get_username()
+    return _current_audit_user.get()

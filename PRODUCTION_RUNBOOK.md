@@ -225,6 +225,9 @@ restringir el acceso a los registros.
 
 ## 7. Verificación funcional
 
+Registrar la ejecución y evidencia usando el
+[checklist manual de QA](docs/CHECKLIST_QA_MANUAL.md).
+
 1. Iniciar sesión y recargar la página sin perder la sesión.
 2. Esperar cinco minutos sin actividad y comprobar el cierre automático.
 3. Crear, cambiar y liberar una IP de usuario; crear y cambiar la IP de un

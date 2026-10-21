@@ -18,7 +18,13 @@ describe('Notificaciones en el encabezado', () => {
   });
 
   it('oculta las notificaciones al rol Visualizador', () => {
-    render(<Header activeTab="anexos" role="Visualizador" onOpenNotifications={vi.fn()} />);
+    const onLogout = vi.fn();
+    render(<Header activeTab="anexos" role="Visualizador" username="recepcion" onOpenNotifications={vi.fn()} onLogout={onLogout} />);
     expect(screen.queryByRole('button', { name: /Notificaciones/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Abrir menú de módulos' })).not.toBeInTheDocument();
+    expect(screen.getByText('Consulta de anexos asignados')).toBeInTheDocument();
+    expect(screen.getByText('recepcion')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }));
+    expect(onLogout).toHaveBeenCalledOnce();
   });
 });

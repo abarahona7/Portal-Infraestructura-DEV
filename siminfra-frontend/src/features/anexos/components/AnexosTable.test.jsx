@@ -31,6 +31,8 @@ describe('Permisos visuales del listado de anexos', () => {
 
     expect(screen.getAllByText('PERSONA QA')).toHaveLength(2);
     expect(screen.queryByText('Acciones')).not.toBeInTheDocument();
+    expect(screen.queryByText('Observaciones')).not.toBeInTheDocument();
+    expect(screen.queryByText('PRUEBA')).not.toBeInTheDocument();
     expect(screen.queryByText('Gestión de anexo')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Ver historial' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Editar anexo' })).not.toBeInTheDocument();
@@ -40,6 +42,8 @@ describe('Permisos visuales del listado de anexos', () => {
     renderTable('Operador Infraestructura');
 
     expect(screen.getByText('Acciones')).toBeInTheDocument();
+    expect(screen.getAllByText('Observaciones')).toHaveLength(2);
+    expect(screen.getAllByText('PRUEBA')).toHaveLength(2);
     expect(screen.getAllByRole('button', { name: 'Ver historial' })).toHaveLength(2);
     expect(screen.getAllByRole('button', { name: 'Editar anexo' })).toHaveLength(2);
   });

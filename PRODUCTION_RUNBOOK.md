@@ -16,7 +16,7 @@ Las decisiones y comprobaciones aún abiertas se registran en
 [la revisión de ambigüedades](docs/REVISION_AMBIGUEDADES_PRODUCCION.md).
 
 Verificación técnica actual del 21 de octubre de 2026: **214 pruebas de core**
-pasaron en SQLite temporal, con 3 omisiones esperadas, y **67 pruebas frontend**
+pasaron en SQLite temporal, con 3 omisiones esperadas, y **68 pruebas frontend**
 pasaron junto con lint y build. MySQL DEV conserva 23 reglas de integridad sin
 errores. La ejecución equivalente sobre MySQL aislado sigue siendo parte de la
 puerta de QA.

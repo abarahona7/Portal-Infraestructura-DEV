@@ -60,7 +60,7 @@ la versión evita que un formulario antiguo sobrescriba el cambio más reciente.
 
 | Rol | Alcance |
 | --- | --- |
-| Visualizador | Solo lectura y búsqueda de Anexos asignados. |
+| Visualizador | Vista completa sin sidebar para lectura y búsqueda de Anexos asignados; no muestra observaciones ni acciones. |
 | Operador Infraestructura | Lectura, creación, edición y asignación; no elimina ni revela secretos. |
 | Administrador | Acceso completo y revelado de secretos después de reautenticarse. |
 | Superusuario | Se trata como Administrador. |

@@ -78,7 +78,7 @@ Los retiros excepcionales se gestionan con el comando técnico documentado en
 - Agregar y editar.
 - Asignar o liberar un usuario y mantener coherentes dueño y estado.
 - Consultar el historial de movimientos.
-- Permitir al Visualizador consultar únicamente anexos asignados, sin filtro de estado, historial ni acciones.
+- Permitir al Visualizador consultar únicamente anexos asignados, en una vista completa sin sidebar, filtro de estado, observaciones, historial ni acciones.
 
 ### Perfiles genéricos
 

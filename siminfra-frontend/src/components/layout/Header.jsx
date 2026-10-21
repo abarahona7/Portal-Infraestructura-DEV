@@ -1,4 +1,4 @@
-import { Bell, Menu } from 'lucide-react';
+import { Bell, LogOut, Menu } from 'lucide-react';
 
 import './Header.css';
 import {
@@ -9,10 +9,13 @@ import {
 export default function Header({
   activeTab,
   role,
+  username,
   onOpenSidebar,
   onOpenNotifications,
+  onLogout,
   pendingReviewCount = 0,
 }) {
+  const isViewer = role === 'Visualizador';
   const getTitle = () => {
     if (isEquipmentTab(activeTab)) {
       return `Equipos / ${getEquipmentLabelByTab(activeTab)}`;
@@ -55,18 +58,25 @@ export default function Header({
   };
 
   return (
-    <header className="main-header">
+    <header className={`main-header ${isViewer ? 'main-header-viewer' : ''}`}>
       <div className="main-header-left">
-        {/* Solo visible en tablet / móvil */}
-        <button
-          type="button"
-          onClick={onOpenSidebar}
-          className="header-menu-button"
-          title="Abrir menú de módulos"
-          aria-label="Abrir menú de módulos"
-        >
-          <Menu size={21} />
-        </button>
+        {isViewer ? (
+          <img
+            className="header-viewer-logo"
+            src="/branding/dr-simi-logo.png"
+            alt="Farmacias del Dr. Simi"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={onOpenSidebar}
+            className="header-menu-button"
+            title="Abrir menú de módulos"
+            aria-label="Abrir menú de módulos"
+          >
+            <Menu size={21} />
+          </button>
+        )}
 
         <div className="main-header-titles">
           <h1>
@@ -78,14 +88,22 @@ export default function Header({
           </div>
 
           <p>
-            {role === 'Visualizador'
-              ? 'Vista de consulta de Anexos'
+            {isViewer
+              ? 'Consulta de anexos asignados'
               : 'Panel Administrador de Infraestructura y Redes'}
           </p>
         </div>
       </div>
 
-      {role !== 'Visualizador' && (
+      {isViewer ? (
+        <div className="header-viewer-session">
+          <span title={username}>{username}</span>
+          <button type="button" onClick={onLogout}>
+            <LogOut size={17} aria-hidden="true" />
+            Cerrar sesión
+          </button>
+        </div>
+      ) : (
         <button
           type="button"
           className={`header-notifications-button ${activeTab === 'revisiones-baja' ? 'is-active' : ''}`}

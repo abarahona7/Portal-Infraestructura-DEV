@@ -28,7 +28,7 @@ reemplaza las validaciones del backend.
 
 ## Roles
 
-- `Visualizador`: acceso únicamente a Anexos asignados, solo lectura y sin acciones.
+- `Visualizador`: acceso únicamente a Anexos asignados, en una vista de consulta sin sidebar, observaciones ni acciones.
 - `Operador Infraestructura`: lectura, creación, edición y asignación; no elimina ni revela secretos.
 - `Administrador`: gestión y revelado de secretos tras reautenticación; no elimina registros desde el portal.
 - Superuser: tratado como Administrador en la API. El archivo técnico se opera fuera del portal.

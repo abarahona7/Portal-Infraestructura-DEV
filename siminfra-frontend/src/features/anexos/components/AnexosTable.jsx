@@ -13,7 +13,8 @@ export default function AnexosTable({
   onEdit,
   role,
 }) {
-  const canShowActions = role !== 'Visualizador';
+  const isViewer = role === 'Visualizador';
+  const canShowActions = !isViewer;
 
   const Actions = ({ anexo }) => canShowActions ? (
     <div className="anexos-actions">
@@ -55,7 +56,7 @@ export default function AnexosTable({
               <th>Exterior</th>
               <th>Correo</th>
               <th>Estado</th>
-              <th>Observaciones</th>
+              {!isViewer && <th>Observaciones</th>}
 
               {canShowActions && (
                 <th className="anexos-actions-header">
@@ -105,10 +106,12 @@ export default function AnexosTable({
                   )}
                 </td>
 
-                <td className="anexo-observations">
-                  {anexo.observaciones ||
-                    'Sin observaciones'}
-                </td>
+                {!isViewer && (
+                  <td className="anexo-observations">
+                    {anexo.observaciones ||
+                      'Sin observaciones'}
+                  </td>
+                )}
 
                 {canShowActions && (
                   <td className="anexos-actions-cell">
@@ -184,14 +187,16 @@ export default function AnexosTable({
                 full
               />
 
-              <MobileField
-                label="Observaciones"
-                value={
-                  anexo.observaciones ||
-                  'Sin observaciones'
-                }
-                full
-              />
+              {!isViewer && (
+                <MobileField
+                  label="Observaciones"
+                  value={
+                    anexo.observaciones ||
+                    'Sin observaciones'
+                  }
+                  full
+                />
+              )}
             </div>
 
             {canShowActions && (

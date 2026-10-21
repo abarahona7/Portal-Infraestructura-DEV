@@ -38,6 +38,11 @@
   width: calc(100% - 76px);
 }
 
+.app-main-viewer {
+  width: 100%;
+  margin-left: 0;
+}
+
 /* =========================
    CONTENEDOR DE TABLAS
 ========================= */

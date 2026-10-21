@@ -1014,32 +1014,38 @@ export default function App() {
         />
       )}
       {/* SIDEBAR */}
-      <Sidebar
-        isOpen={sidebarOpen}
-        collapsed={sidebarCollapsed}
-        activeTab={tab}
-        onClose={closeSidebar}
-        onToggleCollapse={toggleSidebarCollapsed}
-        onSelectTab={handleSelectTab}
-        onLogout={handleLogout}
-        role={authUser?.role}
-      />
+      {!isViewer && (
+        <Sidebar
+          isOpen={sidebarOpen}
+          collapsed={sidebarCollapsed}
+          activeTab={tab}
+          onClose={closeSidebar}
+          onToggleCollapse={toggleSidebarCollapsed}
+          onSelectTab={handleSelectTab}
+          onLogout={handleLogout}
+          role={authUser?.role}
+        />
+      )}
 
 
 
       {/* CONTENIDO PRINCIPAL */}
       <main
-        className={`app-main ${sidebarCollapsed
-          ? 'app-main-sidebar-collapsed'
-          : ''
+        className={`app-main ${isViewer
+          ? 'app-main-viewer'
+          : sidebarCollapsed
+            ? 'app-main-sidebar-collapsed'
+            : ''
           }`}
       >
         {/* ENCABEZADO */}
         <Header
           activeTab={tab}
           role={authUser?.role}
+          username={authUser?.username}
           onOpenSidebar={openSidebar}
           onOpenNotifications={() => handleSelectTab('revisiones-baja')}
+          onLogout={handleLogout}
           pendingReviewCount={pendingReviewCount}
         />
 

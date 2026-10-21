@@ -179,7 +179,7 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
             <span className="asset-overview-stat-icon"><Icon size={22} /></span>
             <span className="asset-overview-stat-label">{label}</span>
             <strong>{count}</strong>
-            <small>Ver equipos <ChevronRight size={14} /></small>
+            <small aria-hidden="true"><ChevronRight size={16} /></small>
           </button>)}
         </div>
       </div>

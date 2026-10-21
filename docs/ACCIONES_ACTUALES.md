@@ -8,7 +8,7 @@ que el backend vuelve a validar. Las diferencias detectadas para QA están en
 
 | Rol | Consulta | Crear/editar/asignar | Exportar | Eliminar | Revelar secretos |
 | --- | --- | --- | --- | --- | --- |
-| Visualizador | Solo Anexos: listado, búsqueda, filtros, paginación e historial | No | No | No | No |
+| Visualizador | Solo Anexos asignados: listado, búsqueda y paginación | No | No | No | No |
 | Operador Infraestructura | Usuarios, Departamentos/Áreas, Equipos, Tablero de activos, Ficha QR, PCs genéricos, Gestión de IP, Servidores, Anexos y Perfiles genéricos | Donde existe la acción; Tablero y QR son de consulta | Donde existe la exportación | No | No |
 | Administrador | Todos los módulos | Sí | Sí | No | Sí, tras reautenticación |
 | Superusuario | Igual que Administrador | Sí | Sí | No desde la API; archivo técnico fuera del portal | Sí, tras reautenticación |
@@ -78,7 +78,7 @@ Los retiros excepcionales se gestionan con el comando técnico documentado en
 - Agregar y editar.
 - Asignar o liberar un usuario y mantener coherentes dueño y estado.
 - Consultar el historial de movimientos.
-- Permitir al Visualizador únicamente las acciones de consulta e historial.
+- Permitir al Visualizador consultar únicamente anexos asignados, sin filtro de estado, historial ni acciones.
 
 ### Perfiles genéricos
 

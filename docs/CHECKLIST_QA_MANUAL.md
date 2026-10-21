@@ -32,7 +32,7 @@ usuario ejecutor, fecha, evidencia y número de incidencia cuando falle.
 - [ ] Administrador puede revelar secretos después de reautenticarse.
 - [ ] Operador puede crear, editar, asignar y exportar donde corresponde.
 - [ ] Operador no puede revelar secretos ni ejecutar retiros técnicos.
-- [ ] Visualizador solo puede consultar Anexos.
+- [ ] Visualizador solo puede consultar Anexos asignados; no ve libres, filtros de estado ni acciones.
 - [ ] Probar rutas directas; ocultar un botón no debe ser la única protección.
 - [ ] Confirmar respuesta `403` para acciones no autorizadas.
 

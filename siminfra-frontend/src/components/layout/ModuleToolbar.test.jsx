@@ -13,10 +13,10 @@ const props = {
 };
 
 describe('Acciones visibles en Anexos', () => {
-  it('permite consultar y filtrar sin ofrecer edición ni exportación al Visualizador', () => {
+  it('permite buscar sin ofrecer filtros ni acciones al Visualizador', () => {
     render(<ModuleToolbar {...props} readOnly />);
     expect(screen.getByRole('searchbox', { name: /Buscar/i })).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: /Filtrar anexos/i })).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /Filtrar anexos/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Agregar Anexo/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Exportar Excel/i })).not.toBeInTheDocument();
   });
@@ -25,6 +25,7 @@ describe('Acciones visibles en Anexos', () => {
     const onCreate = vi.fn();
     const onExport = vi.fn();
     render(<ModuleToolbar {...props} readOnly={false} onCreate={onCreate} onExport={onExport} />);
+    expect(screen.getByRole('combobox', { name: /Filtrar anexos/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Agregar Anexo/i }));
     fireEvent.click(screen.getByRole('button', { name: /Exportar Excel/i }));
     expect(onCreate).toHaveBeenCalledOnce();

@@ -30,17 +30,29 @@ class QAMatrizRolesTests(TestCase):
             usuario=self.person, tipo='Notebook', marca='Dell', modelo='7400',
             numero_serie='QA-PERM-01', estado='ASIGNADO',
         )
-        self.extension = Anexo.objects.create(numero_anexo='8601')
+        self.extension = Anexo.objects.create(
+            numero_anexo='8601', usuario=self.person,
+        )
+        self.free_extension = Anexo.objects.create(numero_anexo='8602')
 
     def authenticate(self, role):
         self.client.force_authenticate(user=self.users[role] if role else None)
 
     def test_visualizador_solo_consulta_anexos_y_nunca_puede_escribir(self):
         self.authenticate('Visualizador')
-        self.assertEqual(self.client.get('/api/anexos/').status_code, 200)
+        listing = self.client.get('/api/anexos/')
+        self.assertEqual(listing.status_code, 200)
+        self.assertEqual(
+            [item['id'] for item in listing.data['results']],
+            [self.extension.pk],
+        )
         detail = self.client.get(f'/api/anexos/{self.extension.pk}/')
         self.assertEqual(detail.status_code, 200)
         self.assertIn('historial', detail.data)
+        self.assertEqual(
+            self.client.get(f'/api/anexos/{self.free_extension.pk}/').status_code,
+            404,
+        )
 
         protected = (
             '/api/usuarios/', '/api/departamentos/', '/api/subareas/',
@@ -56,7 +68,7 @@ class QAMatrizRolesTests(TestCase):
                 self.assertEqual(self.client.get(path).status_code, 403)
 
         self.assertEqual(self.client.post(
-            '/api/anexos/', {'numero_anexo': '8602'}, format='json',
+            '/api/anexos/', {'numero_anexo': '8603'}, format='json',
         ).status_code, 403)
         self.assertEqual(self.client.patch(
             f'/api/anexos/{self.extension.pk}/', {'exterior': '+56212345678'},
@@ -65,7 +77,7 @@ class QAMatrizRolesTests(TestCase):
         self.assertEqual(self.client.delete(
             f'/api/anexos/{self.extension.pk}/',
         ).status_code, 403)
-        self.assertEqual(Anexo.objects.count(), 1)
+        self.assertEqual(Anexo.objects.count(), 2)
 
     def test_operador_consulta_todos_los_modulos_pero_no_elimina(self):
         self.authenticate('Operador Infraestructura')
@@ -78,6 +90,7 @@ class QAMatrizRolesTests(TestCase):
                 self.assertEqual(self.client.get(f'/api/{module}/').status_code, 200)
             with self.subTest(module=module, action='delete'):
                 self.assertEqual(self.client.delete(f'/api/{module}/999999/').status_code, 403)
+        self.assertEqual(self.client.get('/api/anexos/').data['count'], 2)
         self.assertEqual(self.client.get('/api/activos/resumen/').status_code, 200)
         self.assertEqual(self.client.get(
             f'/api/activos/qr/{self.equipment.token_qr}/',

@@ -230,7 +230,7 @@ export default function ModuleToolbar({
 
 
         {/* FILTRO ANEXOS */}
-        {activeTab === 'anexos' && (
+        {activeTab === 'anexos' && !readOnly && (
           <div className="module-toolbar-filter">
             <Filter size={16} />
 

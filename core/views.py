@@ -12,7 +12,7 @@ from rest_framework import viewsets, filters, serializers, status
 from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .permissions import PortalRolePermission
+from .permissions import PortalRolePermission, ROLE_VIEWER, get_role
 from .pagination import PortalPageNumberPagination
 from .services.asignacion_ips import MANAGED_IP_SEGMENT_PREFIXES
 from django_filters.rest_framework import (
@@ -332,6 +332,11 @@ class AnexoViewSet(
 
     def get_queryset(self):
         queryset = Anexo.objects.select_related('usuario')
+        if get_role(self.request.user) == ROLE_VIEWER:
+            queryset = queryset.filter(
+                estado='ASIGNADO',
+                usuario__isnull=False,
+            )
         if self.action == 'retrieve':
             queryset = queryset.prefetch_related('historial')
         return queryset

@@ -27,6 +27,7 @@ import {
 import {
   getActaEntregaUsuario,
 } from '../../../api/usuariosApi';
+import { getApiErrorMessageAsync } from '../../../utils/apiErrorMessage';
 
 import {
   equipmentUsesHostname,
@@ -120,8 +121,7 @@ export default function UsuarioDetailModal({
       }
 
       alert(
-        error.response?.data?.detail
-        || 'No se pudo generar el Acta de Entrega.'
+        await getApiErrorMessageAsync(error, 'No se pudo generar el Acta de Entrega.')
       );
 
     } finally {

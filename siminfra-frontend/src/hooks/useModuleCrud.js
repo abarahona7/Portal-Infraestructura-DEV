@@ -7,25 +7,7 @@ import { prepareUpdatePayload } from '../utils/prepareUpdatePayload';
 import { validateItem } from '../utils/validateItem';
 import { formatEquipmentType } from '../utils/formatEquipmentType';
 import { equipmentChecklist, needsEquipmentChecklist } from '../utils/changeProtocols';
-
-const extractApiErrorMessage = (error, fallback) => {
-  const data = error?.response?.data;
-
-  if (!data) return fallback;
-  if (typeof data === 'string') return data;
-  if (typeof data.detail === 'string') return data.detail;
-
-  for (const value of Object.values(data)) {
-    if (typeof value === 'string') return value;
-    if (Array.isArray(value) && value.length > 0) {
-      const first = value[0];
-      if (typeof first === 'string') return first;
-      if (first?.string) return first.string;
-    }
-  }
-
-  return fallback;
-};
+import { getApiErrorMessage } from '../utils/apiErrorMessage';
 
 const isStaleUpdateError = (error) => (
   error?.response?.status === 409
@@ -155,7 +137,7 @@ export const useModuleCrud = ({
       );
 
       showToast?.(
-        extractApiErrorMessage(
+        getApiErrorMessage(
           error,
           'No se pudo crear el registro. Verifique los datos ingresados.'
         ),
@@ -186,8 +168,11 @@ export const useModuleCrud = ({
     if (userStatusMayChange || (!originalItem && ['usuarios', 'equipos'].includes(tab))) {
       try {
         originalItem = await getItemDetailsByTab(tab, editingItem.id);
-      } catch {
-        showToast?.('No se pudo verificar el estado actual del registro.', 'error');
+      } catch (error) {
+        showToast?.(
+          getApiErrorMessage(error, 'No se pudo verificar el estado actual del registro.'),
+          'error'
+        );
         return;
       }
     }
@@ -250,14 +235,14 @@ export const useModuleCrud = ({
           console.error('No se pudieron recargar los datos tras el conflicto:', refreshError);
         }
         showToast?.(
-          extractApiErrorMessage(error, 'El registro cambió. Vuelve a abrirlo antes de guardar.'),
+          getApiErrorMessage(error, 'El registro cambió. Vuelve a abrirlo antes de guardar.'),
           'error'
         );
         return;
       }
 
       showToast?.(
-        extractApiErrorMessage(
+        getApiErrorMessage(
           error,
           'No se pudieron guardar los cambios. Verifique los datos ingresados.'
         ),

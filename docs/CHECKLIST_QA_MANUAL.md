@@ -76,8 +76,7 @@ usuario ejecutor, fecha, evidencia y número de incidencia cuando falle.
 - [ ] Confirmar que la baja no borra registros ni historiales.
 - [ ] Confirmar la revisión y registrar quién la realizó.
 
-Comportamiento recomendado para reactivación, pendiente de aprobación e
-implementación:
+Comportamiento aprobado para reactivación:
 
 - [ ] Reactivar el usuario cambiando únicamente su estado a `ACTIVO`.
 - [ ] No restaurar automáticamente equipos, IP ni anexo.

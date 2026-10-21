@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import apiClient from '../../../api/client';
+import { getApiErrorMessage } from '../../../utils/apiErrorMessage';
 import { formatEquipmentTypeLabel } from '../../../utils/formatEquipmentType';
 import './EquipoDetailModal.css';
 
@@ -14,7 +15,11 @@ export default function EquipoDetailModal({ id, token, onClose, onOpenHistory, r
     const path = id ? `/equipos/${id}/` : `/activos/qr/${token}/`;
     apiClient.get(path, { signal: controller.signal })
       .then(({ data }) => setEquipo(id ? data : data.equipo))
-      .catch((err) => { if (err.code !== 'ERR_CANCELED') setError('No se pudo cargar la ficha del equipo.'); });
+      .catch((err) => {
+        if (err.code !== 'ERR_CANCELED') {
+          setError(getApiErrorMessage(err, 'No se pudo cargar la ficha del equipo.'));
+        }
+      });
     return () => controller.abort();
   }, [id, token, revision]);
 

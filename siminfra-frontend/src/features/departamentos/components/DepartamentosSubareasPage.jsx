@@ -17,35 +17,12 @@ import {
   updateDepartamento,
   updateSubarea,
 } from '../../../api/departamentosApi';
+import { getApiErrorMessage } from '../../../utils/apiErrorMessage';
 
 import './DepartamentosSubareasPage.css';
 
 const normalize = (value = '') =>
   value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('es');
-
-const getApiErrorMessage = (error) => {
-  const data = error?.response?.data;
-
-  if (!data) {
-    return 'No fue posible completar la operación.';
-  }
-
-  if (typeof data === 'string') {
-    return data;
-  }
-
-  const firstValue = Object.values(data)[0];
-
-  if (Array.isArray(firstValue) && firstValue[0]) {
-    return String(firstValue[0]);
-  }
-
-  if (typeof firstValue === 'string') {
-    return firstValue;
-  }
-
-  return 'No fue posible completar la operación. Verifique los datos ingresados.';
-};
 
 export default function DepartamentosSubareasPage({
   departamentos = [],

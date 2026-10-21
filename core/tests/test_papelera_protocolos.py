@@ -113,6 +113,38 @@ class PapeleraYProtocolosTests(TestCase):
         ip.refresh_from_db()
         self.assertIsNone(ip.usuario_id)
 
+    def test_reactivation_requires_protocol_and_never_restores_matching_equipment(self):
+        self.user.hostname = 'NB-REACTIVACION-01'
+        self.user.save(update_fields=['hostname'])
+        equipment = Equipamiento.objects.create(
+            usuario=self.user, tipo='Notebook', marca='Lenovo', modelo='T14',
+            hostname=self.user.hostname, numero_serie='PROTO-REACT-1',
+        )
+        url = f'/api/usuarios/{self.user.pk}/'
+
+        self.assertEqual(self.client.patch(url, {
+            'estado': 'BAJA', 'protocolo_confirmaciones': ['equipos'],
+        }, format='json').status_code, 200)
+        equipment.refresh_from_db()
+        self.assertIsNone(equipment.usuario_id)
+        self.assertEqual(equipment.estado, 'STOCK')
+
+        rejected = self.client.patch(url, {'estado': 'ACTIVO'}, format='json')
+        self.assertEqual(rejected.status_code, 400)
+        response = self.client.patch(url, {
+            'estado': 'ACTIVO', 'protocolo_confirmaciones': ['reactivacion'],
+        }, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+
+        equipment.refresh_from_db()
+        self.assertIsNone(equipment.usuario_id)
+        self.assertEqual(equipment.estado, 'STOCK')
+        self.assertTrue(HistorialUsuario.objects.filter(
+            usuario=self.user,
+            accion='PROTOCOLO_CONFIRMADO',
+            observacion__icontains='reactivar',
+        ).exists())
+
     def test_equipment_protocol_is_required_for_assignment_or_status(self):
         equipment = Equipamiento.objects.create(
             tipo='Notebook', marca='Lenovo', modelo='T14', numero_serie='PROTO-1',

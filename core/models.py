@@ -2379,30 +2379,6 @@ def auto_sync_usuario(sender, instance, created, **kwargs):
                 ]
             )
 
-    # =====================================
-    # VINCULAR EQUIPO DISPONIBLE
-    # POR HOSTNAME
-    # =====================================
-    if nuevo_hostname:
-        with transaction.atomic():
-            equipos_disponibles = Equipamiento.objects.select_for_update().filter(
-                usuario__isnull=True,
-                tipo__in=[
-                    'Notebook',
-                    'Mac'
-                ],
-                hostname__iexact=nuevo_hostname
-            )
-
-            for equipo in equipos_disponibles:
-                equipo.usuario = instance
-                equipo.estado = 'ASIGNADO'
-                equipo.save(
-                    update_fields=[
-                        'usuario',
-                        'estado',
-                    ]
-                )
 
 
 # =========================================

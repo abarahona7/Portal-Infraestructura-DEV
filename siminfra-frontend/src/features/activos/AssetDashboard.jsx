@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import apiClient from '../../api/client';
+import { getApiErrorMessage } from '../../utils/apiErrorMessage';
 import { formatEquipmentTypeLabel } from '../../utils/formatEquipmentType';
 import './AssetDashboard.css';
 
@@ -33,7 +34,7 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
       })
       .catch((error) => {
         if (!controller.signal.aborted && error.code !== 'ERR_CANCELED') {
-          setSummaryError('No se pudo cargar el tablero.');
+          setSummaryError(getApiErrorMessage(error, 'No se pudo cargar el tablero.'));
         }
       })
       .finally(() => { if (!controller.signal.aborted) setSyncedRevision(revision); });
@@ -57,7 +58,11 @@ export default function AssetDashboard({ onOpenAsset, onEditAsset, revision = 0 
     const params = { ...filters, page, page_size: 20 };
     apiClient.get('/equipos/', { params, signal: controller.signal })
       .then(({ data }) => { setList(data); setListError(''); })
-      .catch((error) => { if (error.code !== 'ERR_CANCELED') setListError('No se pudo cargar la lista de equipos.'); });
+      .catch((error) => {
+        if (error.code !== 'ERR_CANCELED') {
+          setListError(getApiErrorMessage(error, 'No se pudo cargar la lista de equipos.'));
+        }
+      });
     return () => controller.abort();
   }, [selection, page, revision]);
 

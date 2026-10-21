@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { getReferenceData } from '../api/referenceApi';
+import { getApiErrorMessage } from '../utils/apiErrorMessage';
 
 
 const REFERENCE_SECTIONS_BY_MODULE = {
@@ -14,7 +15,7 @@ const REFERENCE_SECTIONS_BY_MODULE = {
 };
 
 
-export const useReferenceData = (token, role, activeModule) => {
+export const useReferenceData = (token, role, activeModule, onError) => {
   const [usuariosList, setUsuariosList] = useState([]);
   const [usuariosStats, setUsuariosStats] = useState({
     total: 0,
@@ -27,7 +28,11 @@ export const useReferenceData = (token, role, activeModule) => {
   const loadedSectionsRef = useRef(new Set());
   const canLoadReferenceData = Boolean(token && role !== 'Visualizador');
 
-  const loadReferenceData = useCallback(async (sections = [], force = false) => {
+  const loadReferenceData = useCallback(async (
+    sections = [],
+    force = false,
+    throwOnError = false
+  ) => {
     if (!token || role === 'Visualizador') {
       return;
     }
@@ -79,13 +84,17 @@ export const useReferenceData = (token, role, activeModule) => {
       Object.keys(result).forEach((section) => {
         loadedSectionsRef.current.add(section);
       });
+      return true;
     } catch (error) {
       console.error(
         'Error cargando datos de referencia:',
         error.response?.data || error
       );
+      if (throwOnError) throw error;
+      onError?.(getApiErrorMessage(error, 'No se pudieron cargar los datos necesarios del formulario.'));
+      return false;
     }
-  }, [token, role]);
+  }, [token, role, onError]);
 
   const refreshReferenceData = useCallback(
     (sections = []) => loadReferenceData(sections, true),
@@ -93,7 +102,9 @@ export const useReferenceData = (token, role, activeModule) => {
   );
 
   const ensureReferenceData = useCallback(
-    (sections = []) => loadReferenceData(sections, false),
+    (sections = [], { throwOnError = false } = {}) => (
+      loadReferenceData(sections, false, throwOnError)
+    ),
     [loadReferenceData]
   );
 

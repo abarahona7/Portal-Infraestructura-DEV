@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../api/client';
+import { getApiErrorMessage } from '../../utils/apiErrorMessage';
 import './BajaReviewsPage.css';
 
 const resourceLabel = { equipo: 'Equipo', ip: 'Dirección IP', anexo: 'Anexo' };
@@ -17,7 +18,11 @@ export default function BajaReviewsPage({ revision, onOpenResource, onCountChang
     const controller = new AbortController();
     apiClient.get('/revisiones-baja/', { params: { estado: status, page }, signal: controller.signal })
       .then(({ data }) => { setResponse(data); setError(''); onCountChange(data.pendientes); })
-      .catch((err) => { if (err.code !== 'ERR_CANCELED') setError('No se pudieron cargar las revisiones.'); });
+      .catch((err) => {
+        if (err.code !== 'ERR_CANCELED') {
+          setError(getApiErrorMessage(err, 'No se pudieron cargar las revisiones.'));
+        }
+      });
     return () => controller.abort();
   }, [status, page, revision, reload, onCountChange]);
 
@@ -31,7 +36,7 @@ export default function BajaReviewsPage({ revision, onOpenResource, onCountChang
       setReload((value) => value + 1);
       showToast('Revisión registrada en el historial del usuario.');
     } catch (err) {
-      showToast(err.response?.data?.detail || err.response?.data?.confirmaciones || 'No se pudo confirmar la revisión.', 'error');
+      showToast(getApiErrorMessage(err, 'No se pudo confirmar la revisión.'), 'error');
       setReload((value) => value + 1);
     } finally {
       setSaving(null);

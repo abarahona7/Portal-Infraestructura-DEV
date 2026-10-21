@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getItemsByTab } from '../services/getItemService';
+import { getApiErrorMessage } from '../utils/apiErrorMessage';
 
 
 const PAGE_SIZE = 50;
@@ -48,6 +49,7 @@ export const useModuleData = ({
   selectedEstadoAnexo,
   selectedEstadoGeneral,
   onUnauthorized,
+  onError,
   enabled = true,
 }) => {
   const [data, setData] = useState([]);
@@ -174,6 +176,7 @@ export const useModuleData = ({
         'Error cargando datos:',
         error.response?.data || error
       );
+      onError?.(getApiErrorMessage(error, 'No se pudieron cargar los registros.'));
       return null;
     }
   }, [
@@ -183,6 +186,7 @@ export const useModuleData = ({
     baseParams,
     page,
     onUnauthorized,
+    onError,
     searchIsDebouncing,
   ]);
 

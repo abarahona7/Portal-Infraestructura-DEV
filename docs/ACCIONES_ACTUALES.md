@@ -35,10 +35,9 @@ Los retiros excepcionales se gestionan con el comando técnico documentado en
   existe esa relación, la interfaz lo explica y el backend responde `409`.
 - Cambiar el estado con una advertencia previa: `LICENCIA` libera solamente la
   IP; `BAJA` libera la IP, desasigna equipos y libera el anexo.
-- Al reactivar un usuario desde `BAJA`, la IP y el anexo no se restauran. Un
-  Notebook o Mac en stock puede volver a asociarse si su hostname coincide con
-  el del usuario; los demás equipos no se restauran desde el historial. Este
-  comportamiento requiere validación funcional en QA.
+- Al reactivar un usuario desde `BAJA`, ningún equipo, IP ni anexo se restaura
+  automáticamente. Los recursos anteriores permanecen en el historial y deben
+  reasignarse manualmente después de verificar que siguen disponibles.
 
 ### Equipos
 
@@ -47,7 +46,7 @@ Los retiros excepcionales se gestionan con el comando técnico documentado en
   se puede ir al detalle de los equipos afectados.
 - Entrar directamente a Notebook, Celular, Tablet, Mac, BAM / Router o
   Periféricos desde el menú lateral.
-- Buscar, filtrar por estado, paginar y exportar. Al crear un equipo desde una
+- Buscar, filtrar por departamento, paginar y exportar. Al crear un equipo desde una
   categoría, el tipo queda fijado; en Periféricos solo se ofrecen tipos de
   periférico. El backend valida la misma relación al guardar.
 - Agregar, editar y consultar historial.
@@ -125,6 +124,11 @@ Los retiros excepcionales se gestionan con el comando técnico documentado en
    nuevos. Los eventos sensibles se registran además en la auditoría de
    seguridad.
 5. La interfaz informa el resultado y actualiza los registros afectados.
+6. Si una restricción impide la operación, la interfaz muestra el campo y el
+   motivo entregado por el backend. Distingue permisos, sesión expirada,
+   registro inexistente, conflicto simultáneo, límite de intentos y falla de red.
+7. Si otro usuario modificó el registro mientras el formulario estaba abierto,
+   la API responde `409`, conserva el cambio más reciente y obliga a recargar.
 
-Texto revisado para la entrega a QA del 13-10-2026. El
+Texto revisado para la entrega a QA del 21-10-2026. El
 diagrama histórico conserva su fecha original hasta su actualización.

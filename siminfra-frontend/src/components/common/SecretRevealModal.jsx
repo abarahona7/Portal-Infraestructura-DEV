@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 import apiClient from '../../api/client';
+import { getApiErrorMessage } from '../../utils/apiErrorMessage';
 import './SecretRevealModal.css';
 
 export default function SecretRevealModal({ request, username, onClose }) {
@@ -76,8 +77,10 @@ export default function SecretRevealModal({ request, username, onClose }) {
     } catch (err) {
       setSecret('');
       setError(
-        err?.response?.data?.detail ||
-        'No fue posible revelar el secreto. Verifica tu contraseña e inténtalo nuevamente.'
+        getApiErrorMessage(
+          err,
+          'No fue posible revelar el secreto. Verifica tu contraseña e inténtalo nuevamente.'
+        )
       );
     } finally {
       setLoading(false);

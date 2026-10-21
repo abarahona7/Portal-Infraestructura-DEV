@@ -4,7 +4,7 @@ Este procedimiento publica el portal con MySQL 8.4, HTTPS y el perfil
 `config.settings_production`. Los secretos reales se guardan únicamente en el
 `.env` del servidor y nunca se agregan a Git.
 
-Estado actual de la reconstrucción: las migraciones hasta `core.0063` están
+Estado actual de la reconstrucción: las migraciones hasta `core.0067` están
 aplicadas en MySQL **DEV**. Antes de aplicar 0059/0060 se
 restauró un respaldo nuevo en MySQL 8.4 aislado y se verificaron conteos y QR;
 el resultado está en [la guía de actualización](docs/ACTUALIZACION_MYSQL_84.md).
@@ -15,7 +15,13 @@ definitiva, el proxy, la base de QA/producción y la ventana de despliegue.
 Las decisiones y comprobaciones aún abiertas se registran en
 [la revisión de ambigüedades](docs/REVISION_AMBIGUEDADES_PRODUCCION.md).
 
-Verificación técnica de la versión actual (7 de octubre de 2026): **176 pruebas
+Verificación técnica actual del 21 de octubre de 2026: **212 pruebas de core**
+pasaron en SQLite temporal, con 3 omisiones esperadas, y **65 pruebas frontend**
+pasaron junto con lint y build. MySQL DEV conserva 23 reglas de integridad sin
+errores. La ejecución equivalente sobre MySQL aislado sigue siendo parte de la
+puerta de QA.
+
+Evidencia anterior del 7 de octubre de 2026: **176 pruebas
 de `core` ejecutadas en MySQL 8.4 temporal, sin fallos (2 omisiones)**. La base
 y el contenedor se retiraron al terminar. La misma suite pasó también en SQLite
 temporal: **176 pruebas, sin fallos y 3 omisiones**. El ejemplo Nginx
@@ -254,8 +260,8 @@ Registrar la ejecución y evidencia usando el
     servidor. Verificar el proxy, el inicio de sesión, `/api` y la carga directa
     de `/qr/a/<uuid>`; comprobar que el backend interno no sea accesible
     directamente.
-12. Probar una baja y reactivación de usuario: confirmar qué sucede con IP,
-    anexo y equipos, incluido el posible re-enlace por hostname de Notebook/Mac.
+12. Probar una baja y reactivación de usuario: confirmar que la baja libera IP,
+    anexo y equipos, y que la reactivación no los restaura ni toma equipos por hostname.
 13. Resolver las puertas de salida de la revisión de ambigüedades y confirmar
     las mismas operaciones en QA antes de programar producción.
 

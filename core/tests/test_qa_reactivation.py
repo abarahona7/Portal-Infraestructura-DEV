@@ -51,7 +51,7 @@ class QAReactivacionUsuarioTests(TestCase):
             numero_anexo='8401', usuario=self.usuario,
         )
 
-    def test_baja_y_reactivacion_no_restauran_ip_ni_anexo_pero_enlazan_notebook(self):
+    def test_baja_y_reactivacion_no_restauran_recursos_por_hostname(self):
         self.usuario.estado = 'BAJA'
         self.usuario.save(update_fields=['estado'])
         self.notebook.refresh_from_db()
@@ -63,6 +63,17 @@ class QAReactivacionUsuarioTests(TestCase):
         self.assertEqual(self.ip.estado, 'LIBRE')
         self.assertIsNone(self.anexo.usuario_id)
 
+        equipment_reassignments = HistorialEquipo.objects.filter(
+            equipo=self.notebook,
+            usuario_anterior='Sin asignar',
+            usuario_nuevo=self.usuario.nombre_completo,
+        ).count()
+        user_reassignments = HistorialUsuario.objects.filter(
+            usuario=self.usuario,
+            accion='ASIGNACION_EQUIPO',
+            objeto_relacionado_id=str(self.notebook.pk),
+        ).count()
+
         # Los espacios externos y las mayúsculas no impiden la coincidencia.
         self.usuario.hostname = '  nb-qa-01  '
         self.usuario.estado = 'ACTIVO'
@@ -72,23 +83,23 @@ class QAReactivacionUsuarioTests(TestCase):
         self.ip.refresh_from_db()
         self.anexo.refresh_from_db()
 
-        self.assertEqual(self.notebook.usuario_id, self.usuario.pk)
-        self.assertEqual(self.notebook.estado, 'ASIGNADO')
+        self.assertIsNone(self.notebook.usuario_id)
+        self.assertEqual(self.notebook.estado, 'STOCK')
         self.assertIsNone(self.celular.usuario_id)
         self.assertIsNone(self.ip.usuario_id)
         self.assertEqual(self.ip.estado, 'LIBRE')
         self.assertFalse(AsignacionIP.objects.filter(usuario=self.usuario).exists())
         self.assertIsNone(self.anexo.usuario_id)
-        self.assertTrue(HistorialEquipo.objects.filter(
+        self.assertEqual(HistorialEquipo.objects.filter(
             equipo=self.notebook,
             usuario_anterior='Sin asignar',
             usuario_nuevo=self.usuario.nombre_completo,
-        ).exists())
-        self.assertTrue(HistorialUsuario.objects.filter(
+        ).count(), equipment_reassignments)
+        self.assertEqual(HistorialUsuario.objects.filter(
             usuario=self.usuario,
             accion='ASIGNACION_EQUIPO',
             objeto_relacionado_id=str(self.notebook.pk),
-        ).exists())
+        ).count(), user_reassignments)
 
     def test_reactivacion_sin_hostname_coincidente_no_recupera_equipos(self):
         self.usuario.estado = 'BAJA'

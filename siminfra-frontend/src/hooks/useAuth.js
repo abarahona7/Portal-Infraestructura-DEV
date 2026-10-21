@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import apiClient, { ensureCsrfToken, setAccessToken } from '../api/client';
+import { getApiErrorMessage } from '../utils/apiErrorMessage';
 
 const TAB_SESSION_KEY = 'portal-infra-ti-tab-session-active';
 let bootstrapPromise = null;
@@ -134,8 +135,10 @@ export const useAuth = () => {
       return true;
     } catch (error) {
       setLoginError(
-        error?.response?.data?.detail ||
-        'Credenciales inválidas. Verifica tu usuario y contraseña.'
+        getApiErrorMessage(
+          error,
+          'Credenciales inválidas. Verifica tu usuario y contraseña.'
+        )
       );
       return false;
     }

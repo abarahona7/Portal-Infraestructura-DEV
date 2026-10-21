@@ -180,7 +180,7 @@ class AutomaticEquipmentHistoryTests(TestCase):
             ).exists()
         )
 
-    def test_hostname_auto_link_assigns_equipment_with_history(self):
+    def test_matching_hostname_does_not_assign_available_equipment(self):
         equipment = Equipamiento.objects.create(
             tipo='Notebook',
             marca='Lenovo',
@@ -190,15 +190,17 @@ class AutomaticEquipmentHistoryTests(TestCase):
             estado='STOCK',
         )
 
-        user = self.create_user('automatico', hostname='HOST-AUTO-HIST')
+        self.create_user('automatico', hostname='HOST-AUTO-HIST')
 
         equipment.refresh_from_db()
-        self.assertEqual(equipment.usuario, user)
-        self.assertEqual(equipment.estado, 'ASIGNADO')
-        history = HistorialEquipo.objects.get(equipo=equipment, accion='MODIFICACION')
-        self.assertIn('Usuario Asignado', history.observacion)
-        self.assertEqual(history.usuario_anterior, 'Sin asignar')
-        self.assertEqual(history.usuario_nuevo, user.nombre_completo)
+        self.assertIsNone(equipment.usuario)
+        self.assertEqual(equipment.estado, 'STOCK')
+        self.assertFalse(
+            HistorialEquipo.objects.filter(
+                equipo=equipment,
+                accion='MODIFICACION',
+            ).exists()
+        )
 
     def test_user_deletion_releases_all_resources_with_history(self):
         user = self.create_user('eliminar', hostname='host-eliminar')

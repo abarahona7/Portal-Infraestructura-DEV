@@ -21,6 +21,7 @@ import IpSegmentCards
   from './features/ips/components/IpSegmentCards';
 
 import { getInitialCreateItem } from './utils/getInitialCreateItem';
+import { getApiErrorMessage } from './utils/apiErrorMessage';
 import {
   exportUsuariosExcel,
   exportEquiposExcel,
@@ -183,6 +184,11 @@ export default function App() {
     }, 3500);
   }, []);
 
+  const showErrorToast = useCallback(
+    (message) => showToast(message, 'error'),
+    [showToast]
+  );
+
   const closeToast = () => {
     if (toastTimerRef.current) {
       clearTimeout(toastTimerRef.current);
@@ -290,7 +296,12 @@ export default function App() {
     refreshReferenceData,
     ensureReferenceData,
     invalidateReferenceData,
-  } = useReferenceData(token, authUser?.role, activeModuleTab);
+  } = useReferenceData(
+    token,
+    authUser?.role,
+    activeModuleTab,
+    showErrorToast
+  );
 
   const normalizedSearch = search.trim();
   const isGlobalUserSearch = (
@@ -328,6 +339,7 @@ export default function App() {
     selectedEstadoAnexo,
     selectedEstadoGeneral: effectiveGeneralStatus,
     onUnauthorized: logout,
+    onError: showErrorToast,
     enabled: moduleDataEnabled,
   });
 
@@ -336,9 +348,15 @@ export default function App() {
     const controller = new AbortController();
     apiClient.get('/revisiones-baja/', { params: { page: 1 }, signal: controller.signal })
       .then(({ data: result }) => setPendingReviewCount(result.pendientes))
-      .catch(() => {});
+      .catch((error) => {
+        if (error.code !== 'ERR_CANCELED') {
+          showErrorToast(
+            getApiErrorMessage(error, 'No se pudo actualizar el contador de notificaciones.')
+          );
+        }
+      });
     return () => controller.abort();
-  }, [token, authUser?.role, reviewsRevision]);
+  }, [token, authUser?.role, reviewsRevision, showErrorToast]);
 
   const refreshVisibleChanges = (modules) => {
     if (modules.includes(activeModuleTab)) refreshData();
@@ -524,7 +542,7 @@ export default function App() {
         await refreshAllData();
       }
       showToast(
-        error?.response?.data?.detail || 'No se pudo actualizar el estado del Perfil Genérico.',
+        getApiErrorMessage(error, 'No se pudo actualizar el estado del Perfil Genérico.'),
         'error'
       );
     }
@@ -562,23 +580,26 @@ export default function App() {
       setter(detailedItem);
     } catch (error) {
       console.error('Error cargando detalle:', error.response?.data || error);
-      showToast('No se pudo cargar el detalle solicitado.', 'error');
+      showToast(getApiErrorMessage(error, 'No se pudo cargar el detalle solicitado.'), 'error');
     }
   };
 
   const openDashboardAssetForEdit = async (item) => {
-    if (authUser?.role === 'Visualizador') return;
+    if (authUser?.role === 'Visualizador') {
+      showToast('Tu rol permite consultar equipos, pero no modificarlos.', 'error');
+      return;
+    }
     const category = {
       Notebook: 'equipos-notebook', Celular: 'equipos-celular', Tablet: 'equipos-tablet',
       Mac: 'equipos-mac', 'BAM / Router': 'equipos-bam-router',
     }[item.tipo] || 'equipos-perifericos';
     selectTab(category);
     try {
-      await ensureReferenceData(['usuarios']);
+      await ensureReferenceData(['usuarios'], { throwOnError: true });
       const detail = await getItemDetailsByTab('equipos', item.id);
       setEditingItem(detail);
-    } catch {
-      showToast('No se pudo abrir el equipo.', 'error');
+    } catch (error) {
+      showToast(getApiErrorMessage(error, 'No se pudo abrir el equipo.'), 'error');
     }
   };
 
@@ -588,7 +609,7 @@ export default function App() {
       setHistoryIp({ ...ip, historial });
     } catch (error) {
       console.error('Error cargando historial IP:', error.response?.data || error);
-      showToast('No se pudo cargar el historial de la IP.', 'error');
+      showToast(getApiErrorMessage(error, 'No se pudo cargar el historial de la IP.'), 'error');
     }
   };
 
@@ -613,16 +634,22 @@ export default function App() {
   const loadFormReferences = async () => {
     const sections = getFormReferenceSections();
     if (sections.length > 0) {
-      await ensureReferenceData(sections);
+      await ensureReferenceData(sections, { throwOnError: true });
     }
   };
 
   const handleOpenCreateModal = async () => {
     if (isViewer) {
+      showToast('Tu rol es de solo lectura y no permite crear registros.', 'error');
       return;
     }
 
-    await loadFormReferences();
+    try {
+      await loadFormReferences();
+    } catch (error) {
+      showToast(getApiErrorMessage(error, 'No se pudieron cargar los datos necesarios para crear el registro.'), 'error');
+      return;
+    }
 
     const initialItem = getInitialCreateItem(activeModuleTab);
 
@@ -637,10 +664,16 @@ export default function App() {
 
   const handleOpenEditModal = async (item) => {
     if (isViewer) {
+      showToast('Tu rol es de solo lectura y no permite editar registros.', 'error');
       return;
     }
 
-    await loadFormReferences();
+    try {
+      await loadFormReferences();
+    } catch (error) {
+      showToast(getApiErrorMessage(error, 'No se pudieron cargar los datos necesarios para editar el registro.'), 'error');
+      return;
+    }
     setEditingItem(item);
   };
 
@@ -662,8 +695,7 @@ export default function App() {
       );
     } catch (error) {
       showToast(
-        error.message ||
-        'No se pudo exportar el archivo Excel.',
+        getApiErrorMessage(error, 'No se pudo exportar el archivo Excel.'),
         'error'
       );
     }
@@ -685,8 +717,7 @@ export default function App() {
       );
     } catch (error) {
       showToast(
-        error.message ||
-        'No se pudo exportar el archivo Excel.',
+        getApiErrorMessage(error, 'No se pudo exportar el archivo Excel.'),
         'error'
       );
     }
@@ -708,8 +739,7 @@ export default function App() {
       );
     } catch (error) {
       showToast(
-        error.message ||
-        'No se pudo exportar el archivo Excel.',
+        getApiErrorMessage(error, 'No se pudo exportar el archivo Excel.'),
         'error'
       );
     }
@@ -728,8 +758,7 @@ export default function App() {
       );
     } catch (error) {
       showToast(
-        error.message ||
-        'No se pudo exportar el archivo Excel.',
+        getApiErrorMessage(error, 'No se pudo exportar el archivo Excel.'),
         'error'
       );
     }
@@ -751,8 +780,7 @@ export default function App() {
       );
     } catch (error) {
       showToast(
-        error.message ||
-        'No se pudo exportar el archivo Excel.',
+        getApiErrorMessage(error, 'No se pudo exportar el archivo Excel.'),
         'error'
       );
     }
@@ -771,8 +799,7 @@ export default function App() {
       );
     } catch (error) {
       showToast(
-        error.message ||
-        'No se pudo exportar el archivo Excel.',
+        getApiErrorMessage(error, 'No se pudo exportar el archivo Excel.'),
         'error'
       );
     }
@@ -794,8 +821,7 @@ export default function App() {
       );
     } catch (error) {
       showToast(
-        error.message ||
-        'No se pudo exportar el archivo Excel.',
+        getApiErrorMessage(error, 'No se pudo exportar el archivo Excel.'),
         'error'
       );
     }

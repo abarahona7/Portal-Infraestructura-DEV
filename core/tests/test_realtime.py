@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 from django.test import TestCase
 
 from config.asgi import application
-from core.models import Anexo, Equipamiento
+from core.models import Anexo, Equipamiento, Usuario
 from core.realtime import EDITOR_GROUP, VIEWER_GROUP, schedule_change
 
 
@@ -44,4 +44,24 @@ class RealtimeChangesTests(TestCase):
         viewer_group, viewer_event = to_sync.return_value.call_args_list[1].args
         self.assertEqual(viewer_group, VIEWER_GROUP)
         self.assertIn('usuarios', editor_event['modules'])
-        self.assertEqual(viewer_event['modules'], ('anexos',))
+        self.assertEqual(viewer_event, {
+            'type': 'portal.change',
+            'event_id': editor_event['event_id'],
+            'modules': ('anexos',),
+        })
+
+    def test_visualizador_recibe_aviso_sanitizado_de_cambio_relacionado(self):
+        person = Usuario(pk=9, nombre_completo='Persona QA')
+        with patch('core.realtime.get_channel_layer'), \
+             patch('core.realtime.async_to_sync') as to_sync:
+            with self.captureOnCommitCallbacks(execute=True):
+                schedule_change(person, 'updated')
+
+        editor_event = to_sync.return_value.call_args_list[0].args[1]
+        viewer_group, viewer_event = to_sync.return_value.call_args_list[1].args
+        self.assertEqual(viewer_group, VIEWER_GROUP)
+        self.assertEqual(viewer_event, {
+            'type': 'portal.change',
+            'event_id': editor_event['event_id'],
+            'modules': ('anexos',),
+        })

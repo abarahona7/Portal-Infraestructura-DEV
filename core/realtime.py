@@ -65,10 +65,9 @@ def schedule_change(instance, operation):
             async_to_sync(layer.group_send)(EDITOR_GROUP, event)
             if 'anexos' in modules:
                 async_to_sync(layer.group_send)(VIEWER_GROUP, {
-                    **event,
+                    'type': 'portal.change',
+                    'event_id': event_id,
                     'modules': ('anexos',),
-                    'record_id': record_id if model == 'Anexo' else None,
-                    'model': 'Anexo' if model == 'Anexo' else 'Relacionado',
                 })
         except Exception:
             logger.exception('No se pudo enviar la notificación del cambio %s', event_id)

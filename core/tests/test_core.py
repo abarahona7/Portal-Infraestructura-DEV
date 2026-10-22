@@ -1267,6 +1267,8 @@ class PortalSessionTests(TestCase):
         self.user = User.objects.create_user(
             'session-admin',
             password='StrongPass!123',
+            first_name='Angelo',
+            last_name='Silva',
         )
         self.user.groups.add(admin_group)
         self.client = APIClient()
@@ -1281,6 +1283,11 @@ class PortalSessionTests(TestCase):
     def test_login_creates_unique_tokenized_session(self):
         first = self.login()
         self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.json()['user'], {
+            'username': 'session-admin',
+            'display_name': 'Angelo Silva',
+            'role': 'Administrador',
+        })
         first_token = AccessToken(first.json()['access'])
         first_sid = first_token['sid']
         self.assertTrue(PortalSession.objects.filter(pk=first_sid).exists())
@@ -1314,6 +1321,14 @@ class PortalSessionTests(TestCase):
         )
         self.assertEqual(refreshed.status_code, 200)
         self.assertEqual(AccessToken(refreshed.json()['access'])['sid'], str(sid))
+        self.assertEqual(refreshed.json()['user']['display_name'], 'Angelo Silva')
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {refreshed.json()['access']}"
+        )
+        current_user = self.client.get('/api/auth/me/')
+        self.assertEqual(current_user.status_code, 200)
+        self.assertEqual(current_user.json()['display_name'], 'Angelo Silva')
 
     def test_refresh_rejects_session_after_effective_inactivity(self):
         login = self.login()

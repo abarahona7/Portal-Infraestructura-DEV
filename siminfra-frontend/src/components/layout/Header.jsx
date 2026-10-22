@@ -1,4 +1,4 @@
-import { Bell, LogOut, Menu } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Menu } from 'lucide-react';
 
 import './Header.css';
 import {
@@ -10,12 +10,22 @@ export default function Header({
   activeTab,
   role,
   username,
+  displayName,
   onOpenSidebar,
   onOpenNotifications,
   onLogout,
   pendingReviewCount = 0,
 }) {
   const isViewer = role === 'Visualizador';
+  const sessionName = displayName || username || 'Usuario';
+  const initials = sessionName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toLocaleUpperCase('es-CL');
   const getTitle = () => {
     if (isEquipmentTab(activeTab)) {
       return `Equipos / ${getEquipmentLabelByTab(activeTab)}`;
@@ -104,17 +114,29 @@ export default function Header({
           </button>
         </div>
       ) : (
-        <button
-          type="button"
-          className={`header-notifications-button ${activeTab === 'revisiones-baja' ? 'is-active' : ''}`}
-          onClick={onOpenNotifications}
-          aria-label={`Notificaciones: ${pendingReviewCount} ${pendingReviewCount === 1 ? 'liberación pendiente' : 'liberaciones pendientes'}`}
-          aria-current={activeTab === 'revisiones-baja' ? 'page' : undefined}
-          title="Ver notificaciones de recursos liberados"
-        >
-          <Bell size={21} aria-hidden="true" />
-          {pendingReviewCount > 0 && <span className="header-notifications-count" aria-hidden="true">{pendingReviewCount > 99 ? '99+' : pendingReviewCount}</span>}
-        </button>
+        <div className="header-actions">
+          <button
+            type="button"
+            className={`header-notifications-button ${activeTab === 'revisiones-baja' ? 'is-active' : ''}`}
+            onClick={onOpenNotifications}
+            aria-label={`Notificaciones: ${pendingReviewCount} ${pendingReviewCount === 1 ? 'liberación pendiente' : 'liberaciones pendientes'}`}
+            aria-current={activeTab === 'revisiones-baja' ? 'page' : undefined}
+            title="Ver notificaciones de recursos liberados"
+          >
+            <Bell size={21} aria-hidden="true" />
+            {pendingReviewCount > 0 && <span className="header-notifications-count" aria-hidden="true">{pendingReviewCount > 99 ? '99+' : pendingReviewCount}</span>}
+          </button>
+          <details className="header-account">
+            <summary aria-label={`Cuenta de ${sessionName}`}>
+              <span className="header-account-avatar" aria-hidden="true">{initials}</span>
+              <span className="header-account-copy"><strong>{sessionName}</strong><small>{role}</small></span>
+              <ChevronDown size={15} aria-hidden="true" />
+            </summary>
+            <div className="header-account-menu">
+              <button type="button" onClick={onLogout}><LogOut size={16} aria-hidden="true" /> Cerrar sesión</button>
+            </div>
+          </details>
+        </div>
       )}
 
     </header>

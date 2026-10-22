@@ -128,6 +128,121 @@
   text-align: center;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: none;
+}
+
+.header-account {
+  position: relative;
+}
+
+.header-account summary {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: #17345d;
+  cursor: pointer;
+  list-style: none;
+}
+
+.header-account summary::-webkit-details-marker {
+  display: none;
+}
+
+.header-account summary:hover,
+.header-account[open] summary {
+  border-color: #dbe6f5;
+  background: #fff;
+}
+
+.header-account summary:focus-visible {
+  outline: 3px solid #9bbcff;
+  outline-offset: 2px;
+}
+
+.header-account-avatar {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 50%;
+  background: #5272ad;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.header-account-copy {
+  display: grid;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.header-account-copy strong {
+  max-width: 150px;
+  overflow: hidden;
+  color: #17345d;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-account-copy small {
+  margin-top: 0.2rem;
+  color: #64748b;
+  font-size: 0.68rem;
+}
+
+.header-account summary > svg {
+  color: #6b83aa;
+  transition: transform 0.18s ease;
+}
+
+.header-account[open] summary > svg {
+  transform: rotate(180deg);
+}
+
+.header-account-menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  min-width: 170px;
+  padding: 0.4rem;
+  border: 1px solid #dbe6f5;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+}
+
+.header-account-menu button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #c92f35;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.header-account-menu button:hover {
+  background: #fff1f2;
+}
+
 .main-header-titles {
   min-width: 0;
 }
@@ -241,6 +356,10 @@
     display: none;
   }
 
+  .header-account-copy {
+    display: none;
+  }
+
 }
 
 /* =========================
@@ -272,6 +391,20 @@
     min-height: 42px;
     padding: 0;
     font-size: 0;
+  }
+
+  .header-actions {
+    gap: 0.35rem;
+  }
+
+  .header-account summary {
+    gap: 0.2rem;
+    padding: 0.15rem;
+  }
+
+  .header-account-avatar {
+    width: 40px;
+    height: 40px;
   }
 
   .main-header-titles {

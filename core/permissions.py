@@ -3,21 +3,22 @@ from rest_framework.permissions import BasePermission, SAFE_METHODS
 ROLE_VIEWER = 'Visualizador'
 ROLE_OPERATOR = 'Operador Infraestructura'
 ROLE_ADMIN = 'Administrador'
+_ROLE_NOT_CACHED = object()
 
 
 def get_role(user):
     if not user or not user.is_authenticated:
         return None
+    cached_role = getattr(user, '_portal_role_cache', _ROLE_NOT_CACHED)
+    if cached_role is not _ROLE_NOT_CACHED:
+        return cached_role
     if user.is_superuser:
-        return ROLE_ADMIN
-    names = set(user.groups.values_list('name', flat=True))
-    if ROLE_ADMIN in names:
-        return ROLE_ADMIN
-    if ROLE_OPERATOR in names:
-        return ROLE_OPERATOR
-    if ROLE_VIEWER in names:
-        return ROLE_VIEWER
-    return None
+        role = ROLE_ADMIN
+    else:
+        names = set(user.groups.values_list('name', flat=True))
+        role = next((name for name in (ROLE_ADMIN, ROLE_OPERATOR, ROLE_VIEWER) if name in names), None)
+    user._portal_role_cache = role
+    return role
 
 
 def is_admin(user):

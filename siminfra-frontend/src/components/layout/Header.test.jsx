@@ -5,10 +5,16 @@ import Header from './Header';
 describe('Notificaciones en el encabezado', () => {
   it('muestra el contador y abre la lista de liberaciones para Infraestructura', () => {
     const onOpenNotifications = vi.fn();
-    render(<Header activeTab="usuarios" role="Operador Infraestructura" pendingReviewCount={2} onOpenNotifications={onOpenNotifications} />);
+    const onLogout = vi.fn();
+    render(<Header activeTab="usuarios" role="Operador Infraestructura" username="asilva" displayName="Angelo Silva" pendingReviewCount={2} onOpenNotifications={onOpenNotifications} onLogout={onLogout} />);
     fireEvent.click(screen.getByRole('button', { name: 'Notificaciones: 2 liberaciones pendientes' }));
     expect(onOpenNotifications).toHaveBeenCalledOnce();
     expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByText('Angelo Silva')).toBeInTheDocument();
+    expect(screen.getByText('Operador Infraestructura')).toBeInTheDocument();
+    expect(screen.getByText('AS')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }));
+    expect(onLogout).toHaveBeenCalledOnce();
   });
 
   it('conserva la campana sin contador cuando no hay pendientes', () => {

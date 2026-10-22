@@ -1043,6 +1043,7 @@ export default function App() {
           activeTab={tab}
           role={authUser?.role}
           username={authUser?.username}
+          displayName={authUser?.display_name}
           onOpenSidebar={openSidebar}
           onOpenNotifications={() => handleSelectTab('revisiones-baja')}
           onLogout={handleLogout}

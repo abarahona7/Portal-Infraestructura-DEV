@@ -26,6 +26,14 @@ from .session_auth import (
 logger = logging.getLogger(__name__)
 
 
+def _user_payload(user, role=None):
+    return {
+        'username': user.get_username(),
+        'display_name': user.get_full_name().strip() or user.get_username(),
+        'role': role or get_role(user),
+    }
+
+
 def _cookie_kwargs():
     return dict(
         httponly=True,
@@ -84,7 +92,7 @@ class LoginView(APIView):
         portal_session = PortalSession.objects.create(user=user)
         refresh = RefreshToken.for_user(user)
         refresh['sid'] = str(portal_session.pk)
-        response = Response({'access': str(refresh.access_token), 'user': {'username': user.get_username(), 'role': role}})
+        response = Response({'access': str(refresh.access_token), 'user': _user_payload(user, role)})
         _set_refresh_cookie(response, refresh)
         return response
 
@@ -115,7 +123,7 @@ class RefreshCookieView(APIView):
                 pass
             new = RefreshToken.for_user(user)
             new['sid'] = str(portal_session.pk)
-            response = Response({'access': str(new.access_token), 'user': {'username': user.get_username(), 'role': get_role(user)}})
+            response = Response({'access': str(new.access_token), 'user': _user_payload(user)})
             _set_refresh_cookie(response, new)
             return response
         except (
@@ -178,4 +186,4 @@ class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response({'username': request.user.get_username(), 'role': get_role(request.user)})
+        return Response(_user_payload(request.user))

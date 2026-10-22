@@ -78,7 +78,11 @@ Los retiros excepcionales se gestionan con el comando técnico documentado en
 - Agregar y editar.
 - Asignar o liberar un usuario y mantener coherentes dueño y estado.
 - Consultar el historial de movimientos.
-- Permitir al Visualizador consultar únicamente anexos asignados, en una vista completa sin sidebar, filtro de estado, observaciones, historial ni acciones.
+- Permitir al Visualizador consultar todos los anexos asignados, en una vista completa sin sidebar, filtro de estado, observaciones, historial ni acciones.
+- La API aplica el mismo límite: no entrega notas ni historial y tampoco busca
+  dentro de observaciones para este rol.
+- Los cambios se reflejan en vivo mediante un aviso WebSocket limitado al módulo
+  Anexos, sin identificadores ni datos del registro modificado.
 
 ### Perfiles genéricos
 
@@ -130,5 +134,5 @@ Los retiros excepcionales se gestionan con el comando técnico documentado en
 7. Si otro usuario modificó el registro mientras el formulario estaba abierto,
    la API responde `409`, conserva el cambio más reciente y obliga a recargar.
 
-Texto revisado para la entrega a QA del 21-10-2026. El
+Texto revisado para la entrega a QA del 22-10-2026. El
 diagrama histórico conserva su fecha original hasta su actualización.

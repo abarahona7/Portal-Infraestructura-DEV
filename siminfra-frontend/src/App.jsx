@@ -1022,7 +1022,6 @@ export default function App() {
           onClose={closeSidebar}
           onToggleCollapse={toggleSidebarCollapsed}
           onSelectTab={handleSelectTab}
-          onLogout={handleLogout}
           role={authUser?.role}
         />
       )}

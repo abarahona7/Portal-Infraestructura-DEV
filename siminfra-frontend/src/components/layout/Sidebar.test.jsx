@@ -36,14 +36,10 @@ describe('Navegación por rol', () => {
     expect(screen.queryByRole('button', { name: /Revisiones/ })).not.toBeInTheDocument();
   });
 
-  it('ofrece cerrar sesión desde el sidebar y cierra el menú móvil', () => {
-    const onClose = vi.fn();
-    const onLogout = vi.fn();
-    render(<Sidebar {...props} isOpen role="Operador Infraestructura" onClose={onClose} onLogout={onLogout} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }));
-    expect(onClose).toHaveBeenCalledOnce();
-    expect(onLogout).toHaveBeenCalledOnce();
+  it('reserva el sidebar para la navegación de módulos', () => {
+    render(<Sidebar {...props} isOpen role="Operador Infraestructura" />);
+    expect(screen.queryByRole('button', { name: 'Cerrar sesión' })).not.toBeInTheDocument();
+    expect(screen.getByText('Farmacias del Dr. Simi')).toBeInTheDocument();
   });
 
   it('no muestra Papelera al Administrador', () => {

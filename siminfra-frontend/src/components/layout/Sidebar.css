@@ -289,34 +289,6 @@
   font-size: 11px;
 }
 
-.sidebar-logout-button {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 40px;
-  padding: 6px 12px;
-  border: 1px solid #59404b;
-  border-radius: 9px;
-  background: transparent;
-  color: #fca5a5;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 650;
-  text-align: left;
-  cursor: pointer;
-}
-
-.sidebar-logout-button:hover,
-.sidebar-logout-button:focus-visible {
-  background: #42212d;
-  color: #fff;
-}
-
-.sidebar-logout-button svg {
-  flex-shrink: 0;
-}
-
 .sidebar-footer strong,
 .sidebar-footer-mini {
   color: #94a3b8;
@@ -359,15 +331,6 @@
   width: auto;
 }
 
-.sidebar-collapsed .sidebar-logout-button {
-  justify-content: center;
-  padding: 8px;
-}
-
-.sidebar-collapsed .sidebar-logout-button span {
-  display: none;
-}
-
 .sidebar-collapsed .sidebar-collapse-button {
   margin-top: 4px;
 }
@@ -383,8 +346,7 @@
   }
 
   .sidebar-module-button,
-  .sidebar-child-button,
-  .sidebar-logout-button {
+  .sidebar-child-button {
     min-height: 36px;
   }
 
@@ -460,15 +422,6 @@
 
   .sidebar-collapsed .sidebar-module-icon {
     width: 26px;
-  }
-
-  .sidebar-collapsed .sidebar-logout-button {
-    justify-content: flex-start;
-    padding: 8px 12px;
-  }
-
-  .sidebar-collapsed .sidebar-logout-button span {
-    display: inline;
   }
 
   .sidebar-collapse-button {

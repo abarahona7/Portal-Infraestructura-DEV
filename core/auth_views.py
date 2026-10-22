@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
-from .permissions import get_role
+from .permissions import HasPortalRole, get_role
 from .models import PortalSession, SecurityAuditLog
 from .session_auth import (
     PortalSessionError,
@@ -171,7 +171,7 @@ class LogoutView(APIView):
 
 
 class ActivityView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPortalRole]
 
     def post(self, request):
         portal_session = get_active_portal_session(
@@ -183,7 +183,7 @@ class ActivityView(APIView):
 
 
 class MeView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPortalRole]
 
     def get(self, request):
         return Response(_user_payload(request.user))

@@ -25,6 +25,15 @@ def is_admin(user):
     return get_role(user) == ROLE_ADMIN
 
 
+class HasPortalRole(BasePermission):
+    """Require an authenticated account with a current portal role."""
+
+    message = 'Tu cuenta no tiene un rol activo en el portal.'
+
+    def has_permission(self, request, view):
+        return get_role(request.user) is not None
+
+
 class PortalRolePermission(BasePermission):
     """
     Permisos del portal aplicados en backend.

@@ -198,3 +198,21 @@ class QASesionRevocacionTests(TestCase):
         self.assertEqual(refreshed.status_code, 200)
         self.assertNotEqual(self.client.cookies[settings.JWT_REFRESH_COOKIE].value, old_refresh)
         self.assertEqual(BlacklistedToken.objects.count(), before + 1)
+
+    def test_me_y_activity_rechazan_cuenta_que_perdio_su_rol(self):
+        login = self.client.post(
+            '/api/auth/login/',
+            {'username': 'qa-session', 'password': 'TestPassword123!'},
+            format='json',
+        )
+        self.assertEqual(login.status_code, 200)
+        access = login.data['access']
+        self.admin.groups.clear()
+        authorization = f'Bearer {access}'
+
+        self.assertEqual(self.client.get(
+            '/api/auth/me/', HTTP_AUTHORIZATION=authorization,
+        ).status_code, 403)
+        self.assertEqual(self.client.post(
+            '/api/auth/activity/', HTTP_AUTHORIZATION=authorization,
+        ).status_code, 403)

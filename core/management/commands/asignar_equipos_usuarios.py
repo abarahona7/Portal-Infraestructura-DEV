@@ -12,6 +12,7 @@ from core.audit import reset_current_audit_user, set_current_audit_user
 from core.models import Equipamiento, Usuario
 from core.serializers import EquipamientoSerializer
 from core.services.asignacion_equipos import build_plan, source_digest, write_pending_report
+from core.services.safe_spreadsheets import validate_xlsx_file
 
 
 class _ImportAuditUser:
@@ -34,9 +35,10 @@ class Command(BaseCommand):
         parser.add_argument('--pending-report', required=True, type=Path)
 
     def handle(self, *args, **options):
-        source = options['source'].resolve()
-        if not source.is_file():
-            raise CommandError(f'No existe el archivo origen: {source}')
+        try:
+            source = validate_xlsx_file(options['source'])
+        except ValueError as exc:
+            raise CommandError(str(exc)) from exc
 
         digest = source_digest(source)
         if options['apply'] and (
@@ -45,7 +47,10 @@ class Command(BaseCommand):
         ):
             raise CommandError('El SHA-256 no coincide con la previsualización aprobada.')
 
-        plan = build_plan(source)
+        try:
+            plan = build_plan(source)
+        except ValueError as exc:
+            raise CommandError(str(exc)) from exc
         report = options['pending_report'].resolve()
         report.parent.mkdir(parents=True, exist_ok=True)
         write_pending_report(report, plan, digest)

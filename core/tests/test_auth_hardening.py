@@ -217,6 +217,38 @@ class WebSocketAuthenticationTests(SimpleTestCase):
         output = await communicator.receive_output(timeout=1)
         self.assertEqual(output, {'type': 'websocket.close', 'code': 4401})
 
+    @override_settings(PORTAL_WS_MAX_MESSAGE_BYTES=32)
+    async def test_mensaje_demasiado_grande_cierra_websocket(self):
+        communicator = WebsocketCommunicator(
+            application,
+            '/ws/changes/',
+            headers=[(b'origin', b'http://localhost:5178')],
+        )
+        self.assertTrue((await communicator.connect())[0])
+        await communicator.send_to(text_data='{"type":"auth","token":"' + ('x' * 40) + '"}')
+        self.assertEqual(
+            await communicator.receive_output(timeout=1),
+            {'type': 'websocket.close', 'code': 4400},
+        )
+        await communicator.disconnect()
+
+    async def test_auth_con_campos_inesperados_se_ignora(self):
+        communicator = WebsocketCommunicator(
+            application,
+            '/ws/changes/',
+            headers=[(b'origin', b'http://localhost:5178')],
+        )
+        self.assertTrue((await communicator.connect())[0])
+        await communicator.send_json_to({
+            'type': 'auth', 'token': 'no-debe-validarse', 'extra': 'rechazado',
+        })
+        await communicator.send_json_to({'type': 'auth', 'token': 'token-invalido'})
+        self.assertEqual(
+            await communicator.receive_output(timeout=1),
+            {'type': 'websocket.close', 'code': 4401},
+        )
+        await communicator.disconnect()
+
     @override_settings(PORTAL_WS_MAX_CONNECTIONS_PER_IP=1)
     async def test_limita_conexiones_por_ip(self):
         first = WebsocketCommunicator(

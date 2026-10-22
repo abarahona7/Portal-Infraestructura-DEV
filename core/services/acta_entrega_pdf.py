@@ -1,5 +1,6 @@
 from io import BytesIO
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 from django.conf import settings
 from django.utils import timezone
@@ -63,6 +64,11 @@ def _safe(value, default=""):
     value = str(value).strip()
 
     return value if value else default
+
+
+def _paragraph_text(value, default=""):
+    """Convierte datos en texto literal antes de entregarlos a ReportLab."""
+    return escape(str(_safe(value, default)))
 
 
 def _fecha_actual_espanol():
@@ -538,17 +544,17 @@ def _build_equipment_table(
                     ),
 
                     Paragraph(
-                        _nomenclatura(equipo),
+                        _paragraph_text(_nomenclatura(equipo)),
                         styles["table_cell"],
                     ),
 
                     Paragraph(
-                        _get_accesorios(equipo),
+                        _paragraph_text(_get_accesorios(equipo)),
                         styles["table_cell"],
                     ),
 
                     Paragraph(
-                        _safe(
+                        _paragraph_text(
                             getattr(
                                 equipo,
                                 "numero_serie",
@@ -560,7 +566,7 @@ def _build_equipment_table(
                     ),
 
                     Paragraph(
-                        _safe(
+                        _paragraph_text(
                             getattr(
                                 equipo,
                                 "af",
@@ -572,9 +578,7 @@ def _build_equipment_table(
                     ),
 
                     Paragraph(
-                        _get_estado_equipo(
-                            equipo
-                        ),
+                        _paragraph_text(_get_estado_equipo(equipo)),
                         styles["table_center"],
                     ),
                 ]
@@ -697,7 +701,7 @@ def _build_signatures(
         ),
         Spacer(1, 1.15 * cm),
         Paragraph(
-            entregado_por,
+            _paragraph_text(entregado_por),
             styles["signature"],
         ),
         Paragraph(
@@ -717,7 +721,7 @@ def _build_signatures(
             styles["signature"],
         ),
         Paragraph(
-            area.upper(),
+            _paragraph_text(area.upper()),
             styles["signature_bold"],
         ),
     ]
@@ -899,10 +903,10 @@ def generar_acta_entrega_pdf(
         "RUT 59.111.330-5, a través del "
         "Departamento de Tecnología, procede "
         "a hacer entrega al colaborador "
-        f"<b>{nombre_usuario}</b>, "
+        f"<b>{_paragraph_text(nombre_usuario)}</b>, "
         "Rut ___________________-_____, "
         "perteneciente al Departamento de "
-        f"<b>{area_usuario}</b>, "
+        f"<b>{_paragraph_text(area_usuario)}</b>, "
         "del/los siguiente(s) elemento(s) "
         "y como parte de la asignación de "
         "recursos para el cumplimiento de "

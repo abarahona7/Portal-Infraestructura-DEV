@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.utils.http import content_disposition_header
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Prefetch, Q
 from django.db.models.functions import Length
@@ -528,8 +529,9 @@ class UsuarioViewSet(
             content_type='application/pdf',
         )
 
-        response['Content-Disposition'] = (
-            f'inline; filename="{nombre_archivo}"'
+        response['Content-Disposition'] = content_disposition_header(
+            False,
+            nombre_archivo,
         )
 
         return response

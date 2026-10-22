@@ -7,6 +7,10 @@ from datetime import date, datetime
 from openpyxl import load_workbook
 
 from core.models import Equipamiento, Usuario
+from core.services.safe_spreadsheets import (
+    validate_workbook_dimensions,
+    validate_xlsx_file,
+)
 
 
 EMPTY = {'', '-', 'N/A', 'N/I', 'FALTA', 'S/C', 'NAN', 'NONE'}
@@ -48,8 +52,10 @@ def _excel_date(value):
 
 
 def _candidates(path):
+    path = validate_xlsx_file(path)
     book = load_workbook(path, read_only=True, data_only=True)
     try:
+        validate_workbook_dimensions(book)
         sheet = book.active
         candidates = []
         for row_number, row in enumerate(sheet.iter_rows(min_row=4, values_only=True), 4):

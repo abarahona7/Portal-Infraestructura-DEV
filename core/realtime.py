@@ -185,6 +185,15 @@ class PortalChangesConsumer(AsyncJsonWebsocketConsumer):
         self.expiry_task = None
         await self.accept()
 
+    async def receive(self, text_data=None, bytes_data=None, **kwargs):
+        if bytes_data is not None:
+            await self.close(code=4400)
+            return
+        if text_data is None or len(text_data.encode('utf-8')) > settings.PORTAL_WS_MAX_MESSAGE_BYTES:
+            await self.close(code=4400)
+            return
+        await super().receive(text_data=text_data, bytes_data=bytes_data, **kwargs)
+
     async def close_if_unauthenticated(self):
         await asyncio.sleep(5)
         if not self.authenticated:
@@ -212,7 +221,7 @@ class PortalChangesConsumer(AsyncJsonWebsocketConsumer):
         if not isinstance(content, dict):
             await self.close(code=4401)
             return
-        if self.authenticated or content.get('type') != 'auth':
+        if self.authenticated or set(content) != {'type', 'token'} or content.get('type') != 'auth':
             return
         raw_token = content.get('token', '')
         if not isinstance(raw_token, str) or len(raw_token) > 8192:

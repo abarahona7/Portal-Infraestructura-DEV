@@ -9,6 +9,10 @@ from .protocols import (
     validate_confirmations, confirmation_observation,
 )
 from .audit import get_current_audit_username
+from .input_validators import (
+    validate_encrypted_plaintext,
+    validate_no_unsafe_control_characters,
+)
 
 from .models import (
     Usuario,
@@ -94,7 +98,22 @@ def _validate_no_whitespace(value, field_label):
     return value
 
 
-class InternalModelFieldsMixin:
+class SafeTextInputMixin:
+    """Aplica el control común a todos los textos recibidos por la API."""
+
+    def to_internal_value(self, data):
+        validated = super().to_internal_value(data)
+        for value in validated.values():
+            if isinstance(value, str):
+                validate_no_unsafe_control_characters(value)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, str):
+                        validate_no_unsafe_control_characters(item)
+        return validated
+
+
+class InternalModelFieldsMixin(SafeTextInputMixin):
     """Exclude database-only normalization fields from public API schemas."""
 
     internal_model_fields = ()
@@ -107,7 +126,7 @@ class InternalModelFieldsMixin:
         return fields
 
 
-class SubAreaSerializer(serializers.ModelSerializer):
+class SubAreaSerializer(SafeTextInputMixin, serializers.ModelSerializer):
     departamento_nombre = serializers.ReadOnlyField(
         source='departamento.nombre'
     )
@@ -166,7 +185,7 @@ class SubAreaSerializer(serializers.ModelSerializer):
         return attrs
 
 
-class DepartamentoSerializer(serializers.ModelSerializer):
+class DepartamentoSerializer(SafeTextInputMixin, serializers.ModelSerializer):
     subareas = SubAreaSerializer(many=True, read_only=True)
 
     class Meta:
@@ -562,8 +581,14 @@ class EquipamientoSerializer(InternalModelFieldsMixin, serializers.ModelSerializ
         read_only=True
     )
 
-    icloud_password = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
-    pin = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    icloud_password = serializers.CharField(
+        write_only=True, required=False, allow_blank=True, allow_null=True,
+        validators=[validate_encrypted_plaintext],
+    )
+    pin = serializers.CharField(
+        write_only=True, required=False, allow_blank=True, allow_null=True,
+        validators=[validate_encrypted_plaintext],
+    )
     icloud_password_configured = serializers.SerializerMethodField()
     pin_configured = serializers.SerializerMethodField()
     ip_asignada = serializers.SerializerMethodField()
@@ -917,10 +942,16 @@ class UsuarioSerializer(InternalModelFieldsMixin, serializers.ModelSerializer):
         allow_null=True
     )
 
-    password_gmail = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    password_gmail = serializers.CharField(
+        write_only=True, required=False, allow_blank=True, allow_null=True,
+        validators=[validate_encrypted_plaintext],
+    )
     password_gmail_configured = serializers.SerializerMethodField()
 
-    password_vpn = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    password_vpn = serializers.CharField(
+        write_only=True, required=False, allow_blank=True, allow_null=True,
+        validators=[validate_encrypted_plaintext],
+    )
     password_vpn_configured = serializers.SerializerMethodField()
 
     class Meta:
@@ -1300,6 +1331,7 @@ class PerfilGenericoSerializer(InternalModelFieldsMixin, serializers.ModelSerial
         required=False,
         allow_blank=True,
         allow_null=True,
+        validators=[validate_encrypted_plaintext],
     )
     password_configured = serializers.SerializerMethodField()
     departamento_nombre = serializers.ReadOnlyField(
@@ -1422,7 +1454,10 @@ class PCGenericoSerializer(InternalModelFieldsMixin, serializers.ModelSerializer
         read_only=True
     )
 
-    password = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    password = serializers.CharField(
+        write_only=True, required=False, allow_blank=True, allow_null=True,
+        validators=[validate_encrypted_plaintext],
+    )
     password_configured = serializers.SerializerMethodField()
     ip_actual = serializers.SerializerMethodField()
     departamento_nombre = serializers.ReadOnlyField(source='departamento.nombre')

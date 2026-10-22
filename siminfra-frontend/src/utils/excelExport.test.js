@@ -46,4 +46,18 @@ describe('Exportación Excel', () => {
     })).rejects.toThrow('No existen registros para exportar.');
     expect(captured.workbook).toBeNull();
   });
+
+  it('mantiene payloads de fórmula como texto literal', async () => {
+    await exportToExcel({
+      rows: [{ valor: '=1+1' }, { valor: '+CMD' }, { valor: '-2+3' }, { valor: '@SUM(1,1)' }],
+      columns: [{ key: 'valor', header: 'Valor' }],
+      sheetName: 'Seguridad',
+    });
+
+    const sheet = captured.workbook.Sheets.Seguridad;
+    ['A2', 'A3', 'A4', 'A5'].forEach((cell) => {
+      expect(sheet[cell].t).toBe('s');
+      expect(sheet[cell].f).toBeUndefined();
+    });
+  });
 });

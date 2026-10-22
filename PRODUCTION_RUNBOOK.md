@@ -235,6 +235,16 @@ El proxy debe reemplazar `X-Forwarded-Proto` y evitar que el cliente se conecte
 directamente a Daphne. `/ws/` debe admitir el upgrade de WebSocket. Solo después de confirmar HTTPS en todo el sitio se
 debe habilitar HSTS.
 
+Mantener definidos los límites de entrada del `.env.example`:
+
+- `PORTAL_WS_MAX_MESSAGE_BYTES` para cada mensaje WebSocket;
+- `PORTAL_IMPORT_MAX_FILE_BYTES` y
+  `PORTAL_IMPORT_MAX_UNCOMPRESSED_BYTES` para cada XLSX;
+- `PORTAL_IMPORT_MAX_ZIP_MEMBERS`, `PORTAL_IMPORT_MAX_ROWS` y
+  `PORTAL_IMPORT_MAX_COLUMNS` para la estructura del libro.
+
+No elevarlos sin medir memoria y tiempo con archivos sintéticos en QA.
+
 En producción los logs se escriben como JSON en la salida estándar. Cada
 respuesta incluye `X-Request-ID`, y el mismo valor aparece en los logs internos
 del ciclo de esa solicitud. El recolector de logs debe conservar este campo y
@@ -280,6 +290,10 @@ Registrar la ejecución y evidencia usando el
 15. Cambiar la contraseña y el rol de una cuenta con dos sesiones abiertas;
     ambas deben quedar revocadas. Repetir con una cuenta desactivada.
 16. Cerrar sesión con un WebSocket activo y comprobar el cierre inmediato.
+17. Generar un acta con caracteres `<`, `>`, `&` y comillas en datos de prueba;
+    el PDF debe mostrarlos como texto y el backend no debe intentar conexiones.
+18. Probar que una importación con extensión `.xlsx` y contenido inválido se
+    rechaza antes de iniciar cualquier escritura.
 
 ## 8. Respaldos y recuperación
 

@@ -63,7 +63,8 @@ la versión evita que un formulario antiguo sobrescriba el cambio más reciente.
 - Producción usa Redis como caché compartida para que los límites sean iguales
   en todos los procesos. Los rechazos `429` quedan en `SecurityAuditLog`.
 - El WebSocket limita conexiones por IP y usuario, limita mensajes y se cierra
-  al vencer o revocar la sesión.
+  al vencer o revocar la sesión. El mensaje inicial admite únicamente `type`
+  y `token`, y todo mensaje tiene un máximo predeterminado de 16 KiB.
 
 | Ámbito | Tasa predeterminada | Clave |
 | --- | --- | --- |
@@ -78,6 +79,7 @@ la versión evita que un formulario antiguo sobrescriba el cambio más reciente.
 | WebSocket conectado | 20 conexiones | IP |
 | WebSocket conectado | 5 conexiones | Usuario autenticado |
 | Mensajes WebSocket | 5/segundo | IP y usuario autenticado |
+| Tamaño de mensaje WebSocket | 16 KiB | Conexión |
 
 ### Roles
 
@@ -117,7 +119,17 @@ El acta solo se puede emitir si existe al menos un equipo actualmente asignado
 al usuario. La interfaz deshabilita la acción y explica el motivo; el endpoint
 vuelve a comprobarlo y responde `409 Conflict` si alguien intenta omitir la
 interfaz. Cuando la relación existe, el backend genera el PDF con los datos y
-equipos vigentes.
+equipos vigentes. Todo dato persistido se escapa como texto antes de entregarlo
+a ReportLab; ninguna etiqueta ingresada en nombres, áreas o equipos puede
+provocar lecturas de archivos ni conexiones salientes.
+
+### Importaciones XLSX
+
+Los comandos históricos aceptan exclusivamente libros `.xlsx` locales y
+regulares. Antes de abrirlos validan firma ZIP, enlaces simbólicos, rutas
+internas, cantidad de miembros, tamaño comprimido y descomprimido, filas y
+columnas. Las fórmulas se leen mediante su valor almacenado y la aplicación
+continúa siendo transaccional.
 
 ## 3. Sincronización de IP
 

@@ -67,6 +67,11 @@ Las validaciones del frontend mejoran la experiencia y las del serializer dan
 mensajes útiles. La base mantiene las invariantes esenciales aunque una carga
 concurrente alcance el último nivel.
 
+La API rechaza NUL y otros caracteres de control invisibles en textos nuevos o
+modificados. Los saltos de línea y tabulaciones normales siguen permitidos en
+campos descriptivos. Hostnames, direcciones IP, teléfonos, anexos, activos
+fijos, estados y relaciones conservan además sus listas blancas específicas.
+
 ### Unicidad normalizada
 
 - Departamento: `nombre_normalizado`.
@@ -123,6 +128,11 @@ Los siguientes campos se cifran en la aplicación con Fernet y el prefijo
 separado. Las contraseñas de los operadores de Django se guardan como hashes no
 reversibles. Los historiales y `SecurityAuditLog` no deben recibir secretos,
 tokens ni claves en texto legible.
+
+El texto plano de cada secreto admite hasta 127 bytes UTF-8. Este límite
+garantiza que el token Fernet con prefijo `ENC2::` quepa en la columna de 255
+caracteres. La regla se aplica antes de cifrar y no modifica secretos ya
+almacenados.
 
 ## 5. Decisiones para MySQL
 

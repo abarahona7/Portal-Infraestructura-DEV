@@ -27,10 +27,14 @@ class Command(BaseCommand):
         parser.add_argument('--report', type=Path)
 
     def handle(self, *args, **options):
-        root = options['input_dir']
+        root = options['input_dir'].resolve()
         missing = [filename for filename in FILES.values() if not (root / filename).is_file()]
         if missing:
             raise CommandError('Faltan archivos: ' + ', '.join(missing))
+        try:
+            plan = make_plan(root)
+        except ValueError as exc:
+            raise CommandError(str(exc)) from exc
         digest = file_digest(root)
         if options['apply']:
             expected = options['expected_sha256']
@@ -43,15 +47,9 @@ class Command(BaseCommand):
             except (RuntimeError, ValueError) as exc:
                 raise CommandError('FIELD_ENCRYPTION_KEY no es una clave Fernet válida.') from exc
 
-        try:
-            if options['apply']:
-                with transaction.atomic():
-                    plan = make_plan(root)
-                    self.apply_plan(plan)
-            else:
-                plan = make_plan(root)
-        except ValueError as exc:
-            raise CommandError(str(exc)) from exc
+        if options['apply']:
+            with transaction.atomic():
+                self.apply_plan(plan)
 
         result = plan.public_report(digest)
         result['mode'] = 'apply' if options['apply'] else 'dry-run'

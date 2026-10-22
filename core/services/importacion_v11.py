@@ -15,6 +15,10 @@ from core.models import (
     _normalize_key,
 )
 from core.serializers import IP_ALLOWED_NETWORKS
+from core.services.safe_spreadsheets import (
+    validate_workbook_dimensions,
+    validate_xlsx_file,
+)
 
 
 FILES = {
@@ -441,7 +445,9 @@ def make_plan(root):
     books = {}
     try:
         for module, filename in FILES.items():
-            books[module] = load_workbook(root / filename, read_only=True, data_only=True)
+            source = validate_xlsx_file(root / filename)
+            books[module] = load_workbook(source, read_only=True, data_only=True)
+            validate_workbook_dimensions(books[module])
         plan.read_users(books['usuarios'].active)
         plan.read_ips(books['ips'])
         plan.read_annexes(books['anexos'].active)

@@ -2,6 +2,7 @@ import io
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from zipfile import ZipFile
 
 from cryptography.fernet import Fernet
 from django.core.management import call_command
@@ -12,6 +13,43 @@ from openpyxl import Workbook, load_workbook
 from core.crypto import decrypt_val
 from core.models import Anexo, Departamento, Equipamiento, IP, PCGenerico, PerfilGenerico, Usuario
 from core.services.importacion_v11 import file_digest
+from core.services.safe_spreadsheets import validate_xlsx_file
+
+
+class SafeSpreadsheetTests(TestCase):
+    def test_rechaza_extension_xlsx_con_contenido_falso(self):
+        with TemporaryDirectory() as folder:
+            source = Path(folder) / 'entrada.xlsx'
+            source.write_bytes(b'contenido que no es un libro')
+            with self.assertRaisesRegex(ValueError, 'XLSX válido'):
+                validate_xlsx_file(source)
+
+    def test_rechaza_ruta_interna_con_path_traversal(self):
+        with TemporaryDirectory() as folder:
+            source = Path(folder) / 'entrada.xlsx'
+            with ZipFile(source, 'w') as archive:
+                archive.writestr('../fuera.xml', '<xml/>')
+            with self.assertRaisesRegex(ValueError, 'ruta interna'):
+                validate_xlsx_file(source)
+
+    @override_settings(PORTAL_IMPORT_MAX_UNCOMPRESSED_BYTES=8)
+    def test_rechaza_contenido_descomprimido_sobre_el_limite(self):
+        with TemporaryDirectory() as folder:
+            source = Path(folder) / 'entrada.xlsx'
+            with ZipFile(source, 'w') as archive:
+                archive.writestr('xl/workbook.xml', 'x' * 64)
+            with self.assertRaisesRegex(ValueError, 'descomprimido'):
+                validate_xlsx_file(source)
+
+    def test_rechaza_enlace_simbolico(self):
+        with TemporaryDirectory() as folder:
+            root = Path(folder)
+            target = root / 'real.xlsx'
+            Workbook().save(target)
+            link = root / 'enlace.xlsx'
+            link.symlink_to(target)
+            with self.assertRaisesRegex(ValueError, 'enlaces simbólicos'):
+                validate_xlsx_file(link)
 
 
 @override_settings(FIELD_ENCRYPTION_KEY=Fernet.generate_key().decode())

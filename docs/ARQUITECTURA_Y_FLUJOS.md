@@ -55,6 +55,29 @@ la versión evita que un formulario antiguo sobrescriba el cambio más reciente.
   no cierra una sesión todavía vigente porque el frontend renueva el access
   token usando la cookie.
 - Los refresh tokens rotan y los reemplazados pasan a la lista de bloqueo.
+- Cambiar la contraseña, desactivar la cuenta, cambiar `is_superuser` o
+  modificar sus grupos revoca todas sus sesiones y refresh tokens.
+- El login se limita por IP y por nombre de usuario. Login administrativo,
+  refresh, revelado de secretos, API general y operaciones pesadas tienen
+  ámbitos independientes.
+- Producción usa Redis como caché compartida para que los límites sean iguales
+  en todos los procesos. Los rechazos `429` quedan en `SecurityAuditLog`.
+- El WebSocket limita conexiones por IP y usuario, limita mensajes y se cierra
+  al vencer o revocar la sesión.
+
+| Ámbito | Tasa predeterminada | Clave |
+| --- | --- | --- |
+| Login del portal | 10/min | IP |
+| Login del portal | 5/15min | Usuario escrito |
+| Login de Django Admin | 10/min y 5/15min | IP y usuario escrito |
+| Refresh | 10/min | IP |
+| Revelado de secretos | 5/min | Usuario autenticado |
+| Operaciones pesadas | 20/hour | Usuario autenticado |
+| API general | 1200/hour | Usuario autenticado |
+| API anónima | 60/hour | IP |
+| WebSocket conectado | 20 conexiones | IP |
+| WebSocket conectado | 5 conexiones | Usuario autenticado |
+| Mensajes WebSocket | 5/segundo | IP y usuario autenticado |
 
 ### Roles
 

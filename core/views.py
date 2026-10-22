@@ -13,6 +13,7 @@ from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .permissions import PortalRolePermission, ROLE_VIEWER, get_role
+from .throttles import HeavyOperationThrottle
 from .pagination import PortalPageNumberPagination
 from .services.asignacion_ips import MANAGED_IP_SEGMENT_PREFIXES
 from django_filters.rest_framework import (
@@ -467,7 +468,8 @@ class UsuarioViewSet(
     @action(
         detail=True,
         methods=['get'],
-        url_path='acta-entrega'
+        url_path='acta-entrega',
+        throttle_classes=[HeavyOperationThrottle],
     )
     def acta_entrega(self, request, pk=None):
         usuario = self.get_object()

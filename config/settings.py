@@ -100,12 +100,13 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'django_filters',
-    'core',
+    'core.apps.CoreConfig',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'core.middleware.RequestContextMiddleware',
+    'core.middleware.AdminLoginRateLimitMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -141,6 +142,24 @@ CHANNEL_LAYERS = {'default': (
     if CHANNEL_REDIS_URL else
     {'BACKEND': 'channels.layers.InMemoryChannelLayer'}
 )}
+
+PORTAL_CACHE_URL = os.getenv('PORTAL_CACHE_URL', '').strip()
+if IS_PRODUCTION and not PORTAL_CACHE_URL:
+    raise ImproperlyConfigured('PORTAL_CACHE_URL es obligatorio para límites compartidos en producción.')
+CACHES = {
+    'default': (
+        {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': PORTAL_CACHE_URL,
+            'KEY_PREFIX': 'siminfra',
+        }
+        if PORTAL_CACHE_URL else
+        {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'siminfra-development',
+        }
+    )
+}
 
 DB_ENGINE = os.getenv('DATABASE_ENGINE', 'mysql' if IS_PRODUCTION else 'sqlite').lower()
 if IS_PRODUCTION and DB_ENGINE not in {'mysql', 'django.db.backends.mysql'}:
@@ -192,6 +211,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {'NAME': 'core.password_validation.NoCurrentPasswordReuseValidator'},
 ]
 
 LANGUAGE_CODE = 'es-cl'
@@ -240,13 +260,41 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_THROTTLE_CLASSES': (
+        'core.throttles.PortalUserRateThrottle',
+        'core.throttles.PortalAnonRateThrottle',
+    ),
     'DEFAULT_THROTTLE_RATES': {
-        'login': os.getenv('LOGIN_THROTTLE_RATE', '5/min'),
+        'login_ip': os.getenv('LOGIN_IP_THROTTLE_RATE', '1000/min' if DJANGO_ENV == 'test' else '10/min'),
+        'login_username': os.getenv('LOGIN_USERNAME_THROTTLE_RATE', '1000/min' if DJANGO_ENV == 'test' else '5/15min'),
+        'admin_login_ip': os.getenv('ADMIN_LOGIN_IP_THROTTLE_RATE', '1000/min' if DJANGO_ENV == 'test' else '10/min'),
+        'admin_login_username': os.getenv('ADMIN_LOGIN_USERNAME_THROTTLE_RATE', '1000/min' if DJANGO_ENV == 'test' else '5/15min'),
+        'refresh': os.getenv('REFRESH_THROTTLE_RATE', '10/min'),
         'secret_reveal': os.getenv('SECRET_REVEAL_THROTTLE_RATE', '5/min'),
+        'heavy': os.getenv('HEAVY_OPERATION_THROTTLE_RATE', '20/hour'),
+        'api_user': os.getenv('API_USER_THROTTLE_RATE', '1200/hour'),
+        'api_anon': os.getenv('API_ANON_THROTTLE_RATE', '60/hour'),
     },
+    'EXCEPTION_HANDLER': 'core.exceptions.portal_exception_handler',
 }
 
+JWT_SIGNING_KEY = os.getenv('JWT_SIGNING_KEY', '').strip()
+if IS_PRODUCTION:
+    if (
+        len(JWT_SIGNING_KEY) < 50
+        or len(set(JWT_SIGNING_KEY)) < 5
+        or JWT_SIGNING_KEY in {SECRET_KEY, os.getenv('FIELD_ENCRYPTION_KEY', '')}
+        or JWT_SIGNING_KEY.startswith('replace-with-')
+    ):
+        raise ImproperlyConfigured(
+            'JWT_SIGNING_KEY debe ser aleatoria, exclusiva y tener al menos 50 caracteres.'
+        )
+else:
+    JWT_SIGNING_KEY = JWT_SIGNING_KEY or SECRET_KEY
+
 SIMPLE_JWT = {
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': JWT_SIGNING_KEY,
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv('JWT_ACCESS_MINUTES', '10'))),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.getenv('JWT_REFRESH_DAYS', '7'))),
     'ROTATE_REFRESH_TOKENS': True,
@@ -258,12 +306,21 @@ JWT_COOKIE_SECURE = env_bool('JWT_COOKIE_SECURE', not DEBUG)
 JWT_COOKIE_SAMESITE = os.getenv('JWT_COOKIE_SAMESITE', 'Lax')
 JWT_COOKIE_PATH = os.getenv('JWT_COOKIE_PATH', '/api/auth/')
 PORTAL_IDLE_TIMEOUT_SECONDS = int(os.getenv('PORTAL_IDLE_TIMEOUT_SECONDS', '300'))
+PORTAL_TRUSTED_PROXY_IPS = env_list('PORTAL_TRUSTED_PROXY_IPS', '127.0.0.1,::1')
+PORTAL_WS_MAX_CONNECTIONS_PER_IP = int(os.getenv('PORTAL_WS_MAX_CONNECTIONS_PER_IP', '20'))
+PORTAL_WS_MAX_CONNECTIONS_PER_USER = int(os.getenv('PORTAL_WS_MAX_CONNECTIONS_PER_USER', '5'))
+PORTAL_WS_MESSAGES_PER_SECOND = int(os.getenv('PORTAL_WS_MESSAGES_PER_SECOND', '5'))
 PORTAL_PAGE_SIZE = int(os.getenv('PORTAL_PAGE_SIZE', '50'))
 PORTAL_MAX_PAGE_SIZE = int(os.getenv('PORTAL_MAX_PAGE_SIZE', '200'))
 if PORTAL_PAGE_SIZE <= 0 or PORTAL_MAX_PAGE_SIZE < PORTAL_PAGE_SIZE:
     raise ImproperlyConfigured(
         'PORTAL_PAGE_SIZE debe ser positivo y no superar PORTAL_MAX_PAGE_SIZE.'
     )
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv('DATA_UPLOAD_MAX_MEMORY_SIZE', str(2_621_440)))
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv('FILE_UPLOAD_MAX_MEMORY_SIZE', str(2_621_440)))
+if DATA_UPLOAD_MAX_MEMORY_SIZE <= 0 or FILE_UPLOAD_MAX_MEMORY_SIZE <= 0:
+    raise ImproperlyConfigured('Los límites de carga deben ser mayores que cero.')
 
 FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY', '')
 LEGACY_DJANGO_SECRET_KEY = os.getenv('LEGACY_DJANGO_SECRET_KEY', '')

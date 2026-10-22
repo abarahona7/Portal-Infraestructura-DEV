@@ -145,6 +145,24 @@ class QASecretosTests(TestCase):
         self.assertEqual(SecurityAuditLog.objects.filter(
             event='SECRET_REVEAL', success=False,
         ).count(), 5)
+        self.assertEqual(SecurityAuditLog.objects.filter(event='RATE_LIMITED').count(), 1)
+
+    def test_reautenticacion_no_crea_permiso_reutilizable(self):
+        first = self.client.post(
+            '/api/secrets/reveal/',
+            {'module': 'usuario', 'object_id': self.person.pk,
+             'secret_type': 'password_gmail', 'password': 'TestPassword123!'},
+            format='json',
+        )
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.data['expires_in'], 30)
+        second = self.client.post(
+            '/api/secrets/reveal/',
+            {'module': 'usuario', 'object_id': self.person.pk,
+             'secret_type': 'password_gmail'},
+            format='json',
+        )
+        self.assertEqual(second.status_code, 403)
 
 
 class QASesionRevocacionTests(TestCase):
@@ -212,7 +230,7 @@ class QASesionRevocacionTests(TestCase):
 
         self.assertEqual(self.client.get(
             '/api/auth/me/', HTTP_AUTHORIZATION=authorization,
-        ).status_code, 403)
+        ).status_code, 401)
         self.assertEqual(self.client.post(
             '/api/auth/activity/', HTTP_AUTHORIZATION=authorization,
-        ).status_code, 403)
+        ).status_code, 401)

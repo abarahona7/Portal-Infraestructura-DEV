@@ -55,6 +55,7 @@ class HttpsReleaseFlowTests(TestCase):
         self.assertTrue(refresh_cookie['secure'])
         self.assertTrue(refresh_cookie['httponly'])
         self.assertEqual(refresh_cookie['path'], '/api/auth/')
+        self.assertEqual(refresh_cookie['max-age'], 7 * 24 * 60 * 60)
 
         qr = self.client.get(
             path, HTTP_AUTHORIZATION=f"Bearer {login.json()['access']}",

@@ -1,12 +1,47 @@
 import logging
+import math
 import time
 import uuid
 
+from django.http import HttpResponse
+
 from config.logging_utils import request_id_context
 from .audit import reset_current_audit_user, set_current_audit_user
+from .exceptions import record_rate_limit
+from .throttles import AdminLoginIPThrottle, AdminLoginUsernameThrottle
 
 
 logger = logging.getLogger('portal.request')
+
+
+class AdminLoginRateLimitMiddleware:
+    """Protege el acceso administrativo con límites por IP y usuario."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.path != '/admin/login/' or request.method != 'POST':
+            return self.get_response(request)
+
+        throttles = [AdminLoginIPThrottle(), AdminLoginUsernameThrottle()]
+        rejected = [throttle for throttle in throttles if not throttle.allow_request(request, None)]
+        if not rejected:
+            return self.get_response(request)
+
+        wait = max((throttle.wait() or 0 for throttle in rejected), default=1)
+        record_rate_limit(
+            request,
+            'admin_login',
+            str(request.POST.get('username', '')),
+        )
+        response = HttpResponse(
+            'Demasiados intentos. Intenta nuevamente más tarde.',
+            status=429,
+            content_type='text/plain; charset=utf-8',
+        )
+        response['Retry-After'] = str(max(1, math.ceil(wait)))
+        return response
 
 
 class RequestContextMiddleware:

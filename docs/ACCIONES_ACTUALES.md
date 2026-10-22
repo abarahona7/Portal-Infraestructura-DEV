@@ -133,6 +133,9 @@ Los retiros excepcionales se gestionan con el comando técnico documentado en
    registro inexistente, conflicto simultáneo, límite de intentos y falla de red.
 7. Si otro usuario modificó el registro mientras el formulario estaba abierto,
    la API responde `409`, conserva el cambio más reciente y obliga a recargar.
+8. Cambiar contraseña, estado de acceso o grupos revoca todas las sesiones de
+   esa cuenta. Los límites de frecuencia responden `429` con `Retry-After` y
+   registran el rechazo en la auditoría de seguridad.
 
 Texto revisado para la entrega a QA del 22-10-2026. El
 diagrama histórico conserva su fecha original hasta su actualización.

@@ -69,7 +69,9 @@ describe('Restauración de sesión', () => {
     await act(async () => expect(await result.current.login('ana', 'clave')).toBe(true));
     expect(sessionStorage.getItem(tabKey)).toBe('1');
 
-    await act(async () => result.current.logout());
+    let serverClosed;
+    await act(async () => { serverClosed = await result.current.logout(); });
+    expect(serverClosed).toBe(false);
     expect(result.current.token).toBeNull();
     expect(result.current.user).toBeNull();
     expect(sessionStorage.getItem(tabKey)).toBeNull();

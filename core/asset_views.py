@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 
 from .models import Departamento, Equipamiento
 from .permissions import PortalRolePermission
+from .throttles import HeavyOperationThrottle, PortalUserRateThrottle
 
 
 class FichaEquipoSerializer(serializers.ModelSerializer):
@@ -60,6 +61,7 @@ class FichaEquipoQrView(APIView):
 
 class EtiquetaEquipoQrView(APIView):
     permission_classes = [PortalRolePermission]
+    throttle_classes = [PortalUserRateThrottle, HeavyOperationThrottle]
 
     def get(self, request, token):
         if not Equipamiento.objects.filter(token_qr=token).exists():

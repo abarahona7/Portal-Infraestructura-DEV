@@ -504,11 +504,12 @@ export default function App() {
       return;
     }
 
-    logout();
-
+    const serverClosed = await logout();
     showToast(
-      'Sesión cerrada correctamente.',
-      'success'
+      serverClosed
+        ? 'Sesión cerrada correctamente.'
+        : 'La sesión local se cerró, pero el servidor no confirmó la revocación. Intenta nuevamente con conexión.',
+      serverClosed ? 'success' : 'error'
     );
   };
 

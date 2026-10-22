@@ -8,17 +8,22 @@ from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlparse
 
 from asgiref.sync import async_to_sync
+from asgiref.sync import sync_to_async
 from channels.consumer import get_handler_name
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.layers import get_channel_layer
 from channels.security.websocket import OriginValidator
 from django.db import transaction
 from django.db import close_old_connections
+from django.conf import settings
+from django.core.cache import cache
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.exceptions import TokenError
 
 from .authentication import PortalJWTAuthentication
+from .client_ip import get_websocket_client_ip
 from .permissions import ROLE_VIEWER, get_role
+from .session_events import session_group_name
 
 
 EDITOR_GROUP = 'portal_editors'
@@ -38,6 +43,41 @@ MODULE_DEPENDENCIES = {
     'SubArea': ('departamentos', 'usuarios', 'perfiles', 'pcs-genericos'),
     'RevisionBajaUsuario': ('revisiones-baja',),
 }
+
+
+def _acquire_connection_slot(key, limit):
+    if limit <= 0:
+        return False
+    if cache.add(key, 1, timeout=3600):
+        return True
+    try:
+        count = cache.incr(key)
+    except ValueError:
+        return cache.add(key, 1, timeout=3600)
+    if count <= limit:
+        return True
+    cache.decr(key)
+    return False
+
+
+def _release_connection_slot(key):
+    if not key:
+        return
+    try:
+        cache.decr(key)
+    except ValueError:
+        return
+
+
+def _allow_message(key, limit):
+    if limit <= 0:
+        return False
+    if cache.add(key, 1, timeout=1):
+        return True
+    try:
+        return cache.incr(key) <= limit
+    except ValueError:
+        return cache.add(key, 1, timeout=1)
 
 
 def schedule_change(instance, operation):
@@ -82,7 +122,12 @@ def _authenticate_portal_token_sync(raw_token):
         validated = authentication.get_validated_token(raw_token)
         user = authentication.get_user(validated)
         role = get_role(user)
-        return (role, int(validated['exp'])) if role else None
+        return (
+            role,
+            int(validated['exp']),
+            validated.get('user_id'),
+            validated.get('sid'),
+        ) if role else None
     except (AuthenticationFailed, TokenError, TypeError, KeyError):
         return None
     finally:
@@ -122,6 +167,19 @@ class PortalChangesConsumer(AsyncJsonWebsocketConsumer):
         await handler(message)
 
     async def connect(self):
+        self.ip_slot_key = None
+        self.user_slot_key = None
+        self.client_ip = get_websocket_client_ip(self.scope) or 'unknown'
+        candidate_key = f'ws:connections:ip:{self.client_ip}'
+        acquired = await sync_to_async(_acquire_connection_slot)(
+            candidate_key,
+            settings.PORTAL_WS_MAX_CONNECTIONS_PER_IP,
+        )
+        if not acquired:
+            logger.warning('websocket_connection_rate_limited', extra={'client_ip': self.client_ip})
+            await self.close(code=4429)
+            return
+        self.ip_slot_key = candidate_key
         self.authenticated = False
         self.auth_deadline = asyncio.create_task(self.close_if_unauthenticated())
         self.expiry_task = None
@@ -137,6 +195,20 @@ class PortalChangesConsumer(AsyncJsonWebsocketConsumer):
         await self.close(code=4401)
 
     async def receive_json(self, content, **kwargs):
+        message_keys = [f'ws:messages:ip:{self.client_ip}']
+        if getattr(self, 'user_id', None) is not None:
+            message_keys.append(f'ws:messages:user:{self.user_id}')
+        allowed = all([
+            await sync_to_async(_allow_message)(
+                key,
+                settings.PORTAL_WS_MESSAGES_PER_SECOND,
+            )
+            for key in message_keys
+        ])
+        if not allowed:
+            logger.warning('websocket_message_rate_limited', extra={'client_ip': self.client_ip})
+            await self.close(code=4429)
+            return
         if not isinstance(content, dict):
             await self.close(code=4401)
             return
@@ -150,13 +222,26 @@ class PortalChangesConsumer(AsyncJsonWebsocketConsumer):
         if authenticated is None:
             await self.close(code=4401)
             return
-        role, expires_at = authenticated
+        role, expires_at, user_id, session_id = authenticated
+        candidate_key = f'ws:connections:user:{user_id}'
+        acquired = await sync_to_async(_acquire_connection_slot)(
+            candidate_key,
+            settings.PORTAL_WS_MAX_CONNECTIONS_PER_USER,
+        )
+        if not acquired:
+            logger.warning('websocket_user_connection_rate_limited', extra={'user_id': user_id})
+            await self.close(code=4429)
+            return
+        self.user_slot_key = candidate_key
+        self.user_id = user_id
+        self.session_group = session_group_name(session_id)
         self.authenticated = True
         self.raw_token = raw_token
         self.role = role
         self.auth_deadline.cancel()
         self.group_name = VIEWER_GROUP if role == ROLE_VIEWER else EDITOR_GROUP
         await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.channel_layer.group_add(self.session_group, self.channel_name)
         self.expiry_task = asyncio.create_task(self.close_at_expiry(expires_at))
         await self.send_json({'type': 'ready'})
 
@@ -167,7 +252,7 @@ class PortalChangesConsumer(AsyncJsonWebsocketConsumer):
         if authenticated is None:
             await self.close(code=4401)
             return
-        role, _ = authenticated
+        role, _, _, _ = authenticated
         if role != self.role:
             await self.close(code=4403)
             return
@@ -175,10 +260,17 @@ class PortalChangesConsumer(AsyncJsonWebsocketConsumer):
             'type': 'change',
         })
 
+    async def session_revoked(self, event):
+        await self.close(code=4401)
+
     async def disconnect(self, close_code):
         if getattr(self, 'group_name', None):
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        if getattr(self, 'session_group', None):
+            await self.channel_layer.group_discard(self.session_group, self.channel_name)
         if getattr(self, 'auth_deadline', None):
             self.auth_deadline.cancel()
         if getattr(self, 'expiry_task', None):
             self.expiry_task.cancel()
+        await sync_to_async(_release_connection_slot)(getattr(self, 'user_slot_key', None))
+        await sync_to_async(_release_connection_slot)(getattr(self, 'ip_slot_key', None))

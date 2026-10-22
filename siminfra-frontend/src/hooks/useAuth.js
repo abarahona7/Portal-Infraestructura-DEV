@@ -145,15 +145,17 @@ export const useAuth = () => {
   }, [applySession]);
 
   const logout = useCallback(async () => {
+    let serverClosed = true;
     try {
       await ensureCsrfToken();
       await apiClient.post('/auth/logout/', {}, { skipAuth: true });
     } catch {
-      // Aunque el backend no responda, limpiamos la sesión visible.
+      serverClosed = false;
     }
 
     clearTabSession();
     applySession(null);
+    return serverClosed;
   }, [applySession]);
 
   return {

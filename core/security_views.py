@@ -3,11 +3,12 @@ from django.http import Http404
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from .crypto import decrypt_val
 from .models import Usuario, Equipamiento, PerfilGenerico, PCGenerico, SecurityAuditLog
 from .permissions import is_admin
+from .client_ip import get_client_ip
+from .throttles import SecretRevealThrottle
 
 SECRET_MAP = {
     'usuario': {'password_gmail': (Usuario, 'password_gmail'), 'password_vpn': (Usuario, 'password_vpn')},
@@ -17,23 +18,18 @@ SECRET_MAP = {
 }
 
 
-def _client_ip(request):
-    forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
-    return forwarded.split(',')[0].strip() if forwarded else request.META.get('REMOTE_ADDR')
-
-
 def _audit(request, success, module, object_id, secret_type, detail=''):
     SecurityAuditLog.objects.create(
         event='SECRET_REVEAL', actor=request.user.get_username(), module=module,
         object_id_text=str(object_id), secret_type=secret_type, success=success,
-        detail=detail[:255], ip_address=_client_ip(request),
+        detail=detail[:255], ip_address=get_client_ip(request),
         request_id=getattr(request, 'request_id', None),
     )
 
 
 class RevealSecretView(APIView):
     permission_classes = [IsAuthenticated]
-    throttle_classes = [ScopedRateThrottle]
+    throttle_classes = [SecretRevealThrottle]
     throttle_scope = 'secret_reveal'
 
     def post(self, request):

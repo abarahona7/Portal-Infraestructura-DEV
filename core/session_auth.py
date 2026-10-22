@@ -10,14 +10,15 @@ class PortalSessionError(Exception):
     pass
 
 
-def get_active_portal_session(session_id, user_id=None):
+def get_active_portal_session(session_id, user_id=None, for_update=False):
     if not session_id:
         raise PortalSessionError('La sesión no tiene un identificador válido.')
 
     try:
-        portal_session = PortalSession.objects.select_related('user').get(
-            pk=session_id
-        )
+        queryset = PortalSession.objects.select_related('user')
+        if for_update:
+            queryset = queryset.select_for_update()
+        portal_session = queryset.get(pk=session_id)
     except (PortalSession.DoesNotExist, ValueError, TypeError) as exc:
         raise PortalSessionError('La sesión no existe.') from exc
 

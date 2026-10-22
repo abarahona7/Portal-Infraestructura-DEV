@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth.forms import PasswordChangeForm
 
 from .models import (
     AsignacionIP,
@@ -8,6 +9,9 @@ from .models import (
     HistorialPerfilGenerico,
     SubArea,
 )
+
+
+admin.site.password_change_form = PasswordChangeForm
 
 
 @admin.register(Departamento)

@@ -3,17 +3,18 @@ import logging
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from .permissions import HasPortalRole, get_role
+from .client_ip import get_client_ip
 from .models import PortalSession, SecurityAuditLog
 from .session_auth import (
     PortalSessionError,
@@ -21,6 +22,8 @@ from .session_auth import (
     revoke_portal_session,
     touch_portal_session,
 )
+from .throttles import LoginIPThrottle, LoginUsernameThrottle, RefreshIPThrottle
+from .session_events import notify_session_revoked
 
 
 logger = logging.getLogger(__name__)
@@ -40,16 +43,12 @@ def _cookie_kwargs():
         secure=settings.JWT_COOKIE_SECURE,
         samesite=settings.JWT_COOKIE_SAMESITE,
         path=settings.JWT_COOKIE_PATH,
+        max_age=int(settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()),
     )
 
 
 def _set_refresh_cookie(response, token):
     response.set_cookie(settings.JWT_REFRESH_COOKIE, str(token), **_cookie_kwargs())
-
-
-def _client_ip(request):
-    forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
-    return forwarded.split(',')[0].strip() if forwarded else request.META.get('REMOTE_ADDR')
 
 
 def _expired_session_response():
@@ -76,7 +75,7 @@ class CsrfTokenView(APIView):
 @method_decorator(csrf_protect, name='dispatch')
 class LoginView(APIView):
     permission_classes = [AllowAny]
-    throttle_classes = [ScopedRateThrottle]
+    throttle_classes = [LoginIPThrottle, LoginUsernameThrottle]
     throttle_scope = 'login'
 
     def post(self, request):
@@ -84,7 +83,7 @@ class LoginView(APIView):
         password = request.data.get('password', '')
         user = authenticate(request=request, username=username, password=password)
         if not user:
-            SecurityAuditLog.objects.create(event='LOGIN_FAILED', actor=username[:150], success=False, ip_address=_client_ip(request))
+            SecurityAuditLog.objects.create(event='LOGIN_FAILED', actor=username[:150], success=False, ip_address=get_client_ip(request))
             return Response({'detail': 'Credenciales inválidas.'}, status=status.HTTP_401_UNAUTHORIZED)
         role = get_role(user)
         if not role:
@@ -100,29 +99,34 @@ class LoginView(APIView):
 @method_decorator(csrf_protect, name='dispatch')
 class RefreshCookieView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [RefreshIPThrottle]
+    throttle_scope = 'refresh'
 
     def post(self, request):
         raw = request.COOKIES.get(settings.JWT_REFRESH_COOKIE)
         if not raw:
             return _expired_session_response()
         try:
-            old = RefreshToken(raw)
-            user_id = old.get('user_id')
-            portal_session = get_active_portal_session(
-                old.get('sid'),
-                user_id=user_id,
-            )
-            user = get_user_model().objects.get(pk=user_id)
-            if not user.is_active or not get_role(user):
-                raise TokenError('Usuario sin acceso')
-            if request.headers.get('X-Portal-Activity') == '1':
-                touch_portal_session(portal_session)
-            try:
+            candidate = RefreshToken(raw)
+            user_id = candidate.get('user_id')
+            # Persiste una eventual expiración por inactividad antes del bloqueo.
+            get_active_portal_session(candidate.get('sid'), user_id=user_id)
+            with transaction.atomic():
+                portal_session = get_active_portal_session(
+                    candidate.get('sid'),
+                    user_id=user_id,
+                    for_update=True,
+                )
+                # Revalida bajo bloqueo para rechazar reutilización concurrente.
+                old = RefreshToken(raw)
+                user = get_user_model().objects.get(pk=user_id)
+                if not user.is_active or not get_role(user):
+                    raise TokenError('Usuario sin acceso')
+                if request.headers.get('X-Portal-Activity') == '1':
+                    touch_portal_session(portal_session)
                 old.blacklist()
-            except AttributeError:
-                pass
-            new = RefreshToken.for_user(user)
-            new['sid'] = str(portal_session.pk)
+                new = RefreshToken.for_user(user)
+                new['sid'] = str(portal_session.pk)
             response = Response({'access': str(new.access_token), 'user': _user_payload(user)})
             _set_refresh_cookie(response, new)
             return response
@@ -161,7 +165,9 @@ class LogoutView(APIView):
         if raw:
             try:
                 refresh = RefreshToken(raw)
-                revoke_portal_session(refresh.get('sid'))
+                session_id = refresh.get('sid')
+                revoke_portal_session(session_id)
+                notify_session_revoked(session_id)
                 refresh.blacklist()
             except TokenError:
                 pass

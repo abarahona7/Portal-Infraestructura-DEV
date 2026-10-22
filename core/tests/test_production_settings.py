@@ -11,13 +11,21 @@ from django.test import SimpleTestCase
 
 
 class ProductionQrUrlSettingsTests(SimpleTestCase):
-    def check_production(self, public_url, redis_url='redis://127.0.0.1:6379/1'):
+    def check_production(
+        self,
+        public_url,
+        redis_url='redis://127.0.0.1:6379/1',
+        cache_url='redis://127.0.0.1:6379/2',
+        reuse_django_key_for_jwt=False,
+    ):
         environment = os.environ.copy()
+        django_key = secrets.token_urlsafe(64)
         environment.update({
             'DJANGO_SETTINGS_MODULE': 'config.settings_production',
             'DJANGO_ENV': 'production',
             'DJANGO_DEBUG': 'False',
-            'DJANGO_SECRET_KEY': secrets.token_urlsafe(64),
+            'DJANGO_SECRET_KEY': django_key,
+            'JWT_SIGNING_KEY': django_key if reuse_django_key_for_jwt else secrets.token_urlsafe(64),
             'DJANGO_ALLOWED_HOSTS': 'portal.example.cl',
             'FIELD_ENCRYPTION_KEY': Fernet.generate_key().decode(),
             'DATABASE_ENGINE': 'mysql',
@@ -27,6 +35,7 @@ class ProductionQrUrlSettingsTests(SimpleTestCase):
             'DATABASE_HOST': '127.0.0.1',
             'PORTAL_PUBLIC_URL': public_url,
             'PORTAL_CHANNEL_REDIS_URL': redis_url,
+            'PORTAL_CACHE_URL': cache_url,
             'CORS_ALLOWED_ORIGINS': 'https://portal.example.cl',
             'CSRF_TRUSTED_ORIGINS': 'https://portal.example.cl',
             'JWT_COOKIE_SECURE': 'True',
@@ -58,3 +67,16 @@ class ProductionQrUrlSettingsTests(SimpleTestCase):
         result = self.check_production('https://portal.example.cl', redis_url='')
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('PORTAL_CHANNEL_REDIS_URL', result.stderr)
+
+    def test_production_requires_shared_security_cache(self):
+        result = self.check_production('https://portal.example.cl', cache_url='')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('PORTAL_CACHE_URL', result.stderr)
+
+    def test_production_rejects_reused_django_key_for_jwt(self):
+        result = self.check_production(
+            'https://portal.example.cl',
+            reuse_django_key_for_jwt=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('JWT_SIGNING_KEY', result.stderr)

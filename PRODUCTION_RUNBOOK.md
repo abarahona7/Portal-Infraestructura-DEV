@@ -15,7 +15,7 @@ definitiva, el proxy, la base de QA/producción y la ventana de despliegue.
 Las decisiones y comprobaciones aún abiertas se registran en
 [la revisión de ambigüedades](docs/REVISION_AMBIGUEDADES_PRODUCCION.md).
 
-Verificación técnica actual del 21 de octubre de 2026: **214 pruebas de core**
+Verificación técnica actual del 22 de octubre de 2026: **236 pruebas de core**
 pasaron en SQLite temporal, con 3 omisiones esperadas, y **68 pruebas frontend**
 pasaron junto con lint y build. MySQL DEV conserva 23 reglas de integridad sin
 errores. La ejecución equivalente sobre MySQL aislado sigue siendo parte de la
@@ -50,12 +50,17 @@ fecha de producción.
 1. Instalar Python, las dependencias de `requirements.txt`, Node.js y MySQL 8.4.
 2. Copiar `.env.production.example` como `.env`.
 3. Reemplazar cada valor `replace-with`.
-4. Generar valores independientes para Django y Fernet:
+4. Generar valores independientes para Django, JWT y Fernet:
 
 ```powershell
 .\venv\Scripts\python.exe -c "import secrets; print(secrets.token_urlsafe(64))"
+.\venv\Scripts\python.exe -c "import secrets; print(secrets.token_urlsafe(64))"
 .\venv\Scripts\python.exe -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
+
+Asignar los dos primeros valores por separado a `DJANGO_SECRET_KEY` y
+`JWT_SIGNING_KEY`. Cambiar `JWT_SIGNING_KEY` invalida todos los JWT vigentes y
+obliga a iniciar sesión nuevamente.
 
 `FIELD_ENCRYPTION_KEY` debe conservarse en un almacén seguro y formar parte del
 procedimiento de recuperación. Sin esa clave no se pueden revelar los secretos
@@ -202,9 +207,15 @@ el frontend y pedir autenticación, no devolver 404. Comprobar además que
 
 ## 6. Ejecutar el backend
 
-Configurar `PORTAL_CHANNEL_REDIS_URL` con una instancia Redis privada antes de
-arrancar. El perfil productivo rechaza su ausencia; Redis permite compartir
-eventos entre procesos ASGI. No publicar Redis a los navegadores.
+Configurar `PORTAL_CHANNEL_REDIS_URL` y `PORTAL_CACHE_URL` con Redis privado
+antes de arrancar. El primer valor comparte eventos ASGI. El segundo comparte
+throttling y contadores WebSocket entre procesos. Usar bases lógicas distintas
+o prefijos separados. El perfil productivo rechaza la ausencia de cualquiera.
+No publicar Redis a los navegadores.
+
+`PORTAL_TRUSTED_PROXY_IPS` debe contener solamente las direcciones o redes de
+los proxies que reemplazan `X-Forwarded-For`. Con Nginx local, conservar
+`127.0.0.1,::1`. Daphne debe seguir ligado a loopback.
 
 No utilizar `runserver` en producción. Daphne sirve HTTP y WebSockets desde
 la misma aplicación ASGI; debe escuchar solamente en la interfaz del proxy:
@@ -264,6 +275,11 @@ Registrar la ejecución y evidencia usando el
     anexo y equipos, y que la reactivación no los restaura ni toma equipos por hostname.
 13. Resolver las puertas de salida de la revisión de ambigüedades y confirmar
     las mismas operaciones en QA antes de programar producción.
+14. Intentar seis accesos incorrectos contra una cuenta de prueba y comprobar
+    el `429`, `Retry-After` y el evento `RATE_LIMITED` sin bloquear cuentas reales.
+15. Cambiar la contraseña y el rol de una cuenta con dos sesiones abiertas;
+    ambas deben quedar revocadas. Repetir con una cuenta desactivada.
+16. Cerrar sesión con un WebSocket activo y comprobar el cierre inmediato.
 
 ## 8. Respaldos y recuperación
 

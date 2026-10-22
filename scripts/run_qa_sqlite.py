@@ -26,6 +26,7 @@ def main():
             'DATABASE_ENGINE': 'sqlite',
             'SQLITE_PATH': str(database),
             'DJANGO_SECRET_KEY': secrets.token_urlsafe(64),
+            'JWT_SIGNING_KEY': secrets.token_urlsafe(64),
             'FIELD_ENCRYPTION_KEY': Fernet.generate_key().decode('ascii'),
             'PORTAL_PUBLIC_URL': 'http://localhost:5178',
         })

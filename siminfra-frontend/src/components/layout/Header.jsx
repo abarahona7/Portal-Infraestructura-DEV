@@ -26,6 +26,18 @@ export default function Header({
     .map((part) => part[0])
     .join('')
     .toLocaleUpperCase('es-CL');
+  const accountMenu = (
+    <details className="header-account">
+      <summary aria-label={`Cuenta de ${sessionName}`}>
+        <span className="header-account-avatar" aria-hidden="true">{initials}</span>
+        <span className="header-account-copy"><strong>{sessionName}</strong><small>{role}</small></span>
+        <ChevronDown size={15} aria-hidden="true" />
+      </summary>
+      <div className="header-account-menu">
+        <button type="button" onClick={onLogout}><LogOut size={16} aria-hidden="true" /> Cerrar sesión</button>
+      </div>
+    </details>
+  );
   const getTitle = () => {
     if (isEquipmentTab(activeTab)) {
       return `Equipos / ${getEquipmentLabelByTab(activeTab)}`;
@@ -106,13 +118,7 @@ export default function Header({
       </div>
 
       {isViewer ? (
-        <div className="header-viewer-session">
-          <span title={username}>{username}</span>
-          <button type="button" onClick={onLogout}>
-            <LogOut size={17} aria-hidden="true" />
-            Cerrar sesión
-          </button>
-        </div>
+        accountMenu
       ) : (
         <div className="header-actions">
           <button
@@ -126,16 +132,7 @@ export default function Header({
             <Bell size={21} aria-hidden="true" />
             {pendingReviewCount > 0 && <span className="header-notifications-count" aria-hidden="true">{pendingReviewCount > 99 ? '99+' : pendingReviewCount}</span>}
           </button>
-          <details className="header-account">
-            <summary aria-label={`Cuenta de ${sessionName}`}>
-              <span className="header-account-avatar" aria-hidden="true">{initials}</span>
-              <span className="header-account-copy"><strong>{sessionName}</strong><small>{role}</small></span>
-              <ChevronDown size={15} aria-hidden="true" />
-            </summary>
-            <div className="header-account-menu">
-              <button type="button" onClick={onLogout}><LogOut size={16} aria-hidden="true" /> Cerrar sesión</button>
-            </div>
-          </details>
+          {accountMenu}
         </div>
       )}
 

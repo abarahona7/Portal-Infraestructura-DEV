@@ -30,6 +30,8 @@ describe('Notificaciones en el encabezado', () => {
     expect(screen.queryByRole('button', { name: 'Abrir menú de módulos' })).not.toBeInTheDocument();
     expect(screen.getByText('Consulta de anexos asignados')).toBeInTheDocument();
     expect(screen.getByText('recepcion')).toBeInTheDocument();
+    expect(screen.getByText('Visualizador')).toBeInTheDocument();
+    expect(screen.getByText('R')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }));
     expect(onLogout).toHaveBeenCalledOnce();
   });

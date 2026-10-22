@@ -84,7 +84,7 @@ export default function ModuleToolbar({
   };
 
   return (
-    <div className="module-toolbar">
+    <div className={`module-toolbar ${readOnly ? 'module-toolbar--readonly' : ''}`}>
       <div className="module-toolbar-actions">
 
         {['usuarios', 'perfiles'].includes(activeTab) && (

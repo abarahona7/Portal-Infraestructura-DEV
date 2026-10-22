@@ -32,6 +32,7 @@ class QAMatrizRolesTests(TestCase):
         )
         self.extension = Anexo.objects.create(
             numero_anexo='8601', usuario=self.person,
+            observaciones='Nota interna de infraestructura',
         )
         self.free_extension = Anexo.objects.create(numero_anexo='8602')
 
@@ -46,9 +47,15 @@ class QAMatrizRolesTests(TestCase):
             [item['id'] for item in listing.data['results']],
             [self.extension.pk],
         )
+        self.assertNotIn('observaciones', listing.data['results'][0])
         detail = self.client.get(f'/api/anexos/{self.extension.pk}/')
         self.assertEqual(detail.status_code, 200)
-        self.assertIn('historial', detail.data)
+        self.assertNotIn('observaciones', detail.data)
+        self.assertNotIn('historial', detail.data)
+        self.assertEqual(
+            self.client.get('/api/anexos/?search=Nota interna').data['count'],
+            0,
+        )
         self.assertEqual(
             self.client.get(f'/api/anexos/{self.free_extension.pk}/').status_code,
             404,
@@ -91,6 +98,16 @@ class QAMatrizRolesTests(TestCase):
             with self.subTest(module=module, action='delete'):
                 self.assertEqual(self.client.delete(f'/api/{module}/999999/').status_code, 403)
         self.assertEqual(self.client.get('/api/anexos/').data['count'], 2)
+        operator_extensions = self.client.get('/api/anexos/')
+        self.assertIn('observaciones', operator_extensions.data['results'][0])
+        self.assertEqual(
+            self.client.get('/api/anexos/?search=Nota interna').data['count'],
+            1,
+        )
+        self.assertIn(
+            'historial',
+            self.client.get(f'/api/anexos/{self.extension.pk}/').data,
+        )
         self.assertEqual(self.client.get('/api/activos/resumen/').status_code, 200)
         self.assertEqual(self.client.get(
             f'/api/activos/qr/{self.equipment.token_qr}/',

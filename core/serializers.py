@@ -1745,6 +1745,24 @@ class AnexoListSerializer(serializers.ModelSerializer):
         ]
 
 
+class AnexoViewerSerializer(serializers.ModelSerializer):
+    """Public extension directory without internal notes or audit history."""
+
+    usuario_nombre = serializers.ReadOnlyField(source='usuario.nombre_completo')
+    departamento = serializers.ReadOnlyField(source='usuario.dpto_area')
+    cargo = serializers.ReadOnlyField(source='usuario.cargo')
+    correo = serializers.ReadOnlyField(source='usuario.correo_corp')
+
+    class Meta:
+        model = Anexo
+        fields = [
+            'id', 'version', 'numero_anexo', 'exterior', 'usuario', 'usuario_nombre',
+            'departamento', 'cargo', 'correo', 'estado',
+            'fecha_creacion', 'fecha_actualizacion',
+        ]
+        read_only_fields = fields
+
+
 class PCGenericoListSerializer(serializers.ModelSerializer):
     password_configured = serializers.SerializerMethodField()
     ip_actual = serializers.SerializerMethodField()

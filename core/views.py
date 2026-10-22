@@ -43,6 +43,7 @@ from .serializers import (
     DepartamentoSerializer,
     SubAreaSerializer,
     AnexoListSerializer,
+    AnexoViewerSerializer,
     EquipamientoListSerializer,
     IPReferenceSerializer,
     PCGenericoListSerializer,
@@ -66,6 +67,16 @@ class StaleUpdateConflict(APIException):
     status_code = status.HTTP_409_CONFLICT
     default_code = 'stale_update'
     default_detail = 'El registro fue actualizado por otra persona. Recarga los datos antes de guardar.'
+
+
+class AnexoSearchFilter(filters.SearchFilter):
+    """Prevent Viewer searches from probing internal extension notes."""
+
+    def get_search_fields(self, view, request):
+        search_fields = super().get_search_fields(view, request)
+        if get_role(request.user) == ROLE_VIEWER:
+            return [field for field in search_fields if field != 'observaciones']
+        return search_fields
 
 
 class AuditUserMixin:
@@ -326,6 +337,8 @@ class AnexoViewSet(
     pagination_class = PortalPageNumberPagination
 
     def get_serializer_class(self):
+        if get_role(self.request.user) == ROLE_VIEWER:
+            return AnexoViewerSerializer
         if self.action == 'list':
             return AnexoListSerializer
         return AnexoSerializer
@@ -343,7 +356,7 @@ class AnexoViewSet(
 
     filter_backends = [
         DjangoFilterBackend,
-        filters.SearchFilter
+        AnexoSearchFilter
     ]
 
     filterset_fields = [

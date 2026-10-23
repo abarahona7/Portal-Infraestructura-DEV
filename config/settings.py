@@ -391,14 +391,20 @@ PORTAL_WS_MAX_CONNECTIONS_PER_IP = int(os.getenv('PORTAL_WS_MAX_CONNECTIONS_PER_
 PORTAL_WS_MAX_CONNECTIONS_PER_USER = int(os.getenv('PORTAL_WS_MAX_CONNECTIONS_PER_USER', '5'))
 PORTAL_WS_MESSAGES_PER_SECOND = int(os.getenv('PORTAL_WS_MESSAGES_PER_SECOND', '5'))
 PORTAL_WS_MAX_MESSAGE_BYTES = int(os.getenv('PORTAL_WS_MAX_MESSAGE_BYTES', '16384'))
+PORTAL_WS_AUTH_TIMEOUT_SECONDS = int(os.getenv('PORTAL_WS_AUTH_TIMEOUT_SECONDS', '5'))
 PORTAL_PAGE_SIZE = int(os.getenv('PORTAL_PAGE_SIZE', '50'))
 PORTAL_MAX_PAGE_SIZE = int(os.getenv('PORTAL_MAX_PAGE_SIZE', '200'))
-if PORTAL_PAGE_SIZE <= 0 or PORTAL_MAX_PAGE_SIZE < PORTAL_PAGE_SIZE:
+PORTAL_EXPORT_MAX_ROWS = int(os.getenv('PORTAL_EXPORT_MAX_ROWS', '5000'))
+if (
+    PORTAL_PAGE_SIZE <= 0
+    or PORTAL_MAX_PAGE_SIZE < PORTAL_PAGE_SIZE
+    or PORTAL_EXPORT_MAX_ROWS <= 0
+):
     raise ImproperlyConfigured(
-        'PORTAL_PAGE_SIZE debe ser positivo y no superar PORTAL_MAX_PAGE_SIZE.'
+        'La paginación y el límite de exportación deben ser positivos y coherentes.'
     )
-if PORTAL_WS_MAX_MESSAGE_BYTES <= 0:
-    raise ImproperlyConfigured('PORTAL_WS_MAX_MESSAGE_BYTES debe ser positivo.')
+if PORTAL_WS_MAX_MESSAGE_BYTES <= 0 or PORTAL_WS_AUTH_TIMEOUT_SECONDS <= 0:
+    raise ImproperlyConfigured('Los límites de mensaje y autenticación WebSocket deben ser positivos.')
 
 PORTAL_IMPORT_MAX_FILE_BYTES = int(os.getenv('PORTAL_IMPORT_MAX_FILE_BYTES', str(25 * 1024 * 1024)))
 PORTAL_IMPORT_MAX_UNCOMPRESSED_BYTES = int(
@@ -507,6 +513,11 @@ LOGGING = {
                 'DJANGO_REQUEST_LOG_LEVEL',
                 'INFO' if IS_PRODUCTION else 'WARNING',
             ),
+            'propagate': False,
+        },
+        'portal.security': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_SECURITY_LOG_LEVEL', 'INFO'),
             'propagate': False,
         },
     },

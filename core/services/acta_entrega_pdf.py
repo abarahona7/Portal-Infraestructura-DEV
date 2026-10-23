@@ -1,4 +1,5 @@
 from io import BytesIO
+import logging
 from pathlib import Path
 from xml.sax.saxutils import escape
 
@@ -21,6 +22,9 @@ from reportlab.platypus import (
     KeepTogether,
 )
 from reportlab.lib.utils import ImageReader
+
+
+logger = logging.getLogger(__name__)
 
 
 # =========================================================
@@ -217,7 +221,7 @@ def _get_estado_equipo(equipo):
         try:
             return _safe(equipo.get_estado_display(), "Sin estado")
         except Exception:
-            pass
+            logger.warning('pdf_equipment_state_fallback')
 
     return _safe(estado, "Sin estado")
 
@@ -274,7 +278,7 @@ def _draw_page_background(canvas, doc):
             canvas.setFillAlpha(1)
 
         except Exception:
-            pass
+            logger.warning('pdf_watermark_unavailable')
 
     # -----------------------------------------------------
     # LOGO
@@ -298,7 +302,7 @@ def _draw_page_background(canvas, doc):
             )
 
         except Exception:
-            pass
+            logger.warning('pdf_logo_unavailable')
 
     # -----------------------------------------------------
     # EJEMPLAR

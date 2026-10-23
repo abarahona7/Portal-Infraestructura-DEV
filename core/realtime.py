@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 from asgiref.sync import async_to_sync
 from asgiref.sync import sync_to_async
 from channels.consumer import get_handler_name
+from channels.exceptions import StopConsumer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.layers import get_channel_layer
 from channels.security.websocket import OriginValidator
@@ -31,6 +32,10 @@ VIEWER_GROUP = 'portal_viewers'
 logger = logging.getLogger(__name__)
 AUTH_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix='portal-ws-auth')
 
+
+class RealtimeDependencyError(RuntimeError):
+    pass
+
 MODULE_DEPENDENCIES = {
     'Usuario': ('usuarios', 'equipos', 'ips', 'anexos', 'activos-resumen'),
     'Equipamiento': ('equipos', 'usuarios', 'activos-resumen'),
@@ -46,18 +51,21 @@ MODULE_DEPENDENCIES = {
 
 
 def _acquire_connection_slot(key, limit):
-    if limit <= 0:
-        return False
-    if cache.add(key, 1, timeout=3600):
-        return True
     try:
-        count = cache.incr(key)
-    except ValueError:
-        return cache.add(key, 1, timeout=3600)
-    if count <= limit:
-        return True
-    cache.decr(key)
-    return False
+        if limit <= 0:
+            return False
+        if cache.add(key, 1, timeout=3600):
+            return True
+        try:
+            count = cache.incr(key)
+        except ValueError:
+            return cache.add(key, 1, timeout=3600)
+        if count <= limit:
+            return True
+        cache.decr(key)
+        return False
+    except Exception as exc:
+        raise RealtimeDependencyError('No se pudo comprobar el límite de conexiones.') from exc
 
 
 def _release_connection_slot(key):
@@ -67,17 +75,22 @@ def _release_connection_slot(key):
         cache.decr(key)
     except ValueError:
         return
+    except Exception as exc:
+        raise RealtimeDependencyError('No se pudo liberar el límite de conexiones.') from exc
 
 
 def _allow_message(key, limit):
-    if limit <= 0:
-        return False
-    if cache.add(key, 1, timeout=1):
-        return True
     try:
-        return cache.incr(key) <= limit
-    except ValueError:
-        return cache.add(key, 1, timeout=1)
+        if limit <= 0:
+            return False
+        if cache.add(key, 1, timeout=1):
+            return True
+        try:
+            return cache.incr(key) <= limit
+        except ValueError:
+            return cache.add(key, 1, timeout=1)
+    except Exception as exc:
+        raise RealtimeDependencyError('No se pudo comprobar el límite de mensajes.') from exc
 
 
 def schedule_change(instance, operation):
@@ -138,8 +151,12 @@ async def authenticate_portal_token(raw_token):
     future = AUTH_EXECUTOR.submit(_authenticate_portal_token_sync, raw_token)
     # Python 3.14 del entorno DEV no despierta siempre al loop al terminar
     # consultas SQLite en run_in_executor; comprobamos solo durante esta tarea.
-    while not future.done():
+    deadline = asyncio.get_running_loop().time() + settings.PORTAL_WS_AUTH_TIMEOUT_SECONDS
+    while not future.done() and asyncio.get_running_loop().time() < deadline:
         await asyncio.sleep(0.02)
+    if not future.done():
+        future.cancel()
+        raise TimeoutError('La autenticación WebSocket excedió el tiempo permitido.')
     return future.result()
 
 
@@ -163,18 +180,31 @@ class PortalChangesConsumer(AsyncJsonWebsocketConsumer):
         # La autenticación gestiona explícitamente sus conexiones de BD.
         handler = getattr(self, get_handler_name(message), None)
         if handler is None:
-            raise ValueError(f'Evento WebSocket desconocido: {message["type"]}')
-        await handler(message)
+            logger.warning('websocket_unknown_event')
+            await self.close(code=1011)
+            return
+        try:
+            await handler(message)
+        except StopConsumer:
+            raise
+        except Exception:
+            logger.exception('websocket_unhandled_exception')
+            await self.close(code=1011)
 
     async def connect(self):
         self.ip_slot_key = None
         self.user_slot_key = None
         self.client_ip = get_websocket_client_ip(self.scope) or 'unknown'
         candidate_key = f'ws:connections:ip:{self.client_ip}'
-        acquired = await sync_to_async(_acquire_connection_slot)(
-            candidate_key,
-            settings.PORTAL_WS_MAX_CONNECTIONS_PER_IP,
-        )
+        try:
+            acquired = await sync_to_async(_acquire_connection_slot)(
+                candidate_key,
+                settings.PORTAL_WS_MAX_CONNECTIONS_PER_IP,
+            )
+        except RealtimeDependencyError:
+            logger.exception('websocket_security_cache_unavailable')
+            await self.close(code=1013)
+            return
         if not acquired:
             logger.warning('websocket_connection_rate_limited', extra={'client_ip': self.client_ip})
             await self.close(code=4429)
@@ -207,13 +237,18 @@ class PortalChangesConsumer(AsyncJsonWebsocketConsumer):
         message_keys = [f'ws:messages:ip:{self.client_ip}']
         if getattr(self, 'user_id', None) is not None:
             message_keys.append(f'ws:messages:user:{self.user_id}')
-        allowed = all([
-            await sync_to_async(_allow_message)(
-                key,
-                settings.PORTAL_WS_MESSAGES_PER_SECOND,
-            )
-            for key in message_keys
-        ])
+        try:
+            allowed = all([
+                await sync_to_async(_allow_message)(
+                    key,
+                    settings.PORTAL_WS_MESSAGES_PER_SECOND,
+                )
+                for key in message_keys
+            ])
+        except RealtimeDependencyError:
+            logger.exception('websocket_security_cache_unavailable')
+            await self.close(code=1013)
+            return
         if not allowed:
             logger.warning('websocket_message_rate_limited', extra={'client_ip': self.client_ip})
             await self.close(code=4429)
@@ -227,30 +262,59 @@ class PortalChangesConsumer(AsyncJsonWebsocketConsumer):
         if not isinstance(raw_token, str) or len(raw_token) > 8192:
             await self.close(code=4401)
             return
-        authenticated = await authenticate_portal_token(raw_token)
+        try:
+            authenticated = await authenticate_portal_token(raw_token)
+        except Exception:
+            logger.exception('websocket_authentication_unavailable')
+            await self.close(code=1013)
+            return
         if authenticated is None:
             await self.close(code=4401)
             return
         role, expires_at, user_id, session_id = authenticated
         candidate_key = f'ws:connections:user:{user_id}'
-        acquired = await sync_to_async(_acquire_connection_slot)(
-            candidate_key,
-            settings.PORTAL_WS_MAX_CONNECTIONS_PER_USER,
-        )
+        try:
+            acquired = await sync_to_async(_acquire_connection_slot)(
+                candidate_key,
+                settings.PORTAL_WS_MAX_CONNECTIONS_PER_USER,
+            )
+        except RealtimeDependencyError:
+            logger.exception('websocket_security_cache_unavailable')
+            await self.close(code=1013)
+            return
         if not acquired:
             logger.warning('websocket_user_connection_rate_limited', extra={'user_id': user_id})
             await self.close(code=4429)
             return
+        group_name = VIEWER_GROUP if role == ROLE_VIEWER else EDITOR_GROUP
+        session_group = session_group_name(session_id)
+        added_groups = []
+        try:
+            await self.channel_layer.group_add(group_name, self.channel_name)
+            added_groups.append(group_name)
+            await self.channel_layer.group_add(session_group, self.channel_name)
+            added_groups.append(session_group)
+        except Exception:
+            logger.exception('websocket_group_subscription_failed')
+            for added_group in added_groups:
+                try:
+                    await self.channel_layer.group_discard(added_group, self.channel_name)
+                except Exception:
+                    logger.exception('websocket_group_cleanup_failed')
+            try:
+                await sync_to_async(_release_connection_slot)(candidate_key)
+            except RealtimeDependencyError:
+                logger.exception('websocket_slot_cleanup_failed')
+            await self.close(code=1013)
+            return
         self.user_slot_key = candidate_key
         self.user_id = user_id
-        self.session_group = session_group_name(session_id)
-        self.authenticated = True
+        self.session_group = session_group
+        self.group_name = group_name
         self.raw_token = raw_token
         self.role = role
+        self.authenticated = True
         self.auth_deadline.cancel()
-        self.group_name = VIEWER_GROUP if role == ROLE_VIEWER else EDITOR_GROUP
-        await self.channel_layer.group_add(self.group_name, self.channel_name)
-        await self.channel_layer.group_add(self.session_group, self.channel_name)
         self.expiry_task = asyncio.create_task(self.close_at_expiry(expires_at))
         await self.send_json({'type': 'ready'})
 
@@ -274,12 +338,24 @@ class PortalChangesConsumer(AsyncJsonWebsocketConsumer):
 
     async def disconnect(self, close_code):
         if getattr(self, 'group_name', None):
-            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+            try:
+                await self.channel_layer.group_discard(self.group_name, self.channel_name)
+            except Exception:
+                logger.exception('websocket_group_cleanup_failed')
         if getattr(self, 'session_group', None):
-            await self.channel_layer.group_discard(self.session_group, self.channel_name)
+            try:
+                await self.channel_layer.group_discard(self.session_group, self.channel_name)
+            except Exception:
+                logger.exception('websocket_group_cleanup_failed')
         if getattr(self, 'auth_deadline', None):
             self.auth_deadline.cancel()
         if getattr(self, 'expiry_task', None):
             self.expiry_task.cancel()
-        await sync_to_async(_release_connection_slot)(getattr(self, 'user_slot_key', None))
-        await sync_to_async(_release_connection_slot)(getattr(self, 'ip_slot_key', None))
+        for slot_key in (
+            getattr(self, 'user_slot_key', None),
+            getattr(self, 'ip_slot_key', None),
+        ):
+            try:
+                await sync_to_async(_release_connection_slot)(slot_key)
+            except RealtimeDependencyError:
+                logger.exception('websocket_slot_cleanup_failed')

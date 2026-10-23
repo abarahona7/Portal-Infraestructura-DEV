@@ -6,8 +6,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .crypto import decrypt_val
 from .models import Usuario, Equipamiento, PerfilGenerico, PCGenerico, SecurityAuditLog
-from .permissions import is_admin
+from .permissions import get_role, is_admin
 from .client_ip import get_client_ip
+from .security_events import emit_security_event
 from .throttles import SecretRevealThrottle
 
 SECRET_MAP = {
@@ -23,6 +24,17 @@ def _audit(request, success, module, object_id, secret_type, detail=''):
         event='SECRET_REVEAL', actor=request.user.get_username(), module=module,
         object_id_text=str(object_id), secret_type=secret_type, success=success,
         detail=detail[:255], ip_address=get_client_ip(request),
+        request_id=getattr(request, 'request_id', None),
+    )
+    emit_security_event(
+        event='SECRET_REVEAL',
+        success=success,
+        actor=request.user.get_username(),
+        role=get_role(request.user) or '',
+        module=module,
+        object_id=object_id,
+        detail=f'{secret_type}:{detail}',
+        client_ip=get_client_ip(request),
         request_id=getattr(request, 'request_id', None),
     )
 

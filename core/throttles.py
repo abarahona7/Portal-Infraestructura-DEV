@@ -1,12 +1,43 @@
 """Límites de uso del portal con claves seguras y ámbitos explícitos."""
 
 import hashlib
+import logging
 import re
 
+from rest_framework.exceptions import APIException
 from rest_framework.throttling import SimpleRateThrottle, UserRateThrottle
 from rest_framework.settings import api_settings
 
 from .client_ip import get_client_ip
+
+
+logger = logging.getLogger('portal.security')
+
+
+class SecurityDependencyUnavailable(APIException):
+    status_code = 503
+    default_detail = 'El servicio de seguridad no está disponible. Intenta nuevamente más tarde.'
+    default_code = 'security_dependency_unavailable'
+
+
+class CacheFailClosedMixin:
+    """Niega la operación con respuesta controlada si el límite no puede comprobarse."""
+
+    def allow_request(self, request, view):
+        try:
+            return super().allow_request(request, view)
+        except SecurityDependencyUnavailable:
+            raise
+        except Exception as exc:
+            logger.exception(
+                'security_cache_unavailable',
+                extra={
+                    'event': 'SECURITY_CACHE_UNAVAILABLE',
+                    'reason': type(exc).__name__,
+                    'result': 'denied',
+                },
+            )
+            raise SecurityDependencyUnavailable() from exc
 
 
 def _digest(value):
@@ -37,7 +68,7 @@ class DynamicRateMixin:
         return api_settings.DEFAULT_THROTTLE_RATES.get(self.scope)
 
 
-class ClientIPRateThrottle(DynamicRateMixin, SimpleRateThrottle):
+class ClientIPRateThrottle(CacheFailClosedMixin, DynamicRateMixin, SimpleRateThrottle):
     scope = None
 
     def get_cache_key(self, request, view):
@@ -54,7 +85,7 @@ class LoginIPThrottle(ClientIPRateThrottle):
     scope = 'login_ip'
 
 
-class LoginUsernameThrottle(FlexibleWindowMixin, DynamicRateMixin, SimpleRateThrottle):
+class LoginUsernameThrottle(CacheFailClosedMixin, FlexibleWindowMixin, DynamicRateMixin, SimpleRateThrottle):
     scope = 'login_username'
 
     def get_cache_key(self, request, view):
@@ -91,13 +122,13 @@ class PortalAnonRateThrottle(ClientIPRateThrottle):
         return super().allow_request(request, view)
 
 
-class PortalUserRateThrottle(DynamicRateMixin, UserRateThrottle):
+class PortalUserRateThrottle(CacheFailClosedMixin, DynamicRateMixin, UserRateThrottle):
     scope = 'api_user'
 
 
-class SecretRevealThrottle(DynamicRateMixin, UserRateThrottle):
+class SecretRevealThrottle(CacheFailClosedMixin, DynamicRateMixin, UserRateThrottle):
     scope = 'secret_reveal'
 
 
-class HeavyOperationThrottle(DynamicRateMixin, UserRateThrottle):
+class HeavyOperationThrottle(CacheFailClosedMixin, DynamicRateMixin, UserRateThrottle):
     scope = 'heavy'

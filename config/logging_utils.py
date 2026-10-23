@@ -26,6 +26,14 @@ class JsonFormatter(logging.Formatter):
         'duration_ms',
         'event',
         'reason',
+        'actor',
+        'role',
+        'client_ip',
+        'action',
+        'resource',
+        'result',
+        'security_module',
+        'security_object_id',
     )
 
     def format(self, record):

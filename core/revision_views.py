@@ -1,5 +1,7 @@
 """Revisión compartida de recursos liberados por estados de usuario."""
 
+import math
+
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers, status
@@ -35,7 +37,8 @@ class RevisionesBajaView(APIView):
         queryset = RevisionBajaUsuario.objects.filter(revisado_en__isnull=(estado == 'pendientes'))
         count = queryset.count()
         page_size = 25
-        items = queryset[(page - 1) * page_size:page * page_size]
+        total_pages = max(math.ceil(count / page_size), 1)
+        items = [] if page > total_pages else queryset[(page - 1) * page_size:page * page_size]
         response = Response({
             'pendientes': pendientes,
             'count': count,

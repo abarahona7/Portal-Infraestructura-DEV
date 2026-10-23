@@ -8,7 +8,11 @@ from django.http import HttpResponse
 from config.logging_utils import request_id_context
 from .audit import reset_current_audit_user, set_current_audit_user
 from .exceptions import record_rate_limit
-from .throttles import AdminLoginIPThrottle, AdminLoginUsernameThrottle
+from .throttles import (
+    AdminLoginIPThrottle,
+    AdminLoginUsernameThrottle,
+    SecurityDependencyUnavailable,
+)
 
 
 logger = logging.getLogger('portal.request')
@@ -25,7 +29,15 @@ class AdminLoginRateLimitMiddleware:
             return self.get_response(request)
 
         throttles = [AdminLoginIPThrottle(), AdminLoginUsernameThrottle()]
-        rejected = [throttle for throttle in throttles if not throttle.allow_request(request, None)]
+        try:
+            rejected = [throttle for throttle in throttles if not throttle.allow_request(request, None)]
+        except SecurityDependencyUnavailable:
+            logger.exception('admin_login_security_cache_unavailable')
+            return HttpResponse(
+                'El servicio de seguridad no está disponible. Intenta nuevamente más tarde.',
+                status=503,
+                content_type='text/plain; charset=utf-8',
+            )
         if not rejected:
             return self.get_response(request)
 

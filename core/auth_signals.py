@@ -7,6 +7,8 @@ from django.utils import timezone
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
 from .models import PortalSession
+from .audit import get_current_audit_username
+from .security_events import record_security_event
 from .session_events import notify_session_revoked
 
 
@@ -28,24 +30,32 @@ def revoke_all_user_sessions(user_id):
 @receiver(pre_save, sender=User)
 def remember_security_fields(sender, instance, **kwargs):
     if not instance.pk:
-        instance._portal_security_changed = False
+        instance._portal_security_changes = ()
         return
     try:
         previous = sender.objects.only('password', 'is_active', 'is_superuser').get(pk=instance.pk)
     except sender.DoesNotExist:
-        instance._portal_security_changed = False
+        instance._portal_security_changes = ()
         return
-    instance._portal_security_changed = any((
-        previous.password != instance.password,
-        previous.is_active != instance.is_active,
-        previous.is_superuser != instance.is_superuser,
-    ))
+    instance._portal_security_changes = [
+        name for name, changed in (
+            ('PASSWORD_CHANGED', previous.password != instance.password),
+            ('ACTIVE_STATUS_CHANGED', previous.is_active != instance.is_active),
+            ('SUPERUSER_STATUS_CHANGED', previous.is_superuser != instance.is_superuser),
+        ) if changed
+    ]
 
 
 @receiver(post_save, sender=User)
 def revoke_after_account_security_change(sender, instance, created, **kwargs):
-    if not created and getattr(instance, '_portal_security_changed', False):
+    changes = getattr(instance, '_portal_security_changes', ())
+    if not created and changes:
         revoke_all_user_sessions(instance.pk)
+        record_security_event(
+            event='ACCOUNT_SECURITY_CHANGED', success=True,
+            actor=get_current_audit_username() or 'system', module='auth',
+            object_id=instance.pk, detail=','.join(changes),
+        )
 
 
 @receiver(m2m_changed, sender=User.groups.through)
@@ -63,3 +73,8 @@ def revoke_after_group_change(sender, instance, action, reverse, pk_set, **kwarg
             delattr(instance, '_portal_role_cache')
     for user_id in user_ids:
         revoke_all_user_sessions(user_id)
+        record_security_event(
+            event='ACCOUNT_ROLE_CHANGED', success=True,
+            actor=get_current_audit_username() or 'system', module='auth',
+            object_id=user_id, detail='GROUP_MEMBERSHIP_CHANGED',
+        )

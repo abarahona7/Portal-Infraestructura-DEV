@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.http import HttpResponse
 from django.utils.http import content_disposition_header
 from django.db import IntegrityError, transaction
@@ -14,7 +15,7 @@ from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .permissions import PortalRolePermission, ROLE_VIEWER, get_role
-from .throttles import HeavyOperationThrottle
+from .throttles import HeavyOperationThrottle, SecurityDependencyUnavailable
 from .pagination import PortalPageNumberPagination
 from .services.asignacion_ips import MANAGED_IP_SEGMENT_PREFIXES
 from django_filters.rest_framework import (
@@ -61,6 +62,7 @@ from .audit import (
     reset_current_audit_user,
 )
 from .realtime import schedule_change
+from .security_events import record_security_event
 from .services.papelera import archive_record
 from .equipment_categories import EQUIPMENT_CATEGORY_TYPES
 
@@ -82,6 +84,44 @@ class AnexoSearchFilter(filters.SearchFilter):
 
 
 class AuditUserMixin:
+    def get_throttles(self):
+        throttles = super().get_throttles()
+        if self.action == 'list' and self.request.query_params.get('export') == '1':
+            throttles.append(HeavyOperationThrottle())
+        return throttles
+
+    def list(self, request, *args, **kwargs):
+        is_export = request.query_params.get('export') == '1'
+        if is_export:
+            count = self.filter_queryset(self.get_queryset()).count()
+            if count > settings.PORTAL_EXPORT_MAX_ROWS:
+                raise serializers.ValidationError({
+                    'detail': (
+                        f'La exportación supera el máximo de '
+                        f'{settings.PORTAL_EXPORT_MAX_ROWS} registros. Aplica filtros.'
+                    ),
+                })
+        response = super().list(request, *args, **kwargs)
+        if is_export and request.query_params.get('page', '1') == '1':
+            response_count = (
+                response.data.get('count', len(response.data))
+                if isinstance(response.data, dict)
+                else len(response.data)
+            )
+            recorded = record_security_event(
+                request=request,
+                event='DATA_EXPORT',
+                success=True,
+                role=get_role(request.user) or '',
+                module=getattr(self, 'basename', type(self).__name__),
+                detail=f'ROWS:{response_count}',
+            )
+            if not recorded:
+                raise SecurityDependencyUnavailable(
+                    'No fue posible registrar la exportación. Intenta nuevamente más tarde.'
+                )
+        return response
+
     def perform_create(self, serializer):
         token = set_current_audit_user(
             self.request.user

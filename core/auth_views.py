@@ -14,8 +14,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from .permissions import HasPortalRole, get_role
-from .client_ip import get_client_ip
-from .models import PortalSession, SecurityAuditLog
+from .models import PortalSession
 from .session_auth import (
     PortalSessionError,
     get_active_portal_session,
@@ -24,6 +23,7 @@ from .session_auth import (
 )
 from .throttles import LoginIPThrottle, LoginUsernameThrottle, RefreshIPThrottle
 from .session_events import notify_session_revoked
+from .security_events import record_security_event
 from .token_storage import redact_outstanding_token
 
 
@@ -84,10 +84,17 @@ class LoginView(APIView):
         password = request.data.get('password', '')
         user = authenticate(request=request, username=username, password=password)
         if not user:
-            SecurityAuditLog.objects.create(event='LOGIN_FAILED', actor=username[:150], success=False, ip_address=get_client_ip(request))
+            record_security_event(
+                request=request, event='LOGIN_FAILED', actor=username,
+                module='auth', success=False, detail='CREDENCIALES_INVALIDAS',
+            )
             return Response({'detail': 'Credenciales inválidas.'}, status=status.HTTP_401_UNAUTHORIZED)
         role = get_role(user)
         if not role:
+            record_security_event(
+                request=request, event='LOGIN_FAILED', actor=user.get_username(),
+                module='auth', success=False, detail='ROL_NO_AUTORIZADO',
+            )
             return Response({'detail': 'Usuario autenticado sin rol del portal.'}, status=status.HTTP_403_FORBIDDEN)
         portal_session = PortalSession.objects.create(user=user)
         refresh = RefreshToken.for_user(user)
@@ -95,6 +102,11 @@ class LoginView(APIView):
         redact_outstanding_token(refresh)
         response = Response({'access': str(refresh.access_token), 'user': _user_payload(user, role)})
         _set_refresh_cookie(response, refresh)
+        record_security_event(
+            request=request, event='LOGIN_SUCCESS', actor=user.get_username(),
+            role=role, module='auth', object_id=portal_session.pk,
+            success=True, detail='OK',
+        )
         return response
 
 
@@ -132,6 +144,11 @@ class RefreshCookieView(APIView):
                 redact_outstanding_token(new)
             response = Response({'access': str(new.access_token), 'user': _user_payload(user)})
             _set_refresh_cookie(response, new)
+            record_security_event(
+                request=request, event='SESSION_REFRESH', actor=user.get_username(),
+                role=get_role(user), module='auth', object_id=portal_session.pk,
+                success=True, detail='ROTATED',
+            )
             return response
         except (
             TokenError,
@@ -146,6 +163,10 @@ class RefreshCookieView(APIView):
                     'event': 'SESSION_REFRESH_REJECTED',
                     'reason': type(exc).__name__,
                 },
+            )
+            record_security_event(
+                request=request, event='SESSION_REFRESH', module='auth',
+                success=False, detail=type(exc).__name__,
             )
             return _expired_session_response()
         except Exception:
@@ -165,16 +186,39 @@ class LogoutView(APIView):
 
     def post(self, request):
         raw = request.COOKIES.get(settings.JWT_REFRESH_COOKIE)
+        success = True
+        detail = 'NO_COOKIE'
+        actor = ''
+        session_id = None
         if raw:
             try:
                 refresh = RefreshToken(raw)
                 session_id = refresh.get('sid')
+                actor = f'user_id:{refresh.get("user_id", "unknown")}'
                 revoke_portal_session(session_id)
                 notify_session_revoked(session_id)
                 refresh.blacklist()
+                detail = 'REVOKED'
             except TokenError:
-                pass
-        response = Response(status=status.HTTP_204_NO_CONTENT)
+                detail = 'INVALID_TOKEN'
+            except Exception as exc:
+                success = False
+                detail = type(exc).__name__
+                logger.exception(
+                    'session_logout_unexpected_error',
+                    extra={'event': 'SESSION_LOGOUT_ERROR'},
+                )
+        record_security_event(
+            request=request, event='LOGOUT', actor=actor, module='auth',
+            object_id=session_id or '', success=success, detail=detail,
+        )
+        response = Response(
+            {'detail': 'No fue posible confirmar el cierre de sesión.'} if not success else None,
+            status=(
+                status.HTTP_503_SERVICE_UNAVAILABLE
+                if not success else status.HTTP_204_NO_CONTENT
+            ),
+        )
         response.delete_cookie(settings.JWT_REFRESH_COOKIE, path=settings.JWT_COOKIE_PATH)
         return response
 

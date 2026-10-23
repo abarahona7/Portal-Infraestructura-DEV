@@ -6,12 +6,14 @@ const mocks = vi.hoisted(() => ({
   post: vi.fn(),
   ensureCsrfToken: vi.fn(),
   setAccessToken: vi.fn(),
+  subscribeSessionInvalidated: vi.fn(() => () => {}),
 }));
 
 vi.mock('../api/client', () => ({
   default: { post: mocks.post },
   ensureCsrfToken: mocks.ensureCsrfToken,
   setAccessToken: mocks.setAccessToken,
+  subscribeSessionInvalidated: mocks.subscribeSessionInvalidated,
 }));
 
 const tabKey = 'portal-infra-ti-tab-session-active';
@@ -22,6 +24,7 @@ describe('Restauración de sesión', () => {
     mocks.post.mockReset();
     mocks.ensureCsrfToken.mockReset().mockResolvedValue(undefined);
     mocks.setAccessToken.mockReset();
+    mocks.subscribeSessionInvalidated.mockClear();
   });
 
   afterEach(() => sessionStorage.clear());

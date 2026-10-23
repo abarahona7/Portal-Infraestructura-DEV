@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import apiClient, { ensureCsrfToken, setAccessToken } from '../api/client';
+import apiClient, {
+  ensureCsrfToken,
+  setAccessToken,
+  subscribeSessionInvalidated,
+} from '../api/client';
 import { getApiErrorMessage } from '../utils/apiErrorMessage';
 
 const TAB_SESSION_KEY = 'portal-infra-ti-tab-session-active';
@@ -63,6 +67,11 @@ export const useAuth = () => {
       markTabSession();
     }
   }, []);
+
+  useEffect(() => subscribeSessionInvalidated(() => {
+    clearTabSession();
+    applySession(null);
+  }), [applySession]);
 
   const refresh = useCallback(async () => {
     try {

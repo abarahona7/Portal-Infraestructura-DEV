@@ -5,6 +5,7 @@ import { getApiErrorMessage } from '../utils/apiErrorMessage';
 
 const PAGE_SIZE = 50;
 const EXPORT_PAGE_SIZE = 200;
+const MAX_EXPORT_ROWS = 5000;
 const EMPTY_PAGINATION = {
   count: 0,
   page: 1,
@@ -220,10 +221,16 @@ export const useModuleData = ({
     do {
       const response = await getItemsByTab(tab, {
         ...exportParams,
+        export: '1',
         page: exportPage,
         page_size: EXPORT_PAGE_SIZE,
       });
       const normalized = normalizeResponse(response);
+      if (normalized.pagination.count > MAX_EXPORT_ROWS) {
+        throw new Error(
+          `La exportación supera el máximo de ${MAX_EXPORT_ROWS.toLocaleString('es-CL')} registros. Aplica filtros antes de continuar.`
+        );
+      }
       allRows.push(...normalized.items);
       totalPages = normalized.pagination.totalPages;
       exportPage += 1;

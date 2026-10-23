@@ -47,6 +47,22 @@ describe('getApiErrorMessage', () => {
     );
   });
 
+  it('oculta detalles técnicos en errores internos y conserva el código de soporte', () => {
+    const error = {
+      response: {
+        status: 500,
+        data: {
+          detail: 'OperationalError: tabla_interna no existe',
+          request_id: 'abc123',
+        },
+      },
+    };
+
+    expect(getApiErrorMessage(error)).toBe(
+      'El servidor no pudo completar la operación. Código de soporte: abc123'
+    );
+  });
+
   it('lee el detalle JSON recibido como Blob al descargar un PDF', async () => {
     const error = {
       response: {

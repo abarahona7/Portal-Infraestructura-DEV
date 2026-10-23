@@ -31,7 +31,7 @@ const FIELD_LABELS = {
   version: 'Versión del registro',
 };
 
-const IGNORED_FIELDS = new Set(['code', 'current_version']);
+const IGNORED_FIELDS = new Set(['code', 'current_version', 'request_id']);
 const UNLABELED_FIELDS = new Set(['detail', 'non_field_errors']);
 
 const fieldLabel = (field) => FIELD_LABELS[field]
@@ -76,17 +76,23 @@ export const getApiErrorMessage = (
     return 'No se pudo conectar con el servidor. Revisa la red e inténtalo nuevamente.';
   }
 
+  if (status === 401) return 'La sesión expiró. Inicia sesión nuevamente.';
+  if (status === 403) return 'No tienes permisos para realizar esta operación.';
+  if (status === 404) return 'El registro ya no existe o no está disponible.';
+  if (status === 429) return 'Se alcanzó el límite de intentos. Espera un momento e inténtalo nuevamente.';
+  if (status >= 500) {
+    const requestId = data && typeof data === 'object' ? data.request_id : '';
+    return requestId
+      ? `El servidor no pudo completar la operación. Código de soporte: ${requestId}`
+      : 'El servidor no pudo completar la operación. Inténtalo nuevamente.';
+  }
+
   const messages = collectMessages(data);
   if (messages.length > 0) {
     return [...new Set(messages)].slice(0, 3).join(' · ');
   }
 
-  if (status === 401) return 'La sesión expiró. Inicia sesión nuevamente.';
-  if (status === 403) return 'No tienes permisos para realizar esta operación.';
-  if (status === 404) return 'El registro ya no existe o no está disponible.';
   if (status === 409) return 'El registro cambió. Recarga los datos antes de guardar.';
-  if (status === 429) return 'Se alcanzó el límite de intentos. Espera un momento e inténtalo nuevamente.';
-  if (status >= 500) return 'El servidor no pudo completar la operación. Inténtalo nuevamente.';
 
   return fallback;
 };

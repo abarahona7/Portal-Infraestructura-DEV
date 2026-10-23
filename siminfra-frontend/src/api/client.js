@@ -13,8 +13,16 @@ const apiClient = axios.create({
 let accessToken = null;
 let refreshPromise = null;
 let csrfPromise = null;
+const sessionInvalidatedListeners = new Set();
 export const setAccessToken = (token) => { accessToken = token || null; };
 export const getAccessToken = () => accessToken;
+export const subscribeSessionInvalidated = (listener) => {
+  sessionInvalidatedListeners.add(listener);
+  return () => sessionInvalidatedListeners.delete(listener);
+};
+const notifySessionInvalidated = () => {
+  sessionInvalidatedListeners.forEach((listener) => listener());
+};
 
 const hasCsrfCookie = () => (
   typeof document !== 'undefined'
@@ -71,6 +79,7 @@ apiClient.interceptors.response.use(
       return apiClient(original);
     } catch (refreshError) {
       setAccessToken(null);
+      notifySessionInvalidated();
       return Promise.reject(refreshError);
     }
   }

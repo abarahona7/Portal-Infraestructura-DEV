@@ -136,6 +136,11 @@ Los retiros excepcionales se gestionan con el comando técnico documentado en
 8. Cambiar contraseña, estado de acceso o grupos revoca todas las sesiones de
    esa cuenta. Los límites de frecuencia responden `429` con `Retry-After` y
    registran el rechazo en la auditoría de seguridad.
+9. Las exportaciones se limitan a 5.000 registros, usan el throttle de
+   operaciones pesadas y requieren registrar actor, módulo y cantidad antes de
+   entregar el resultado.
+10. Los errores internos responden con un mensaje genérico y un `request_id`.
+    Redis caído no desactiva los límites: la operación responde `503`.
 
 Texto revisado para la entrega a QA del 22-10-2026. El
 diagrama histórico conserva su fecha original hasta su actualización.

@@ -30,6 +30,11 @@ El recorrido normal de una operación es:
 7. El cambio funcional queda en su historial. Las operaciones sensibles, como
    revelar una contraseña, generan además un `SecurityAuditLog`.
 
+Toda excepción inesperada se transforma en una respuesta genérica `500` o
+`503`. La respuesta incluye `request_id` para correlacionarla con los logs sin
+mostrar trazas, tablas ni rutas internas. El modelo de fallos y amenazas está en
+[MODELO_AMENAZAS.md](MODELO_AMENAZAS.md).
+
 Tras confirmar una escritura REST, Channels emite un aviso mínimo con el módulo
 afectado. Cada navegador conectado por `/ws/changes/` vuelve a consultar solo
 los datos visibles que necesita. Daphne sirve HTTP y WebSocket; en DEV se usa
@@ -83,6 +88,7 @@ la versión evita que un formulario antiguo sobrescriba el cambio más reciente.
 | WebSocket conectado | 5 conexiones | Usuario autenticado |
 | Mensajes WebSocket | 5/segundo | IP y usuario autenticado |
 | Tamaño de mensaje WebSocket | 16 KiB | Conexión |
+| Exportación | 20/hour y máximo 5.000 filas | Usuario autenticado |
 
 ### Roles
 

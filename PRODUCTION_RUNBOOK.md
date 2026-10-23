@@ -284,6 +284,15 @@ respuesta incluye `X-Request-ID`, y el mismo valor aparece en los logs internos
 del ciclo de esa solicitud. El recolector de logs debe conservar este campo y
 restringir el acceso a los registros.
 
+El logger `portal.security` identifica los eventos de seguridad. El recolector
+debe separarlo del log general, impedir modificaciones a operadores del portal
+y alertar ante eventos `security_alert_threshold_reached` con nivel `CRITICAL`.
+Los umbrales vigentes están en `docs/MODELO_AMENAZAS.md`.
+
+Configurar `PORTAL_EXPORT_MAX_ROWS=5000` y
+`PORTAL_WS_AUTH_TIMEOUT_SECONDS=5`. No aumentar estos límites sin una prueba de
+carga en QA.
+
 ## 7. Verificación funcional
 
 Registrar la ejecución y evidencia usando el
@@ -328,6 +337,12 @@ Registrar la ejecución y evidencia usando el
     el PDF debe mostrarlos como texto y el backend no debe intentar conexiones.
 18. Probar que una importación con extensión `.xlsx` y contenido inválido se
     rechaza antes de iniciar cualquier escritura.
+19. Detener Redis en QA. Login y revelado deben responder `503`; el WebSocket
+    debe cerrar con `1013` y ninguna operación debe omitir el límite.
+20. Forzar un error interno sintético en QA. La respuesta debe ser genérica,
+    contener `request_id` y no mostrar trazas ni nombres de tablas.
+21. Exportar datos de prueba. Confirmar `DATA_EXPORT`, el throttle pesado y el
+    rechazo cuando se supera `PORTAL_EXPORT_MAX_ROWS`.
 
 ## 8. Respaldos y recuperación
 
@@ -374,3 +389,21 @@ Registrar la ejecución y evidencia usando el
   ausencia de versión en la cabecera `Server`.
 - Mantener Python, Django, MySQL, Node, Nginx y el sistema operativo en sus
   últimos parches soportados, siempre después de probar la suite en QA.
+
+## 11. Respuesta mínima a incidentes
+
+1. Registrar hora UTC, `request_id`, usuario, IP, módulo y alerta. Nunca copiar
+   tokens, cookies, contraseñas o secretos al ticket.
+2. Contener: desactivar la cuenta afectada, revocar sus sesiones y restringir el
+   acceso en el proxy si corresponde.
+3. Preservar el log `portal.security`, logs del proxy y auditoría de MySQL con
+   permisos de solo lectura para el análisis.
+4. Determinar alcance mediante historiales, `SecurityAuditLog` y respaldos. No
+   modificar evidencias durante esta revisión.
+5. Rotar JWT y `SECRET_KEY` para invalidar sesiones si hubo compromiso. La
+   rotación Fernet debe seguir el procedimiento con respaldo y ensayo; nunca
+   reemplazar la única clave sobre datos `ENC2::` existentes.
+6. Restaurar desde un respaldo verificado cuando exista corrupción. Ejecutar
+   después las reglas de integridad y pruebas manuales críticas.
+7. Documentar causa, impacto, acciones y controles preventivos antes de cerrar
+   el incidente.

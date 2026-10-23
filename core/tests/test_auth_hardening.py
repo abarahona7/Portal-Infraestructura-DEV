@@ -14,7 +14,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.test import SimpleTestCase, TestCase, TransactionTestCase, override_settings
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.settings import api_settings as jwt_settings
 
 from config.asgi import application
@@ -173,6 +173,22 @@ class SessionSecurityChangeTests(TestCase):
         self.assertEqual(self.client.post('/api/auth/refresh/').status_code, 200)
         self.client.cookies[settings.JWT_REFRESH_COOKIE] = old_refresh
         self.assertEqual(self.client.post('/api/auth/refresh/').status_code, 401)
+
+    def test_login_no_persiste_refresh_reutilizable(self):
+        self.login()
+        raw_refresh = self.client.cookies[settings.JWT_REFRESH_COOKIE].value
+        token = RefreshToken(raw_refresh)
+        stored = OutstandingToken.objects.get(jti=token['jti'])
+        self.assertEqual(stored.token, f'redacted:jti:{token["jti"]}')
+        self.assertNotIn(raw_refresh, stored.token)
+
+    def test_rotacion_no_persiste_nuevo_refresh_reutilizable(self):
+        self.login()
+        self.assertEqual(self.client.post('/api/auth/refresh/').status_code, 200)
+        raw_refresh = self.client.cookies[settings.JWT_REFRESH_COOKIE].value
+        token = RefreshToken(raw_refresh)
+        stored = OutstandingToken.objects.get(jti=token['jti'])
+        self.assertEqual(stored.token, f'redacted:jti:{token["jti"]}')
 
     def test_contrasena_actual_no_se_puede_reutilizar(self):
         with self.assertRaises(ValidationError):

@@ -24,6 +24,7 @@ from .session_auth import (
 )
 from .throttles import LoginIPThrottle, LoginUsernameThrottle, RefreshIPThrottle
 from .session_events import notify_session_revoked
+from .token_storage import redact_outstanding_token
 
 
 logger = logging.getLogger(__name__)
@@ -91,6 +92,7 @@ class LoginView(APIView):
         portal_session = PortalSession.objects.create(user=user)
         refresh = RefreshToken.for_user(user)
         refresh['sid'] = str(portal_session.pk)
+        redact_outstanding_token(refresh)
         response = Response({'access': str(refresh.access_token), 'user': _user_payload(user, role)})
         _set_refresh_cookie(response, refresh)
         return response
@@ -127,6 +129,7 @@ class RefreshCookieView(APIView):
                 old.blacklist()
                 new = RefreshToken.for_user(user)
                 new['sid'] = str(portal_session.pk)
+                redact_outstanding_token(new)
             response = Response({'access': str(new.access_token), 'user': _user_payload(user)})
             _set_refresh_cookie(response, new)
             return response

@@ -15,11 +15,12 @@ definitiva, el proxy, la base de QA/producción y la ventana de despliegue.
 Las decisiones y comprobaciones aún abiertas se registran en
 [la revisión de ambigüedades](docs/REVISION_AMBIGUEDADES_PRODUCCION.md).
 
-Verificación técnica actual del 22 de octubre de 2026: **236 pruebas de core**
-pasaron en SQLite temporal, con 3 omisiones esperadas, y **68 pruebas frontend**
+Verificación técnica actual del 23 de octubre de 2026: **265 pruebas de core**
+pasaron en SQLite temporal, con 3 omisiones esperadas, y **69 pruebas frontend**
 pasaron junto con lint y build. MySQL DEV conserva 23 reglas de integridad sin
 errores. La ejecución equivalente sobre MySQL aislado sigue siendo parte de la
-puerta de QA.
+puerta de QA; 11 pruebas focalizadas de criptografía y tokens ya pasaron en un
+MySQL 8.4 desechable.
 
 Evidencia anterior del 7 de octubre de 2026: **176 pruebas
 de `core` ejecutadas en MySQL 8.4 temporal, sin fallos (2 omisiones)**. La base
@@ -66,6 +67,36 @@ obliga a iniciar sesión nuevamente.
 procedimiento de recuperación. Sin esa clave no se pueden revelar los secretos
 cifrados existentes.
 
+### Rotación segura de Fernet
+
+La aplicación acepta `FIELD_ENCRYPTION_KEYS` como lista separada por comas y
+usa la primera clave para cifrar. Sin esa variable continúa usando únicamente
+`FIELD_ENCRYPTION_KEY`; desplegar este cambio no recifra datos.
+
+1. Obtener y verificar un respaldo cifrado, separado de las claves.
+2. Restaurarlo en QA y ejecutar `verify_secrets` con la clave actual.
+3. Generar una clave nueva y configurar
+   `FIELD_ENCRYPTION_KEYS=<nueva>,<actual>`. Conservar
+   `FIELD_ENCRYPTION_KEY=<actual>` durante la transición.
+4. Reiniciar y ejecutar primero la simulación:
+
+```powershell
+.\venv\Scripts\python.exe manage.py rotate_secrets --settings=config.settings_production
+```
+
+5. Solo en una ventana aprobada, aplicar y verificar:
+
+```powershell
+.\venv\Scripts\python.exe manage.py rotate_secrets --apply --confirm ROTATE_ENCRYPTION_KEYS --settings=config.settings_production
+.\venv\Scripts\python.exe manage.py verify_secrets --settings=config.settings_production
+```
+
+6. Probar los seis tipos de secreto y conservar la clave anterior hasta cerrar
+   el ensayo de rollback. Retirarla solo cuando la simulación indique cero
+   pendientes; entonces dejar la clave nueva tanto en `FIELD_ENCRYPTION_KEY`
+   como en `FIELD_ENCRYPTION_KEYS` y retirar la anterior. Nunca sustituir la
+   única clave de una base que todavía tenga valores cifrados con ella.
+
 ## 2. Preparar MySQL
 
 Para ejecutar MySQL localmente mediante Docker:
@@ -84,7 +115,10 @@ docker compose ps
 
 El puerto queda publicado solamente en `127.0.0.1` de forma predeterminada. Si
 MySQL se administra fuera de Docker, configurar `DATABASE_HOST`,
-`DATABASE_PORT` y, cuando corresponda, `DATABASE_SSL_CA`.
+`DATABASE_PORT` y `DATABASE_SSL_CA`. Producción rechaza MySQL remoto sin CA.
+En el servidor usar `require_secure_transport=ON`, restringir `bind-address` y
+firewall, y separar el usuario runtime del usuario de migraciones. El usuario
+runtime no debe tener `SUPER`, `FILE`, `GRANT OPTION` ni privilegios globales.
 
 Antes de continuar, validar la conexión:
 
@@ -297,8 +331,11 @@ Registrar la ejecución y evidencia usando el
 
 ## 8. Respaldos y recuperación
 
-- Respaldar MySQL diariamente y conservar al menos una copia fuera del servidor.
-- Respaldar por separado el `.env` y `FIELD_ENCRYPTION_KEY` con acceso limitado.
+- Respaldar MySQL diariamente, cifrar el archivo antes de transferirlo y
+  conservar al menos una copia fuera del servidor. Comprimir no equivale a cifrar.
+- Guardar la clave del respaldo separada tanto del dump como de las claves
+  Fernet; nunca incluir las claves dentro del respaldo.
+- Respaldar por separado el `.env` y las claves Fernet con acceso limitado.
 - Probar periódicamente la restauración en una base aislada.
 - Antes de cada despliegue: respaldar, ejecutar migraciones, validar el portal y
   conservar un procedimiento para volver al commit anterior.
@@ -306,3 +343,34 @@ Registrar la ejecución y evidencia usando el
   Después de QA y revisión de los cambios locales pendientes, integrar el
   commit aprobado en `main` y verificar `origin/main` antes de desplegarlo.
   No asumir que la rama de trabajo ya está incluida en producción.
+
+## 9. Sesiones, retención y minimización
+
+- Programar diariamente `python manage.py flushexpiredtokens` para retirar
+  metadatos de refresh vencidos.
+- Los refresh nuevos se guardan como `redacted:jti:<jti>`; la blacklist conserva
+  su relación sin almacenar el bearer JWT completo.
+- Revisar tokens históricos sin modificar la base:
+
+```powershell
+.\venv\Scripts\python.exe manage.py sanear_tokens_refresh --settings=config.settings_production
+```
+
+- Después de un respaldo y una ventana aprobada, repetir con `--apply`. Este
+  comando no cambia el esquema ni invalida la blacklist.
+- Antes de producción, aprobar plazos de retención para Papelera, historiales,
+  auditoría, respaldos y archivos de migración. Documentar responsable,
+  frecuencia de purga, excepciones legales y prueba de eliminación.
+
+## 10. Proxy y configuración segura
+
+- Usar el build de Vite; nunca `npm run dev`, `dev:lan` ni `vite preview`.
+- Daphne debe escuchar en `127.0.0.1` detrás del proxy y ejecutarse sin root.
+- Instalar `deploy/nginx.portal.conf.example` ajustando dominio, certificados y
+  rutas. Validar CSP en QA: `style-src` permite estilos inline porque el frontend
+  todavía los utiliza; scripts inline y `eval` permanecen bloqueados.
+- Ejecutar `python manage.py check --deploy --settings=config.settings_production`
+  y comprobar desde un cliente externo HSTS, CSP, Permissions-Policy, cookies y
+  ausencia de versión en la cabecera `Server`.
+- Mantener Python, Django, MySQL, Node, Nginx y el sistema operativo en sus
+  últimos parches soportados, siempre después de probar la suite en QA.

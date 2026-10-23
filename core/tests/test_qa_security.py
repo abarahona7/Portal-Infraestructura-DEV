@@ -131,6 +131,24 @@ class QASecretosTests(TestCase):
         self.assertIn('Usuario:', output.getvalue())
         self.assertNotIn('token-invalido', output.getvalue())
 
+    @patch.object(RevealSecretView, 'throttle_classes', [])
+    def test_revelado_corrupto_falla_cerrado_y_deja_auditoria(self):
+        Usuario.objects.filter(pk=self.person.pk).update(
+            password_gmail='ENC2::token-invalido'
+        )
+        response = self.client.post(
+            '/api/secrets/reveal/',
+            {'module': 'usuario', 'object_id': self.person.pk,
+             'secret_type': 'password_gmail', 'password': 'TestPassword123!'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 409)
+        self.assertNotIn('token-invalido', str(response.data))
+        audit = SecurityAuditLog.objects.get(
+            event='SECRET_REVEAL', success=False, detail='DESCIFRADO_FALLIDO'
+        )
+        self.assertEqual(audit.object_id_text, str(self.person.pk))
+
     def test_revelado_limita_los_intentos_repetidos(self):
         responses = []
         for _ in range(6):

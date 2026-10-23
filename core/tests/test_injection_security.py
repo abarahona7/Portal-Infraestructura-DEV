@@ -130,6 +130,17 @@ class ApiInjectionTests(TestCase):
         self.person.refresh_from_db()
         self.assertFalse(self.person.password_gmail)
 
+    def test_rechaza_prefijo_criptografico_reservado_en_secreto(self):
+        response = self.client.patch(
+            f'/api/usuarios/{self.person.pk}/',
+            {'password_gmail': 'ENC2::contenido-no-cifrado'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('password_gmail', response.data)
+        self.person.refresh_from_db()
+        self.assertFalse(self.person.password_gmail)
+
     def test_nombre_pdf_no_permite_romper_content_disposition(self):
         self.person.usuario_red = 'persona";malicioso'
         self.person.save(update_fields=['usuario_red'])

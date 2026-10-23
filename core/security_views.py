@@ -59,7 +59,14 @@ class RevealSecretView(APIView):
             raise Http404
 
         encrypted = getattr(obj, field, None)
-        secret = decrypt_val(encrypted) if encrypted else ''
+        try:
+            secret = decrypt_val(encrypted) if encrypted else ''
+        except (RuntimeError, ValueError, UnicodeError, TypeError):
+            _audit(request, False, module, object_id, secret_type, 'DESCIFRADO_FALLIDO')
+            return Response(
+                {'detail': 'El secreto no se encuentra disponible. Contacta al administrador.'},
+                status=status.HTTP_409_CONFLICT,
+            )
         _audit(request, True, module, object_id, secret_type, 'OK')
         response = Response({'secret': secret, 'expires_in': 30})
         response['Cache-Control'] = 'no-store, private'

@@ -125,9 +125,12 @@ Los siguientes campos se cifran en la aplicación con Fernet y el prefijo
 - contraseña del PC genérico.
 
 `FIELD_ENCRYPTION_KEY` no se almacena en la base ni en Git. Debe respaldarse por
-separado. Las contraseñas de los operadores de Django se guardan como hashes no
-reversibles. Los historiales y `SecurityAuditLog` no deben recibir secretos,
-tokens ni claves en texto legible.
+separado. Para rotaciones, `FIELD_ENCRYPTION_KEYS` admite varias claves en orden
+primario primero: cifra con la primera y descifra con cualquiera. Esto conserva
+compatibilidad con `ENC2::` sin migrar automáticamente al desplegar. Las
+contraseñas de los operadores de Django se guardan como hashes no reversibles.
+Los historiales y `SecurityAuditLog` no deben recibir secretos, tokens ni claves
+en texto legible.
 
 El texto plano de cada secreto admite hasta 127 bytes UTF-8. Este límite
 garantiza que el token Fernet con prefijo `ENC2::` quepa en la columna de 255

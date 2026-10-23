@@ -55,6 +55,9 @@ la versión evita que un formulario antiguo sobrescriba el cambio más reciente.
   no cierra una sesión todavía vigente porque el frontend renueva el access
   token usando la cookie.
 - Los refresh tokens rotan y los reemplazados pasan a la lista de bloqueo.
+- La tabla de tokens pendientes conserva JTI, usuario y expiración, pero el
+  campo `token` se reemplaza por `redacted:jti:<jti>` después de emitirlo. La
+  blacklist no necesita conservar el bearer JWT completo.
 - Cambiar la contraseña, desactivar la cuenta, cambiar `is_superuser` o
   modificar sus grupos revoca todas sus sesiones y refresh tokens.
 - El login se limita por IP y por nombre de usuario. Login administrativo,

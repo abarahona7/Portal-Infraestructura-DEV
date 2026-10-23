@@ -26,6 +26,8 @@ def validate_encrypted_plaintext(value):
     if value in (None, ''):
         return
     validate_no_unsafe_control_characters(value)
+    if value.startswith(('ENC::', 'ENC2::')):
+        raise ValidationError('El secreto utiliza un prefijo interno reservado.')
     if len(value.encode('utf-8')) > MAX_ENCRYPTED_PLAINTEXT_BYTES:
         raise ValidationError(
             'El secreto es demasiado largo; permite un máximo de 127 bytes.'

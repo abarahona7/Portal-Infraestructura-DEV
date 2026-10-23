@@ -11,15 +11,28 @@ server {
 server {
     listen 443 ssl;
     server_name portal.example.cl;
+    server_tokens off;
 
     ssl_certificate /etc/letsencrypt/live/portal.example.cl/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/portal.example.cl/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256;
+    ssl_prefer_server_ciphers off;
 
     root /srv/portal/siminfra-frontend/dist;
     index index.html;
 
-    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
     add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "same-origin" always;
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
+    add_header Cross-Origin-Resource-Policy "same-origin" always;
+    add_header Permissions-Policy "camera=(), geolocation=(), microphone=(), payment=(), usb=()" always;
+    # React conserva estilos inline en algunos componentes. script-src no usa
+    # unsafe-inline ni unsafe-eval; retirar unsafe-inline de style-src requiere
+    # migrar primero esos estilos a CSS o aplicar nonces.
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://portal.example.cl" always;
 
     location /api/ {
         proxy_pass http://127.0.0.1:8000;

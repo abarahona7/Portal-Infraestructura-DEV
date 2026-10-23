@@ -60,6 +60,53 @@ def require_env(name):
     return value
 
 
+def reject_placeholder(name, value):
+    normalized = value.strip().lower()
+    if normalized.startswith(('replace-with-', 'change-me', 'changeme')):
+        raise ImproperlyConfigured(f'{name} no puede contener un placeholder en producción.')
+    return value
+
+
+def validate_https_origins(name, origins):
+    if not origins:
+        raise ImproperlyConfigured(f'{name} es obligatorio en producción.')
+    for origin in origins:
+        if origin == '*' or '*' in origin:
+            raise ImproperlyConfigured(f'{name} no permite orígenes comodín en producción.')
+        try:
+            parsed = urlsplit(origin)
+            port_is_valid = parsed.port is None or 1 <= parsed.port <= 65535
+        except ValueError as exc:
+            raise ImproperlyConfigured(f'{name} contiene un origen inválido.') from exc
+        if (
+            parsed.scheme != 'https'
+            or not parsed.hostname
+            or not port_is_valid
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.path not in {'', '/'}
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ImproperlyConfigured(
+                f'{name} solo permite orígenes HTTPS explícitos, sin ruta ni credenciales.'
+            )
+
+
+def validate_redis_url(name, value):
+    reject_placeholder(name, value)
+    try:
+        parsed = urlsplit(value)
+    except ValueError as exc:
+        raise ImproperlyConfigured(f'{name} contiene una URL inválida.') from exc
+    if parsed.scheme not in {'redis', 'rediss', 'unix'}:
+        raise ImproperlyConfigured(f'{name} debe usar redis://, rediss:// o unix://.')
+    if parsed.scheme in {'redis', 'rediss'} and not parsed.hostname:
+        raise ImproperlyConfigured(f'{name} debe indicar el servidor Redis.')
+    if parsed.scheme == 'unix' and not parsed.path:
+        raise ImproperlyConfigured(f'{name} debe indicar el socket Unix de Redis.')
+
+
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'development').strip().lower()
 if DJANGO_ENV not in {'development', 'test', 'production'}:
     raise ImproperlyConfigured(
@@ -87,6 +134,8 @@ if IS_PRODUCTION and (
 ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost' if DEBUG else '')
 if IS_PRODUCTION and not ALLOWED_HOSTS:
     raise ImproperlyConfigured('DJANGO_ALLOWED_HOSTS es obligatorio en producción.')
+if IS_PRODUCTION and any(host == '*' or not host for host in ALLOWED_HOSTS):
+    raise ImproperlyConfigured('DJANGO_ALLOWED_HOSTS no permite comodines globales en producción.')
 
 INSTALLED_APPS = [
     'daphne',
@@ -134,6 +183,8 @@ ASGI_APPLICATION = 'config.asgi.application'
 CHANNEL_REDIS_URL = os.getenv('PORTAL_CHANNEL_REDIS_URL', '').strip()
 if IS_PRODUCTION and not CHANNEL_REDIS_URL:
     raise ImproperlyConfigured('PORTAL_CHANNEL_REDIS_URL es obligatorio para WebSockets en producción.')
+if IS_PRODUCTION:
+    validate_redis_url('PORTAL_CHANNEL_REDIS_URL', CHANNEL_REDIS_URL)
 CHANNEL_LAYERS = {'default': (
     {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
@@ -146,6 +197,8 @@ CHANNEL_LAYERS = {'default': (
 PORTAL_CACHE_URL = os.getenv('PORTAL_CACHE_URL', '').strip()
 if IS_PRODUCTION and not PORTAL_CACHE_URL:
     raise ImproperlyConfigured('PORTAL_CACHE_URL es obligatorio para límites compartidos en producción.')
+if IS_PRODUCTION:
+    validate_redis_url('PORTAL_CACHE_URL', PORTAL_CACHE_URL)
 CACHES = {
     'default': (
         {
@@ -166,10 +219,10 @@ if IS_PRODUCTION and DB_ENGINE not in {'mysql', 'django.db.backends.mysql'}:
     raise ImproperlyConfigured('Producción requiere DATABASE_ENGINE=mysql.')
 
 if DB_ENGINE in {'mysql', 'django.db.backends.mysql'}:
-    database_name = os.getenv('DATABASE_NAME', 'siminfra_db').strip()
-    database_user = os.getenv('DATABASE_USER', 'siminfra_user').strip()
+    database_name = os.getenv('DATABASE_NAME', '' if IS_PRODUCTION else 'siminfra_db').strip()
+    database_user = os.getenv('DATABASE_USER', '' if IS_PRODUCTION else 'siminfra_user').strip()
     database_password = os.getenv('DATABASE_PASSWORD', '')
-    database_host = os.getenv('DATABASE_HOST', 'db').strip()
+    database_host = os.getenv('DATABASE_HOST', '' if IS_PRODUCTION else 'db').strip()
     if IS_PRODUCTION:
         for variable, value in {
             'DATABASE_NAME': database_name,
@@ -179,6 +232,7 @@ if DB_ENGINE in {'mysql', 'django.db.backends.mysql'}:
         }.items():
             if not value:
                 raise ImproperlyConfigured(f'{variable} es obligatorio en producción.')
+            reject_placeholder(variable, value)
 
     mysql_options = {
         'charset': 'utf8mb4',
@@ -187,7 +241,14 @@ if DB_ENGINE in {'mysql', 'django.db.backends.mysql'}:
     }
     database_ssl_ca = os.getenv('DATABASE_SSL_CA', '').strip()
     if database_ssl_ca:
+        if IS_PRODUCTION and not Path(database_ssl_ca).is_file():
+            raise ImproperlyConfigured('DATABASE_SSL_CA debe apuntar a un archivo CA legible.')
         mysql_options['ssl'] = {'ca': database_ssl_ca}
+        mysql_options['ssl_mode'] = 'VERIFY_IDENTITY'
+    if IS_PRODUCTION and database_host not in {'127.0.0.1', 'localhost', '::1'} and not database_ssl_ca:
+        raise ImproperlyConfigured(
+            'DATABASE_SSL_CA es obligatorio para MySQL remoto en producción.'
+        )
 
     DATABASES = {'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -252,6 +313,9 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_EXPOSE_HEADERS = ['X-Request-ID']
 CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS')
 CSRF_COOKIE_SAMESITE = os.getenv('CSRF_COOKIE_SAMESITE', 'Lax')
+if IS_PRODUCTION:
+    validate_https_origins('CORS_ALLOWED_ORIGINS', CORS_ALLOWED_ORIGINS)
+    validate_https_origins('CSRF_TRUSTED_ORIGINS', CSRF_TRUSTED_ORIGINS)
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -277,13 +341,22 @@ REST_FRAMEWORK = {
     },
     'EXCEPTION_HANDLER': 'core.exceptions.portal_exception_handler',
 }
+if IS_PRODUCTION:
+    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = (
+        'rest_framework.renderers.JSONRenderer',
+    )
 
 JWT_SIGNING_KEY = os.getenv('JWT_SIGNING_KEY', '').strip()
+configured_field_keys = env_list('FIELD_ENCRYPTION_KEYS')
+legacy_primary_field_key = os.getenv('FIELD_ENCRYPTION_KEY', '').strip()
+field_keys_for_separation = set(configured_field_keys)
+if legacy_primary_field_key:
+    field_keys_for_separation.add(legacy_primary_field_key)
 if IS_PRODUCTION:
     if (
         len(JWT_SIGNING_KEY) < 50
         or len(set(JWT_SIGNING_KEY)) < 5
-        or JWT_SIGNING_KEY in {SECRET_KEY, os.getenv('FIELD_ENCRYPTION_KEY', '')}
+        or JWT_SIGNING_KEY in ({SECRET_KEY} | field_keys_for_separation)
         or JWT_SIGNING_KEY.startswith('replace-with-')
     ):
         raise ImproperlyConfigured(
@@ -305,6 +378,13 @@ JWT_REFRESH_COOKIE = os.getenv('JWT_REFRESH_COOKIE', 'siminfra_refresh')
 JWT_COOKIE_SECURE = env_bool('JWT_COOKIE_SECURE', not DEBUG)
 JWT_COOKIE_SAMESITE = os.getenv('JWT_COOKIE_SAMESITE', 'Lax')
 JWT_COOKIE_PATH = os.getenv('JWT_COOKIE_PATH', '/api/auth/')
+if IS_PRODUCTION:
+    if JWT_COOKIE_SAMESITE not in {'Lax', 'Strict'}:
+        raise ImproperlyConfigured('JWT_COOKIE_SAMESITE debe ser Lax o Strict en producción.')
+    if JWT_COOKIE_PATH != '/api/auth/':
+        raise ImproperlyConfigured('JWT_COOKIE_PATH debe limitarse a /api/auth/ en producción.')
+    if CSRF_COOKIE_SAMESITE not in {'Lax', 'Strict'}:
+        raise ImproperlyConfigured('CSRF_COOKIE_SAMESITE debe ser Lax o Strict en producción.')
 PORTAL_IDLE_TIMEOUT_SECONDS = int(os.getenv('PORTAL_IDLE_TIMEOUT_SECONDS', '300'))
 PORTAL_TRUSTED_PROXY_IPS = env_list('PORTAL_TRUSTED_PROXY_IPS', '127.0.0.1,::1')
 PORTAL_WS_MAX_CONNECTIONS_PER_IP = int(os.getenv('PORTAL_WS_MAX_CONNECTIONS_PER_IP', '20'))
@@ -341,16 +421,23 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv('FILE_UPLOAD_MAX_MEMORY_SIZE', str(2
 if DATA_UPLOAD_MAX_MEMORY_SIZE <= 0 or FILE_UPLOAD_MAX_MEMORY_SIZE <= 0:
     raise ImproperlyConfigured('Los límites de carga deben ser mayores que cero.')
 
-FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY', '')
+FIELD_ENCRYPTION_KEYS = list(configured_field_keys)
+if legacy_primary_field_key and legacy_primary_field_key not in FIELD_ENCRYPTION_KEYS:
+    FIELD_ENCRYPTION_KEYS.append(legacy_primary_field_key)
+FIELD_ENCRYPTION_KEY = FIELD_ENCRYPTION_KEYS[0] if FIELD_ENCRYPTION_KEYS else ''
 LEGACY_DJANGO_SECRET_KEY = os.getenv('LEGACY_DJANGO_SECRET_KEY', '')
 if IS_PRODUCTION:
-    require_env('FIELD_ENCRYPTION_KEY')
-    try:
-        Fernet(FIELD_ENCRYPTION_KEY.encode())
-    except (TypeError, ValueError) as exc:
+    if not FIELD_ENCRYPTION_KEYS:
         raise ImproperlyConfigured(
-            'FIELD_ENCRYPTION_KEY debe ser una clave Fernet válida.'
-        ) from exc
+            'FIELD_ENCRYPTION_KEY o FIELD_ENCRYPTION_KEYS es obligatorio en producción.'
+        )
+    for key in FIELD_ENCRYPTION_KEYS:
+        try:
+            Fernet(key.encode('ascii'))
+        except (TypeError, ValueError, UnicodeError) as exc:
+            raise ImproperlyConfigured(
+                'Todas las claves de FIELD_ENCRYPTION_KEYS deben ser claves Fernet válidas.'
+            ) from exc
 
 SECURE_PROXY_SSL_HEADER = (
     ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -365,6 +452,7 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', not 
 SECURE_HSTS_PRELOAD = env_bool('SECURE_HSTS_PRELOAD', False)
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'same-origin'
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
 X_FRAME_OPTIONS = 'DENY'
 
 if IS_PRODUCTION:
@@ -384,6 +472,8 @@ if IS_PRODUCTION:
         )
     if SECURE_HSTS_SECONDS <= 0:
         raise ImproperlyConfigured('SECURE_HSTS_SECONDS debe ser mayor que cero en producción.')
+    if SECURE_PROXY_SSL_HEADER != ('HTTP_X_FORWARDED_PROTO', 'https'):
+        raise ImproperlyConfigured('USE_X_FORWARDED_PROTO debe estar activo en producción.')
 
 LOG_FORMAT = os.getenv('DJANGO_LOG_FORMAT', 'json' if IS_PRODUCTION else 'simple').lower()
 if LOG_FORMAT not in {'simple', 'json'}:

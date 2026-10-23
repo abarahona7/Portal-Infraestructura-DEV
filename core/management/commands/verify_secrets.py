@@ -29,7 +29,8 @@ class Command(BaseCommand):
         invalid = []
         checked = 0
         for model, fields in TARGETS:
-            for row in model.objects.values_list('pk', *fields).iterator(chunk_size=500):
+            manager = getattr(model, 'all_objects', model.objects)
+            for row in manager.values_list('pk', *fields).iterator(chunk_size=500):
                 pk, *values = row
                 for field, value in zip(fields, values):
                     if not value:

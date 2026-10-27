@@ -10,6 +10,46 @@ from cryptography.fernet import Fernet
 from django.test import SimpleTestCase
 
 
+class SharedJwtSettingsTests(SimpleTestCase):
+    def check_development(self, jwt_key):
+        environment = os.environ.copy()
+        django_key = secrets.token_urlsafe(64)
+        environment.update({
+            'DJANGO_SETTINGS_MODULE': 'config.settings',
+            'DJANGO_ENV': 'development',
+            'DJANGO_DEBUG': 'True',
+            'DJANGO_SECRET_KEY': django_key,
+            'JWT_SIGNING_KEY': django_key if jwt_key == 'reuse' else jwt_key,
+            'FIELD_ENCRYPTION_KEY': Fernet.generate_key().decode(),
+            'FIELD_ENCRYPTION_KEYS': '',
+            'DATABASE_ENGINE': 'sqlite',
+            'PORTAL_PUBLIC_URL': 'http://localhost:5178',
+        })
+        return subprocess.run(
+            [
+                sys.executable,
+                '-c',
+                'from django.conf import settings; print(settings.SIMPLE_JWT["ALGORITHM"])',
+            ],
+            cwd=Path(__file__).resolve().parents[2],
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    def test_development_requires_independent_jwt_key(self):
+        for jwt_key in ('', 'reuse'):
+            with self.subTest(jwt_key=jwt_key):
+                result = self.check_development(jwt_key)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('JWT_SIGNING_KEY', result.stderr)
+
+    def test_development_accepts_independent_jwt_key(self):
+        result = self.check_development(secrets.token_urlsafe(64))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
 class ProductionQrUrlSettingsTests(SimpleTestCase):
     def check_production(
         self,

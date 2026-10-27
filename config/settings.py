@@ -352,18 +352,15 @@ legacy_primary_field_key = os.getenv('FIELD_ENCRYPTION_KEY', '').strip()
 field_keys_for_separation = set(configured_field_keys)
 if legacy_primary_field_key:
     field_keys_for_separation.add(legacy_primary_field_key)
-if IS_PRODUCTION:
-    if (
-        len(JWT_SIGNING_KEY) < 50
-        or len(set(JWT_SIGNING_KEY)) < 5
-        or JWT_SIGNING_KEY in ({SECRET_KEY} | field_keys_for_separation)
-        or JWT_SIGNING_KEY.startswith('replace-with-')
-    ):
-        raise ImproperlyConfigured(
-            'JWT_SIGNING_KEY debe ser aleatoria, exclusiva y tener al menos 50 caracteres.'
-        )
-else:
-    JWT_SIGNING_KEY = JWT_SIGNING_KEY or SECRET_KEY
+if (
+    len(JWT_SIGNING_KEY) < 50
+    or len(set(JWT_SIGNING_KEY)) < 5
+    or JWT_SIGNING_KEY in ({SECRET_KEY} | field_keys_for_separation)
+    or JWT_SIGNING_KEY.startswith('replace-with-')
+):
+    raise ImproperlyConfigured(
+        'JWT_SIGNING_KEY debe ser aleatoria, exclusiva y tener al menos 50 caracteres.'
+    )
 
 SIMPLE_JWT = {
     'ALGORITHM': 'HS256',

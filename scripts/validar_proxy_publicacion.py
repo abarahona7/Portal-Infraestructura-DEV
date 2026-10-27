@@ -18,6 +18,48 @@ ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / 'deploy/nginx.portal.conf.example'
 OFFICE_TEMPLATE = ROOT / 'deploy/nginx.portal-dev-oficina.conf.example'
 DIST = ROOT / 'siminfra-frontend/dist'
+DEPLOYMENT_PLACEHOLDERS = (
+    'portal.example.cl',
+    'portal-dev.example.cl',
+    '203.0.113.10',
+)
+
+
+def validate_hsts_policy(value):
+    directives = [part.strip() for part in value.split(';') if part.strip()]
+    normalized = {directive.lower() for directive in directives}
+    max_age = [directive for directive in directives if directive.lower().startswith('max-age=')]
+    assert len(max_age) == 1, 'HSTS debe declarar max-age una sola vez.'
+    try:
+        seconds = int(max_age[0].split('=', 1)[1])
+    except ValueError as exc:
+        raise AssertionError('HSTS contiene un max-age inválido.') from exc
+    assert seconds >= 31536000, 'HSTS debe usar max-age de al menos 31536000 segundos.'
+    assert 'includesubdomains' in normalized, 'HSTS debe incluir includeSubDomains.'
+    assert 'preload' not in normalized, 'HSTS preload requiere aprobación organizacional previa.'
+
+
+def validate_no_deployment_placeholders(configuration):
+    active_configuration = '\n'.join(
+        line.split('#', 1)[0] for line in configuration.splitlines()
+    )
+    remaining = [
+        value for value in DEPLOYMENT_PLACEHOLDERS if value in active_configuration
+    ]
+    assert not remaining, f'Configuración Nginx conserva placeholders: {", ".join(remaining)}'
+
+
+def validate_installed_configuration(configuration, *, require_hsts):
+    validate_no_deployment_placeholders(configuration)
+    if not require_hsts:
+        return
+    match = re.search(
+        r'add_header\s+Strict-Transport-Security\s+"([^"]+)"',
+        configuration,
+        flags=re.IGNORECASE,
+    )
+    assert match, 'Configuración Nginx no declara Strict-Transport-Security.'
+    validate_hsts_policy(match.group(1))
 
 
 def free_port():
@@ -64,7 +106,14 @@ def request(port, path, *, https=True, headers=None, source_address=None):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--office-dev', action='store_true')
-    office_dev = parser.parse_args().office_dev
+    parser.add_argument('--installed-config', type=Path)
+    arguments = parser.parse_args()
+    office_dev = arguments.office_dev
+    if arguments.installed_config:
+        validate_installed_configuration(
+            arguments.installed_config.read_text(),
+            require_hsts=not office_dev,
+        )
     if not (DIST / 'index.html').exists():
         raise RuntimeError('Ejecute npm run build antes de validar el proxy.')
 
@@ -94,6 +143,7 @@ def main():
                     '/opt/proyectos/Portal-Infraestructura-DEV/staticfiles/': str(temp / 'staticfiles') + '/',
                     'http://127.0.0.1:8005': f'http://127.0.0.1:{backend.server_port}',
                     'allow 203.0.113.10;': 'allow 127.0.0.1;',
+                    'portal-dev.example.cl': 'portal-dev.test.invalid',
                 })
             else:
                 replacements.update({
@@ -103,10 +153,12 @@ def main():
                     '/srv/portal/siminfra-frontend/dist': str(DIST),
                     '/srv/portal/staticfiles/': str(temp / 'staticfiles') + '/',
                     'http://127.0.0.1:8000': f'http://127.0.0.1:{backend.server_port}',
+                    'portal.example.cl': 'portal.test.invalid',
                 })
             for old, new in replacements.items():
                 assert old in site, f'Falta en el ejemplo Nginx: {old}'
                 site = site.replace(old, new)
+            validate_installed_configuration(site, require_hsts=not office_dev)
             (temp / 'staticfiles').mkdir()
             (temp / 'staticfiles/probe.txt').write_text('static-ok')
             (temp / 'portal.conf').write_text(site)
@@ -140,12 +192,12 @@ def main():
                 )
                 assert status == 200 and b'<div id="root"></div>' in body
                 if not office_dev:
-                    assert headers['Strict-Transport-Security'] == 'max-age=31536000'
+                    validate_hsts_policy(headers['Strict-Transport-Security'])
                 asset = re.search(rb'src="(/assets/[^"]+\.js)"', body).group(1).decode()
                 status, headers, _ = request(https_port, asset)
                 assert status == 200
                 if not office_dev:
-                    assert headers['Strict-Transport-Security'] == 'max-age=31536000'
+                    validate_hsts_policy(headers['Strict-Transport-Security'])
 
                 status, _, body = request(
                     https_port, '/api/auth/me/',
@@ -170,7 +222,7 @@ def main():
                         assert status == 403, path
                     print('Nginx DEV aislado: HTTPS, QR, assets, API/admin e IP restringida OK')
                 else:
-                    assert headers['Strict-Transport-Security'] == 'max-age=31536000'
+                    validate_hsts_policy(headers['Strict-Transport-Security'])
                     status, headers, _ = request(http_port, '/qr/a/test', https=False)
                     assert status == 301 and headers['Location'].endswith('/qr/a/test')
                     print('Nginx aislado: sintaxis, HTTPS, QR, assets, estáticos y proxy API/admin OK')

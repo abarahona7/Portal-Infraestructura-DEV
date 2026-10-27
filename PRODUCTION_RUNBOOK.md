@@ -195,6 +195,8 @@ cookie insegura impiden que el perfil productivo inicie.
 Solo debe cambiarse a `True` cuando el dominio definitivo y todos sus
 subdominios cumplan permanentemente HTTPS y se haya aprobado su incorporación
 a la lista preload de los navegadores.
+La plantilla Nginx exige un `max-age` mínimo de un año e
+`includeSubDomains`, pero omite `preload` hasta recibir esa aprobación.
 
 ## 5. Compilar el frontend
 
@@ -220,6 +222,9 @@ En Linux, después de compilar, ejecutar
 `python3 scripts/validar_proxy_publicacion.py`: levanta un Nginx temporal en
 puertos locales y comprueba HTTPS, assets, `/api` y la ruta QR sin tocar el
 servicio activo ni la base de datos.
+Para comprobar además que la configuración instalada no conserva dominios o
+direcciones de ejemplo, agregar
+`--installed-config /etc/nginx/sites-enabled/portal`.
 Antes de publicar, ejecutar además
 `.venv/bin/python scripts/verify_realtime_sqlite.py`: crea una base temporal,
 edita un equipo por REST y verifica que dos clientes WebSocket reciben un solo

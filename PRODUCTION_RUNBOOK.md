@@ -15,12 +15,12 @@ definitiva, el proxy, la base de QA/producción y la ventana de despliegue.
 Las decisiones y comprobaciones aún abiertas se registran en
 [la revisión de ambigüedades](docs/REVISION_AMBIGUEDADES_PRODUCCION.md).
 
-Verificación técnica actual del 23 de octubre de 2026: **265 pruebas de core**
-pasaron en SQLite temporal, con 3 omisiones esperadas, y **69 pruebas frontend**
-pasaron junto con lint y build. MySQL DEV conserva 23 reglas de integridad sin
-errores. La ejecución equivalente sobre MySQL aislado sigue siendo parte de la
-puerta de QA; 11 pruebas focalizadas de criptografía y tokens ya pasaron en un
-MySQL 8.4 desechable.
+Verificación técnica actual del 27 de octubre de 2026: **283 pruebas de core**
+pasaron en SQLite temporal, con 3 omisiones esperadas, y las mismas **283
+pruebas** pasaron en MySQL 8.4 temporal, con 2 omisiones específicas de
+SQLite. MySQL ejecutó las 3 pruebas de concurrencia de reserva de IP. El
+frontend aprobó **23 archivos y 70 pruebas**, lint, build y `npm audit` con 0
+vulnerabilidades. Ambas variantes del proxy Nginx aprobaron localmente.
 
 Evidencia anterior del 7 de octubre de 2026: **176 pruebas
 de `core` ejecutadas en MySQL 8.4 temporal, sin fallos (2 omisiones)**. La base
@@ -233,9 +233,11 @@ También debe entregar `dist/index.html` para rutas del frontend como
 `/qr/a/<uuid>`; de lo contrario, el código QR abrirá una página 404 al
 escanearlo. Definir `PORTAL_PUBLIC_URL` con la URL HTTPS real del frontend,
 sin ruta final. El perfil productivo rechaza una URL HTTP o mal formada.
-El flujo de GitHub Actions repite la suite de MySQL, la prueba aislada de
-WebSocket y ambas variantes del proxy en cada cambio de la rama de trabajo y
-de `main`; la comprobación en QA con el dominio real sigue siendo obligatoria.
+El workflow de GitHub Actions está configurado para repetir la suite de MySQL,
+la prueba aislada de WebSocket y ambas variantes del proxy en cada cambio de la
+rama de trabajo y de `main`. Las ejecuciones locales están verdes; no promover
+el commit hasta confirmar también ambos gates verdes en GitHub Actions. La
+comprobación en QA con el dominio real sigue siendo obligatoria.
 El ejemplo [deploy/nginx.portal.conf.example](deploy/nginx.portal.conf.example)
 incluye las rutas necesarias; reemplazar dominio, directorios y certificados
 antes de instalarlo. Validar la configuración con `nginx -t` antes de recargar

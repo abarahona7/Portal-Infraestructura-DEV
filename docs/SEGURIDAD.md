@@ -1,8 +1,12 @@
 # Verificación global de seguridad
 
-Fecha de verificación: 23 de octubre de 2026  
-Rama: `feature/itam-reinicio-limpio`  
-Commit auditado: `3926ace2d1fac09faa0d181723d9bb85d8f41a87`
+Fecha de verificación inicial: 23 de octubre de 2026
+
+Última reverificación: 27 de octubre de 2026
+
+Rama: `feature/itam-reinicio-limpio`
+
+Commit base auditado: `3926ace2d1fac09faa0d181723d9bb85d8f41a87`
 
 ## Resumen ejecutivo
 
@@ -11,16 +15,27 @@ IDOR, autenticación, rate limiting, cifrado, inyección, SSRF, configuración
 productiva, manejo de excepciones e integridad funcional. La suite SQLite, el
 frontend y las pruebas transversales de abuso aprobaron.
 
-La auditoría no aprueba todavía el paso a producción. Se comprobaron tres
-bloqueos:
+La verificación inicial no aprobó el paso a producción. Comprobó tres bloqueos:
 
 1. La suite completa ejecutada mediante `scripts/run_qa_mysql.py core` falla
    porque el runner no define una `JWT_SIGNING_KEY` independiente. El workflow
    de CI presenta la misma omisión.
 2. `scripts/validar_proxy_publicacion.py` falla contra la plantilla Nginx
    vigente porque compara una cabecera HSTS antigua.
-3. `npm audit` reporta dos dependencias vulnerables con severidad alta:
-   `follow-redirects@1.16.0` y `vite@8.2.2`.
+3. `npm audit` reportó dependencias vulnerables con severidad alta:
+   `follow-redirects@1.16.0`, `vite@8.2.2` y, al reverificar el 27 de octubre,
+   `undici@8.11.2`.
+
+La Parte 7 cerró los tres P0 localmente mediante los commits:
+
+- `72ebbfa`: claves sintéticas independientes en runners y CI;
+- `a5aced5`: clave JWT independiente obligatoria en todos los perfiles;
+- `4a30f75`: HSTS vigente y detección de placeholders del proxy;
+- `01e53fc`: dependencias npm corregidas dentro del mismo salto mayor.
+
+SQLite, MySQL 8.4, frontend y ambas variantes del proxy aprobaron. La
+promoción sigue condicionada a gates verdes en GitHub Actions y a los controles
+operativos P1 indicados al final de este documento.
 
 La cobertura A03 y A08 es parcial. Existen versiones Python fijadas,
 `package-lock.json` con integridad, huellas SHA-256 para importaciones y reglas
@@ -28,29 +43,29 @@ de integridad de datos. No existe un control continuo de vulnerabilidades
 Python, SBOM, procedencia firmada, firma de commits o artefactos, ni fijación
 inmutable de acciones e imágenes por digest.
 
-No se modificó código ni configuración durante esta revisión. Las pruebas
-usaron bases temporales, salvo `validar_integridad_portal`, que consultó DEV en
-modo de solo lectura y confirmó 23 reglas.
+La verificación inicial fue de solo lectura. Las correcciones de Parte 7 no
+tocaron la base DEV ni archivos `.env` reales. Todas las pruebas backend de
+esta reverificación usaron bases temporales.
 
 ## Resultados de pruebas
 
 | Verificación | Resultado | Observación |
 | --- | --- | --- |
-| Backend SQLite: `.venv/bin/python scripts/run_qa_sqlite.py core` | 277 aprobadas, 3 omitidas, 0 fallidas | Base SQLite temporal. |
-| Backend MySQL: `.venv/bin/python scripts/run_qa_mysql.py core` | 276 aprobadas, 2 omitidas, 1 fallida | MySQL 8.4 temporal. Falla separación JWT/Django. |
-| Prueba MySQL fallida con `JWT_SIGNING_KEY` sintética independiente | 1 aprobada | Confirma defecto del runner, no del rechazo productivo. |
+| Backend SQLite: `.venv/bin/python scripts/run_qa_sqlite.py core` | 283 ejecutadas, 3 omitidas, 0 fallidas | Base SQLite temporal. |
+| Backend MySQL: `.venv/bin/python scripts/run_qa_mysql.py core` | 283 ejecutadas, 2 omitidas, 0 fallidas | MySQL 8.4 temporal; ejecutó los 3 casos de concurrencia de IP. |
 | Frontend: `npm test -- --run` | 23 archivos, 70 pruebas aprobadas | Sin omisiones reportadas. |
 | Abuso transversal | 48 aprobadas | Roles, IDOR, rate limit, secretos, inyección, SSRF y WebSocket. |
-| Arranque productivo inseguro | 16 aprobadas | Configuraciones inseguras rechazadas. |
+| Configuración JWT y arranque productivo | 18 aprobadas | Desarrollo rechaza JWT ausente/reutilizada y producción rechaza configuraciones inseguras. |
 | `manage.py check --deploy` productivo | Ejecutado; 1 advertencia | `security.W021` por HSTS preload desactivado en el entorno sintético. El runbook documenta esta decisión. |
 | Lint y build React | Aprobados | 1.988 módulos; build sin source maps públicos observados. |
 | WebSocket aislado | Aprobado | REST, dos clientes, origen y autenticación. |
 | Integridad funcional DEV, solo lectura | 23 reglas aprobadas | Sin incoherencias detectadas. |
-| Proxy de producción | Fallido | El validador espera una cabecera HSTS anterior. |
+| Proxy de producción | Aprobado | HSTS mínimo de un año, `includeSubDomains`, sin `preload` y rechazo automatizado de placeholders. |
 | Proxy DEV oficina | Aprobado | HTTPS, QR, assets, API/admin e IP restringida. |
 | `pip check` | Aprobado | No detectó requisitos rotos. |
 | Auditoría Python de CVE | No ejecutada | `pip-audit` no está instalado. |
-| `npm audit --json` | Fallido | 2 vulnerabilidades altas, 0 críticas. |
+| `npm audit --audit-level=high` | Aprobado | 0 vulnerabilidades en 176 dependencias. |
+| Escaneo de secretos | Parcial | No hay gitleaks/trufflehog instalados; búsqueda por patrones en árbol e historial sin secretos reales confirmados. |
 | Integridad Git: `git fsck --full --no-dangling` | Aprobada | Sin objetos dañados ni colgantes. |
 
 ### Pruebas omitidas
@@ -61,29 +76,28 @@ SQLite omitió tres pruebas que requieren bloqueos reales de MySQL:
 - dos servidores intentando reservar la misma IP;
 - dos IP simultáneas para el mismo propietario.
 
-Estas pruebas se ejecutaron en la suite MySQL antes del fallo final y no
-reportaron errores.
+Estas pruebas se ejecutaron y aprobaron en la suite MySQL completa.
 
 MySQL omitió dos pruebas deliberadamente específicas de SQLite:
 
 - inyección de inconsistencias con `PRAGMA ignore_check_constraints`;
 - simulación de una colisión heredada que la colación MySQL ya impide crear.
 
-### Falla MySQL reproducida
+### Falla MySQL reproducida y cerrada
 
 La prueba
 `TrustedProxyTests.test_jwt_declara_algoritmo_y_clave_independiente` exige que
 la clave JWT sea distinta de `SECRET_KEY` y `FIELD_ENCRYPTION_KEY` en
 `core/tests/test_auth_hardening.py:199-203`.
 
-`scripts/run_qa_mysql.py:77-90` genera claves Django y Fernet, pero no define
-`JWT_SIGNING_KEY`. En perfiles no productivos, `config/settings.py:365-366`
-usa `SECRET_KEY` como fallback de JWT. Por eso la prueba falla.
+La versión auditada de `scripts/run_qa_mysql.py` generaba claves Django y
+Fernet, pero no definía `JWT_SIGNING_KEY`. Los perfiles no productivos usaban
+`SECRET_KEY` como fallback de JWT. Por eso la prueba fallaba.
 
-El workflow presenta la misma contradicción en
-`.github/workflows/validacion-portal.yml:29-53`: tampoco define
-`DJANGO_SECRET_KEY` ni `JWT_SIGNING_KEY` independientes antes de ejecutar la
-suite. La prueba aislada aprobó al suministrar una clave JWT sintética distinta.
+El runner MySQL, el smoke WebSocket y el workflow ahora generan claves Django,
+JWT y Fernet distintas en tiempo de ejecución. `config/settings.py` rechaza una
+clave JWT ausente, débil o reutilizada también en desarrollo y test. La suite
+MySQL completa aprobó con este contrato.
 
 ## Pruebas de abuso por rol
 
@@ -130,14 +144,14 @@ No se detectó una validación nueva incompatible con los datos consultados.
 
 El build productivo aprobó. La CSP bloquea scripts inline y `eval`; mantiene
 `'unsafe-inline'` solo en `style-src` porque existen estilos React inline. El
-riesgo está documentado. `connect-src` contiene el dominio de ejemplo y debe
-reemplazarse al instalar la plantilla.
+riesgo está documentado. El validador sustituye los valores de ejemplo para la
+prueba aislada y puede recibir `--installed-config` para rechazar un dominio o
+una dirección de ejemplo que permanezca en directivas activas.
 
-La prueba automática del proxy no alcanzó todas sus verificaciones porque
-`scripts/validar_proxy_publicacion.py:143,148,173` exige exactamente
-`max-age=31536000`, mientras `deploy/nginx.portal.conf.example:25` agrega
-`includeSubDomains; preload`. La plantilla es más estricta; la prueba está
-desactualizada.
+La política HSTS exige `max-age` de al menos un año e `includeSubDomains`.
+`preload` permanece desactivado hasta que la organización confirme HTTPS para
+todos los subdominios y apruebe una decisión difícil de revertir. Producción y
+DEV oficina aprobaron las pruebas funcionales del proxy.
 
 ### Fail closed y disponibilidad
 
@@ -149,22 +163,23 @@ exportación.
 
 ### Criptografía y configuración
 
-Producción exige claves Django, JWT y Fernet válidas e independientes, MySQL,
-Redis compartido, cookies seguras, HTTPS, hosts y orígenes explícitos. Las 16
-pruebas negativas aprobaron. La falla MySQL corresponde al entorno de QA/CI;
-el perfil productivo sí rechaza la reutilización de claves.
+Todos los perfiles exigen claves Django, JWT y Fernet válidas e independientes.
+Producción exige además MySQL, Redis compartido, cookies seguras, HTTPS, hosts
+y orígenes explícitos. Las 18 pruebas de configuración aprobaron. `check
+--deploy` terminó sin errores y conserva la advertencia aceptada `security.W021`
+porque HSTS preload permanece desactivado.
 
 ## Matriz de cobertura
 
 | Control | Estado | Evidencia verificada | Riesgo residual |
 | --- | --- | --- | --- |
 | A01 Broken Access Control | Cerrado | `core/permissions.py:18-58`; matriz por rol y 48 pruebas transversales. | Django Admin sigue siendo un canal privilegiado y requiere disciplina operativa. |
-| A02 Security Misconfiguration | Parcial | `config/settings.py:110-138,308-347,448-482`; 16 pruebas negativas; `check --deploy`. | Validador Nginx productivo falla; dominio, TLS y cabeceras reales aún requieren QA externo. |
-| A03 Software Supply Chain | Parcial | Versiones Python exactas; `package-lock.json` con hashes; CI con permisos `contents: read`. | Dos CVE altas npm; sin auditor Python, SBOM ni política automática; acciones e imagen MySQL usan tags mutables. |
-| A04 Cryptographic Failures | Cerrado | Separación productiva de claves, MultiFernet y pruebas de secreto corrupto/oculto. | Custodia, rotación y recuperación de claves siguen siendo controles operativos. |
+| A02 Security Misconfiguration | Parcial | `config/settings.py`, 18 pruebas de configuración, `check --deploy` y ambas variantes del proxy. | Dominio, TLS, configuración instalada y gates remotos aún requieren QA externo. |
+| A03 Software Supply Chain | Parcial | Versiones Python exactas; lock npm con hashes; `npm audit` sin vulnerabilidades; CI con permisos `contents: read`. | Sin auditor Python, SBOM ni política automática; acciones e imagen MySQL usan tags mutables. |
+| A04 Cryptographic Failures | Parcial | Claves independientes en todos los perfiles, MultiFernet y pruebas de secreto corrupto/oculto. | Falta cifrar respaldos con claves separadas y demostrar restauración en QA. |
 | A05 Injection | Cerrado | ORM, filtros explícitos, neutralización de fórmulas y pruebas SQL/CRLF/NUL/PDF. | Cualquier campo o exportación nueva debe reutilizar validadores existentes. |
 | A06 Insecure Design | Parcial | Transacciones, concurrencia, reglas de negocio, modelo STRIDE y límites de volumen. | Sin doble aprobación para promoción a Administrador o retiros técnicos de alto impacto. |
-| A07 Authentication Failures | Parcial | Rotación, blacklist, revocación, reautenticación y límites verificados. | Runner MySQL y CI violan el contrato de clave JWT independiente; MFA no está implementado. |
+| A07 Authentication Failures | Parcial | Rotación, blacklist, revocación, reautenticación, límites y separación JWT verificados en SQLite/MySQL. | MFA no está implementado. |
 | A08 Software/Data Integrity | Parcial | Huellas SHA-256 de importación, `hmac.compare_digest`, locks npm, restricciones DB y 23 reglas. | Commits y artefactos sin firma; sin procedencia, SBOM o verificación inmutable de dependencias e imágenes. |
 | A09 Exceptional Conditions/Logging | Parcial | Handler global, `request_id`, eventos estructurados, alertas y pruebas de fallos simulados. | No se verificó recolector externo, alerta real, retención ni almacenamiento append-only. |
 | A10 SSRF | Cerrado | Guardia AST contra clientes salientes y payloads loopback/metadata/rebinding en PDF. | Toda conexión saliente futura debe pasar revisión; hoy no existe una función runtime dirigida por usuario. |
@@ -180,17 +195,17 @@ productiva real.
 - `pip check` no encontró conflictos, pero no busca CVE.
 - `pip-audit` no está instalado. Las vulnerabilidades Python no quedaron
   verificadas contra una base de avisos.
-- `npm audit` encontró:
-  - `follow-redirects@1.16.0`: dos avisos altos relacionados con exposición de
-    cabeceras sensibles en redirecciones (`GHSA-q3jh-wrc6-jgq8` y
-    `GHSA-8r9p-f939-6h3c`);
-  - `vite@8.2.2`: avisos del servidor de desarrollo, incluido uno alto
-    (`GHSA-587h-7wmj-h5pm`). Vite no debe ejecutarse en producción, pero la
-    dependencia vulnerable permanece en la cadena de desarrollo.
+- `npm audit` terminó con 0 vulnerabilidades después de actualizar:
+  - `follow-redirects` de `1.16.0` a `1.16.2`, transitiva de Axios;
+  - Vite de `8.2.2` a `8.3.5`, usado solo para desarrollo y build;
+  - `undici` de `8.11.2` a `8.12.3`, transitiva de jsdom para pruebas.
 - `requirements.txt` fija versiones exactas, pero no contiene hashes de
   distribución.
 - `package-lock.json` fija el tarball externo de SheetJS con SHA-512 en
-  `siminfra-frontend/package-lock.json:2738-2741`.
+  `siminfra-frontend/package-lock.json:2738-2741`. Su versión es `0.20.3` y
+  `npm audit` no cubre ese origen. Revisar mensualmente los avisos del proveedor,
+  comprobar manualmente versión e integridad y repetir frontend completo antes
+  de aceptar otro tarball.
 - GitHub Actions usa `actions/checkout@v7` y `actions/setup-python@v7`, no SHA
   inmutables. MySQL usa `mysql:8.4`, no digest.
 - El commit auditado no tiene firma criptográfica ni tag de liberación.
@@ -203,24 +218,50 @@ productiva real.
 | --- | --- | --- |
 | `docs/ACCIONES_ACTUALES.md` | Consistente | Roles, Anexos asignados, DELETE bloqueado y exportación coinciden con código y pruebas. |
 | `docs/ARQUITECTURA_Y_FLUJOS.md` | Consistente | Describe JWT, WebSocket, roles, límites y manejo de excepciones vigente. |
-| `docs/MODELO_DATOS.md` | Parcial | Relaciones, cifrado y restricciones coinciden; no documenta el campo común `version` agregado por migración 0067. |
+| `docs/MODELO_DATOS.md` | Consistente | Relaciones, cifrado, restricciones y campo común `version` coinciden con migración 0067. |
 | `docs/MODELO_AMENAZAS.md` | Consistente con reservas | Registra doble aprobación, alertas externas, auditoría inmutable y MFA como pendientes. |
 | `docs/ENTREGA_QA.md` | Consistente | Entrega por commit, exclusiones y separación de datos están alineadas. |
-| `PRODUCTION_RUNBOOK.md` | Parcial | Conserva evidencia histórica de 176 pruebas; hoy son 277. Afirma que CI repite MySQL/proxy, pero ambos gates fallan con el código actual. |
-| `.env.production.example` | Parcial | No incluye `PORTAL_EXPORT_MAX_ROWS` ni `PORTAL_WS_AUTH_TIMEOUT_SECONDS`, aunque el runbook los exige. Los defaults actuales son seguros. |
+| `PRODUCTION_RUNBOOK.md` | Consistente con reservas | Registra 283 pruebas por motor y exige gates remotos verdes antes de promover. |
+| `.env.production.example` | Consistente | Incluye límites de exportación y autenticación WebSocket con valores seguros. |
 | A03/A08 | Pendiente documental | No existe una sección operativa de SBOM, auditoría de CVE, procedencia o firma de artefactos. |
+
+## Evaluaciones sin cambio de comportamiento
+
+### Django Admin
+
+`/admin/` está publicado por el proxy productivo sin restricción de red. Su
+login tiene límites por IP y usuario, responde `429` y falla cerrado si Redis
+no está disponible. Los bloqueos se auditan, pero los logins normales exitosos
+y fallidos no generan eventos dedicados en `portal.security`.
+
+Recomendación P1: restringir `/admin/` a VPN o redes corporativas y agregar
+eventos de autenticación específicos. Desactivarlo por completo reduce más la
+superficie, pero aumenta la carga operativa. MFA o SSO ofrece mayor protección
+con esfuerzo superior.
+
+### Redis y throttle general
+
+Una caída de Redis bloquea actualmente toda la API porque todos los throttles
+fallan cerrados. Como mejora de disponibilidad, el throttle general podría usar
+un contador local por proceso y emitir una alerta. Login, Admin, refresh,
+reautenticación, revelado, operaciones pesadas y WebSocket deben conservar el
+fallo cerrado.
+
+El respaldo local multiplica el límite efectivo entre workers y pierde estado
+al reiniciar. Antes de adoptarlo requiere pruebas de caída, límite local,
+alerta deduplicada y confirmación de que los ámbitos sensibles siguen
+respondiendo `503`.
 
 ## Riesgos residuales priorizados
 
-### P0: resolver antes de producción
+### P0 cerrados localmente
 
-1. Corregir el runner MySQL y CI para generar claves Django, JWT y Fernet
-   independientes. Repetir la suite completa y exigir resultado verde.
-2. Alinear el validador Nginx con la cabecera HSTS vigente. Repetir ambas
-   variantes del proxy en CI.
-3. Actualizar `follow-redirects` y Vite a versiones corregidas. Ejecutar
-   `npm ci`, lint, tests, build, proxy y `npm audit` hasta obtener cero riesgos
-   altos o justificar formalmente cualquier excepción.
+1. Claves independientes: cerrado en runners, CI y settings; suites completas
+   SQLite y MySQL aprobadas.
+2. Proxy: cerrado localmente; producción, DEV oficina y casos negativos
+   aprobaron. Falta confirmar el gate remoto.
+3. npm: cerrado; lint, 70 pruebas, build, proxies y auditoría con 0
+   vulnerabilidades aprobaron.
 
 ### P1: cerrar antes de la aprobación operativa
 
@@ -231,8 +272,8 @@ productiva real.
 4. Conectar `portal.security` a un recolector restringido y probar una alerta
    real. Definir retención y protección append-only.
 5. Cifrar respaldos, separar las claves y demostrar una restauración en QA.
-6. Actualizar documentación, cifras de pruebas, variables productivas y el
-   campo de concurrencia `version`.
+6. Instalar gitleaks o trufflehog y conservar evidencia del escaneo completo
+   del historial. La búsqueda alternativa no confirmó secretos reales.
 
 ### P2: decisiones de diseño
 

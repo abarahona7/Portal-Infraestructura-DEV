@@ -99,6 +99,18 @@ espacios antes de guardar.
 - Las relaciones uno a uno impiden que dos usuarios, servidores o PCs tengan
   simultáneamente la misma IP y que un propietario tenga dos IP activas.
 
+### Concurrencia optimista
+
+La migración `0067_add_optimistic_versions` agregó el campo común `version` a
+Departamento, SubÁrea, Usuario, Anexo, Equipamiento, PerfilGenérico,
+PCGenérico, IP y Servidor. El campo comienza en `1` y aumenta con cada
+actualización.
+
+Los formularios pueden enviar la versión que leyeron. El backend bloquea el
+registro, compara esa versión con la actual y responde `409 Conflict` con el
+código `stale_update` si otra operación guardó cambios antes. Esto evita que
+un formulario antiguo sobrescriba silenciosamente una edición más reciente.
+
 ### Índices operacionales
 
 Los índices actuales cubren los filtros usados con mayor frecuencia:

@@ -17,6 +17,7 @@ with tempfile.TemporaryDirectory(prefix='portal_ws_smoke_') as folder:
         'DATABASE_ENGINE': 'sqlite',
         'SQLITE_PATH': folder + '/db.sqlite3',
         'DJANGO_SECRET_KEY': secrets.token_urlsafe(64),
+        'JWT_SIGNING_KEY': secrets.token_urlsafe(64),
         'FIELD_ENCRYPTION_KEY': Fernet.generate_key().decode(),
         'PORTAL_PUBLIC_URL': 'http://localhost:5178',
         'DJANGO_ALLOWED_HOSTS': 'testserver,localhost,127.0.0.1',

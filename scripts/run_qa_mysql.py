@@ -85,6 +85,7 @@ def main():
             'DATABASE_HOST': '127.0.0.1',
             'DATABASE_PORT': str(port),
             'DJANGO_SECRET_KEY': secrets.token_urlsafe(64),
+            'JWT_SIGNING_KEY': secrets.token_urlsafe(64),
             'FIELD_ENCRYPTION_KEY': Fernet.generate_key().decode('ascii'),
             'PORTAL_PUBLIC_URL': 'http://localhost:5178',
         })
